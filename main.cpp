@@ -30,7 +30,7 @@ int	main(void)
 	{
 		int connect_fd = accept(socket_fd, (struct sockaddr *)&client_addr, &addr_size);
 		printf("Successful connection\n");
-
+     
 		// Read the HTTP request
 		ssize_t bytes_read = recv(connect_fd, buffer, BUFFER_SIZE, 0);
 
@@ -42,7 +42,7 @@ int	main(void)
 		close(connect_fd);
 	}
 	close(socket_fd);
-	
+
 
 }
 
