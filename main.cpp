@@ -15,9 +15,7 @@ void	setNonblocking(int fd)
 {
 	// the correct way to make the fd non-blocking would be to first get the current flags with F_GETFL and then add the non-blocking one. However, F_GETFL is not allowed
 	if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1)
-	{
 		perror("fcntl failure"); // is perror allowed?
-	}
 	
 }
 
@@ -30,6 +28,17 @@ int	main(void)
 	socklen_t addr_size;
 
 	int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+	if (socket_fd == -1)
+		return (perror("Failure creating server socket"), 1);
+	
+
+	// enabling SO_REUSEADDR for the socket indicates that the socket can be reused even if it is in a TIME_WAIT state. This can be helpful in scenarios where you want to restart a server quickly after it has been shut down, without waiting for the operating system to release the socket.
+	// how is it related to timeout functionality (RFC 9112 (HTTP 1.1) section 9.5) and do we implement it?
+	int enable = 1;
+	if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable)) == -1)
+		return (perror("Failure setting socket options"), 1);
+
+
 
 	// setNonblocking(socket_fd);
 
