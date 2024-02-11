@@ -28,7 +28,7 @@ int	main(void)
 	socklen_t addr_size;
 
 
-	// create kqueue object by calling kqueue()
+	
 
 	// creating server socket
 	int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -56,16 +56,25 @@ int	main(void)
 		return (perror("Failure when binding socket"), 1);
 	
 
+
 	// listening to incoming requests
 	//setNonblocking(socket_fd);
 	if (listen(socket_fd, SOMAXCONN) < 0)
 		return (perror("Failure when listening for requests"), 1);
 
+	// create kqueue object by calling kqueue()
 
-	// attach socket to kqueue
+	// attach socket to kqueue (how to attach several sockets?)
+	// define what events we are interested in
+	// by calling kevent()
+	// in a loop(?) --> no; because this is the listening socket we are attaching
+	// and we don't create any new listening sockets while the server is running (only conncetion sockets)
 
 
-	// wait for incoming evenets from kqueue
+	// create event loop
+	// wait for and receive incoming events from kqueue 
+	// by calling kevent()
+
 
 
 	// process the received event incl. accept() call
