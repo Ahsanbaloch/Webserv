@@ -5,8 +5,22 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #define BUFFER_SIZE 1024
+
+
+// function to set fd as nonblocking // could also be done with open() call
+void	setNonblocking(int fd)
+{
+	// the correct way to make the fd non-blocking would be to first get the current flags with F_GETFL and then add the non-blocking one. However, F_GETFL is not allowed
+	if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1)
+	{
+		perror("fcntl failure"); // is perror allowed?
+	}
+	
+}
+
 
 int	main(void)
 {
@@ -16,6 +30,8 @@ int	main(void)
 	socklen_t addr_size;
 
 	int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+
+	// setNonblocking(socket_fd);
 
 	//see man bind(2) and man ip7
 	memset(&my_addr, 0, sizeof(my_addr));
