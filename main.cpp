@@ -27,29 +27,52 @@ int	main(void)
 	char buffer[BUFFER_SIZE];
 	socklen_t addr_size;
 
+
+	// create kqueue object by calling kqueue()
+
+	// creating server socket
 	int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (socket_fd == -1)
 		return (perror("Failure creating server socket"), 1);
 	
 
 	// enabling SO_REUSEADDR for the socket indicates that the socket can be reused even if it is in a TIME_WAIT state. This can be helpful in scenarios where you want to restart a server quickly after it has been shut down, without waiting for the operating system to release the socket.
+	// A TCP local socket address that has been bound is unavailable for some time after closing, unless the SO_REUSEADDR flag has been
+	// set.  Care should be taken when using this flag as it makes TCP less reliable.
 	// how is it related to timeout functionality (RFC 9112 (HTTP 1.1) section 9.5) and do we implement it?
 	int enable = 1;
 	if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable)) == -1)
 		return (perror("Failure setting socket options"), 1);
 
 
-
-	// setNonblocking(socket_fd);
-
-	//see man bind(2) and man ip7
+	// binding
+	// see man bind(2) and man ip7
 	memset(&my_addr, 0, sizeof(my_addr));
 	my_addr.sin_family = AF_INET;
 	my_addr.sin_port = htons(4242); // port in network byte order --> here using 8080
-	my_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK); // ip host address --> --> here using 127.0.0.1 (man ip7)
+	my_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK); // ip host address --> here using 127.0.0.1 (man ip7)
 
-	bind(socket_fd, (struct sockaddr*)&my_addr, sizeof(my_addr));
-	listen(socket_fd, 20); // second arg is number of connection requests allowed in the queue
+	if (bind(socket_fd, (struct sockaddr*)&my_addr, sizeof(my_addr)) < 0)
+		return (perror("Failure when binding socket"), 1);
+	
+
+	// listening to incoming requests
+	//setNonblocking(socket_fd);
+	if (listen(socket_fd, SOMAXCONN) < 0)
+		return (perror("Failure when listening for requests"), 1);
+
+
+	// attach socket to kqueue
+
+
+	// wait for incoming evenets from kqueue
+
+
+	// process the received event incl. accept() call
+
+
+
+
 
 	while (1)
 	{
@@ -68,6 +91,17 @@ int	main(void)
 	}
 	close(socket_fd);
 
+	// close kqueue object
+
 
 }
+
+
+// epoll/kqueue etc. provide an interface to kernel
+// 1) creating a KQ object (one per provess/thread)
+// 2) attach socket_fd to KQ
+// --> since we have several socket_fds, we would need to attach several?
+// --> this is usually done once per socket
+// 3) wait for incoming events from KQ
+// 4) destroy KQ object
 
