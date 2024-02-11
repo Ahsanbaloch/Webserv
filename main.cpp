@@ -114,3 +114,5 @@ int	main(void)
 // 3) wait for incoming events from KQ
 // 4) destroy KQ object
 
+// how to test?
+
