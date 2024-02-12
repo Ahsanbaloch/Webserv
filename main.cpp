@@ -6,13 +6,15 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/event.h>
 
 #define BUFFER_SIZE 1024
 
 
 // function to set fd as nonblocking // could also be done with open() call
-void	setNonblocking(int fd)
+void	setNonblocking(int fd) // --> do when doing socket creation and socketopt
 {
+
 	// the correct way to make the fd non-blocking would be to first get the current flags with F_GETFL and then add the non-blocking one. However, F_GETFL is not allowed
 	if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1)
 		perror("fcntl failure"); // is perror allowed?
@@ -63,13 +65,18 @@ int	main(void)
 		return (perror("Failure when listening for requests"), 1);
 
 	// create kqueue object by calling kqueue()
-
+	int kq_fd = kqueue();
+	if (kq_fd == -1)
+		return (perror("Failure when creating kqueue object"), 1);
+	
 	// attach socket to kqueue (how to attach several sockets?)
 	// define what events we are interested in
 	// by calling kevent()
 	// in a loop(?) --> no; because this is the listening socket we are attaching
 	// and we don't create any new listening sockets while the server is running (only conncetion sockets)
-
+	
+	// read and write for socket_fd or just read? / also: how to attach several sockets?
+	EV_SET( );
 
 	// create event loop
 	// wait for and receive incoming events from kqueue 
