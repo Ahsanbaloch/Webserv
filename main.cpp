@@ -9,6 +9,7 @@
 #include <sys/event.h>
 
 #define BUFFER_SIZE 1024
+#define MAX_EVENTS 1 // how to determine what to set here?
 
 
 // function to set fd as nonblocking // could also be done with open() call
@@ -20,7 +21,6 @@ void	setNonblocking(int fd) // --> do when doing socket creation and socketopt
 		perror("fcntl failure"); // is perror allowed?
 	
 }
-
 
 int	main(void)
 {
@@ -74,38 +74,81 @@ int	main(void)
 	// by calling kevent()
 	// in a loop(?) --> no; because this is the listening socket we are attaching
 	// and we don't create any new listening sockets while the server is running (only conncetion sockets)
-	
-	// read and write for socket_fd or just read? / also: how to attach several sockets?
-	EV_SET( );
+	struct kevent listening_event[1];
+	EV_SET(listening_event, socket_fd, EVFILT_READ, EV_ADD, 0, 0, 0); // may add EV_CLEAR and/or EV_ENABLE flags in addition to EV_ADD
+	if (kevent(kq_fd, listening_event, 1, NULL, 0, NULL) == -1)
+		return (perror("Failure in registering event"), 1);
 
 	// create event loop
-	// wait for and receive incoming events from kqueue 
-	// by calling kevent()
-
-
-
-	// process the received event incl. accept() call
-
-
-
-
+	struct kevent eventSet[1];
 
 	while (1)
 	{
-		int connect_fd = accept(socket_fd, (struct sockaddr *)&client_addr, &addr_size);
-		printf("Successful connection\n");
-     
-		// Read the HTTP request
-		ssize_t bytes_read = recv(connect_fd, buffer, BUFFER_SIZE, 0);
+		// check for new events that are registered in our kqueue (could come from a listening or conncetion socket), but do not register them with the kqueue yet. 5th arg specifies the number of new events to handle per each iteration
+		struct kevent event_lst[MAX_EVENTS]; 
+		int new_events = kevent(kq_fd, NULL, 0, event_lst, MAX_EVENTS, NULL);
+		if (new_events == -1)
+			return (perror("Checking for new events"), 1);
+		
+		// go through all the events we have been notified of
+		for (int i = 0; new_events > i; i++)
+		{
+			// when client discounnected an EOF is sent. Close fd to rm event from kqueue
+			// event_lst[i].ident is basically the file descriptor of the socket that triggered
+			if (event_lst[i].flags & EV_EOF)
+			{
+				printf("client disconnected\n");
+				close(event_lst[i].ident); // is this enough to remove from queue?
+			}
+			// event came from listening socket --> we have to create the connection
+			else if (event_lst[i].ident = socket_fd)
+			{
+				printf("new connection incoming");
+				// accept basically performs the 3-way TCP handshake
+				// probably need to be store an array or so
+				int connection_fd = accept(event_lst[i].ident, (struct sockaddr *)&client_addr, &addr_size);
+				if (connection_fd == -1)
+					perror("Failure when trying to establish connection");
+					// close connection_fd?
+				else
+				{
+					// attach conncetion to kqueue to be able to receive updates
+					// we later also want to add write
+					EV_SET(eventSet, connection_fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
+					if (kevent(kq_fd, eventSet, 1, NULL, 0, NULL) < 0)
+						perror("Failure when registering event");
+				}
+			}
 
-		// Print the HTTP request
-		printf("Received HTTP request:\n%s\n", buffer);
-
-		const char* response = "HTTP/1.1 200 OK\r\nContent-Length: 12\r\n\r\nHello, World!";
-		send(connect_fd, response, strlen(response), 0);
-		close(connect_fd);
+			// event came from conncetion socket and had been added with read filter
+			// signalling that it is ready for reading --> so, we want to read as much as possible
+			else if (event_lst[i].filter == EVFILT_READ)
+			{
+				char buf[BUFFER_SIZE];
+				size_t bytes_read = recv(event_lst[i].ident, buf, sizeof(buf), 0);
+				printf("read %zu bytes\n", bytes_read);
+			}
+		}
 	}
 	close(socket_fd);
+
+
+	// while (1)
+	// {
+	// 	int connect_fd = accept(socket_fd, (struct sockaddr *)&client_addr, &addr_size);
+	// 	printf("Successful connection\n");
+     
+	// 	// Read the HTTP request
+	// 	ssize_t bytes_read = recv(connect_fd, buffer, BUFFER_SIZE, 0);
+
+	// 	// Print the HTTP request
+	// 	printf("Received HTTP request:\n%s\n", buffer);
+
+	// 	const char* response = "HTTP/1.1 200 OK\r\nContent-Length: 12\r\n\r\nHello, World!";
+	// 	send(connect_fd, response, strlen(response), 0);
+	// 	close(connect_fd);
+	// }
+	// close(socket_fd);
 
 	// close kqueue object
 
