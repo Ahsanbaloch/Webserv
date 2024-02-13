@@ -60,7 +60,7 @@ int	main(void)
 
 
 	// listening to incoming requests
-	//setNonblocking(socket_fd);
+	setNonblocking(socket_fd);
 	if (listen(socket_fd, SOMAXCONN) < 0)
 		return (perror("Failure when listening for requests"), 1);
 
@@ -93,7 +93,7 @@ int	main(void)
 		// go through all the events we have been notified of
 		for (int i = 0; new_events > i; i++)
 		{
-			printf("new event detected\n");
+			printf("new event detected; num events: %d\n", new_events);
 			// when client discounnected an EOF is sent. Close fd to rm event from kqueue
 			// event_lst[i].ident is basically the file descriptor of the socket that triggered
 			if (event_lst[i].flags & EV_EOF)
@@ -113,6 +113,7 @@ int	main(void)
 					// close connection_fd?
 				else
 				{
+					setNonblocking(connection_fd);
 					// attach conncetion to kqueue to be able to receive updates
 					// we later also want to add write
 					EV_SET(eventSet, connection_fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
@@ -132,6 +133,7 @@ int	main(void)
 		}
 	}
 	close(socket_fd);
+	close(kq_fd);
 
 
 	// while (1)
@@ -155,6 +157,7 @@ int	main(void)
 
 
 }
+
 
 
 // epoll/kqueue etc. provide an interface to kernel
