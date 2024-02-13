@@ -9,8 +9,12 @@
 #include <sys/event.h>
 
 #define BUFFER_SIZE 1024
-#define MAX_EVENTS 1 // how to determine what to set here?
+#define MAX_EVENTS 64 // how to determine what to set here?
 
+
+// next steps:
+// - how to make it work with multiple listening socket
+// - accept connections in a loop (--> do we need an array for the connection fds?)
 
 // function to set fd as nonblocking // could also be done with open() call
 void	setNonblocking(int fd) // --> do when doing socket creation and socketopt
@@ -59,7 +63,7 @@ int	main(void)
 	
 
 
-	// listening to incoming requests
+	// listening to incoming requests and setting listening socket to non-blocking (actually does not matter that much as long as async I/O is not edge-triggered)
 	setNonblocking(socket_fd);
 	if (listen(socket_fd, SOMAXCONN) < 0)
 		return (perror("Failure when listening for requests"), 1);
@@ -106,6 +110,7 @@ int	main(void)
 			{
 				printf("new connection incoming\n");
 				// accept basically performs the 3-way TCP handshake
+				// here could actually have a loop and try to make as many accepts as possible (--> see eklitzke)
 				// probably need to be store an array or so
 				int connection_fd = accept(event_lst[i].ident, (struct sockaddr *)&client_addr, &addr_size);
 				if (connection_fd == -1)
