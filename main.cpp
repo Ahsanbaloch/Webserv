@@ -101,7 +101,7 @@ int	main(void)
 				close(event_lst[i].ident); // is this enough to remove from queue?
 			}
 			// event came from listening socket --> we have to create the connection
-			else if (event_lst[i].ident = socket_fd)
+			else if (event_lst[i].ident == socket_fd)
 			{
 				printf("new connection incoming");
 				// accept basically performs the 3-way TCP handshake
