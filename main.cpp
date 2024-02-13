@@ -93,6 +93,7 @@ int	main(void)
 		// go through all the events we have been notified of
 		for (int i = 0; new_events > i; i++)
 		{
+			printf("new event detected\n");
 			// when client discounnected an EOF is sent. Close fd to rm event from kqueue
 			// event_lst[i].ident is basically the file descriptor of the socket that triggered
 			if (event_lst[i].flags & EV_EOF)
@@ -103,7 +104,7 @@ int	main(void)
 			// event came from listening socket --> we have to create the connection
 			else if (event_lst[i].ident == socket_fd)
 			{
-				printf("new connection incoming");
+				printf("new connection incoming\n");
 				// accept basically performs the 3-way TCP handshake
 				// probably need to be store an array or so
 				int connection_fd = accept(event_lst[i].ident, (struct sockaddr *)&client_addr, &addr_size);
