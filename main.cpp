@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/event.h>
+#include <map>
 
 #define BUFFER_SIZE 1024
 #define MAX_EVENTS 64 // how to determine what to set here?
@@ -28,60 +29,68 @@ void	setNonblocking(int fd) // --> do when doing socket creation and socketopt
 
 int	main(void)
 {
-	struct sockaddr_in my_addr;
 	struct sockaddr_storage client_addr;
 	char buffer[BUFFER_SIZE];
+	std::map<int, sockaddr_in> listening_sockets;
 	socklen_t addr_size;
 
-
-	
-
-	// creating server socket
-	int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
-	if (socket_fd == -1)
-		return (perror("Failure creating server socket"), 1);
-	
-
-	// enabling SO_REUSEADDR for the socket indicates that the socket can be reused even if it is in a TIME_WAIT state. This can be helpful in scenarios where you want to restart a server quickly after it has been shut down, without waiting for the operating system to release the socket.
-	// A TCP local socket address that has been bound is unavailable for some time after closing, unless the SO_REUSEADDR flag has been
-	// set.  Care should be taken when using this flag as it makes TCP less reliable.
-	// how is it related to timeout functionality (RFC 9112 (HTTP 1.1) section 9.5) and do we implement it?
 	int enable = 1;
-	if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable)) == -1)
-		return (perror("Failure setting socket options"), 1);
+	// creating multiple server sockets (here just two for testing purposes --> info comes from config file)
+	for (int i = 0; i < 2; i++)
+	{
+		// creating server socket 
+		int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+		if (socket_fd == -1)
+			return (perror("Failure creating server socket"), 1);
 
+		// set socket options
+		// enabling SO_REUSEADDR for the socket indicates that the socket can be reused even if it is in a TIME_WAIT state. This can be helpful in scenarios where you want to restart a server quickly after it has been shut down, without waiting for the operating system to release the socket.
+		// A TCP local socket address that has been bound is unavailable for some time after closing, unless the SO_REUSEADDR flag has been
+		// set.  Care should be taken when using this flag as it makes TCP less reliable.
+		// how is it related to timeout functionality (RFC 9112 (HTTP 1.1) section 9.5) and do we implement it?
+		if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable)) == -1)
+			return (perror("Failure setting socket options"), 1);
 
-	// binding
-	// see man bind(2) and man ip7
-	memset(&my_addr, 0, sizeof(my_addr));
-	my_addr.sin_family = AF_INET;
-	my_addr.sin_port = htons(4242); // port in network byte order --> here using 8080
-	my_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK); // ip host address --> here using 127.0.0.1 (man ip7)
+		// binding
+		// see man bind(2) and man ip7
+		struct sockaddr_in my_addr; // this structure describes an IPv4 Internet domain socket address. Relevant for binding
+		memset(&my_addr, 0, sizeof(my_addr));
+		my_addr.sin_family = AF_INET;
+		// for testing
+		if (i == 0)
+			my_addr.sin_port = htons(4242); // port in network byte order --> here using 8080
+		else
+			my_addr.sin_port = htons(8080);
+		my_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK); // ip host address --> here using 127.0.0.1 (man ip7)
+		if (bind(socket_fd, (struct sockaddr*)&my_addr, sizeof(my_addr)) < 0)
+			return (perror("Failure when binding socket"), 1);
 
-	if (bind(socket_fd, (struct sockaddr*)&my_addr, sizeof(my_addr)) < 0)
-		return (perror("Failure when binding socket"), 1);
-	
-
+		// storing all socket data in a map
+		listening_sockets.insert(std::pair<int, sockaddr_in>(socket_fd, my_addr));
+	}
 
 	// listening to incoming requests and setting listening socket to non-blocking (actually does not matter that much as long as async I/O is not edge-triggered)
-	setNonblocking(socket_fd);
-	if (listen(socket_fd, SOMAXCONN) < 0)
-		return (perror("Failure when listening for requests"), 1);
+	for (std::map<int, sockaddr_in>::iterator it = listening_sockets.begin(); it != listening_sockets.end(); it++)
+	{
+		setNonblocking(it->first); // this holds the value of the listening socket fd
+		if (listen(it->first, SOMAXCONN) < 0)
+			return (perror("Failure when listening for requests"), 1);
+	}
 
 	// create kqueue object by calling kqueue()
 	int kq_fd = kqueue();
 	if (kq_fd == -1)
 		return (perror("Failure when creating kqueue object"), 1);
 	
-	// attach socket to kqueue (how to attach several sockets?)
-	// define what events we are interested in
-	// by calling kevent()
-	// in a loop(?) --> no; because this is the listening socket we are attaching
-	// and we don't create any new listening sockets while the server is running (only conncetion sockets)
+	// attach sockets to kqueue
+	// define what events we are interested in by calling kevent()
 	struct kevent listening_event[1];
-	EV_SET(listening_event, socket_fd, EVFILT_READ, EV_ADD, 0, 0, 0); // may add EV_CLEAR and/or EV_ENABLE flags in addition to EV_ADD
-	if (kevent(kq_fd, listening_event, 1, NULL, 0, NULL) == -1)
-		return (perror("Failure in registering event"), 1);
+	for (std::map<int, sockaddr_in>::iterator it = listening_sockets.begin(); it != listening_sockets.end(); it++)
+	{
+		EV_SET(listening_event, it->first, EVFILT_READ, EV_ADD, 0, 0, 0); // may add EV_CLEAR and/or EV_ENABLE flags in addition to EV_ADD
+		if (kevent(kq_fd, listening_event, 1, NULL, 0, NULL) == -1)
+			return (perror("Failure in registering event"), 1);
+	}
 
 	// create event loop
 	struct kevent eventSet[1];
@@ -106,7 +115,8 @@ int	main(void)
 				close(event_lst[i].ident); // is this enough to remove from queue?
 			}
 			// event came from listening socket --> we have to create the connection
-			else if (event_lst[i].ident == socket_fd)
+			// else if (event_lst[i].ident == socket_fd)
+			else if (listening_sockets.find((event_lst[i]).ident) != listening_sockets.end())
 			{
 				printf("new connection incoming\n");
 				// accept basically performs the 3-way TCP handshake
@@ -137,7 +147,11 @@ int	main(void)
 			}
 		}
 	}
-	close(socket_fd);
+	// close all listening sockets
+	for (std::map<int, sockaddr_in>::iterator it = listening_sockets.begin(); it != listening_sockets.end(); it++)
+	{
+		close(it->first);
+	}
 	close(kq_fd);
 
 
