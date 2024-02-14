@@ -60,7 +60,6 @@ int	main(void)
 {
 	struct sockaddr_storage client_addr;
 	char buffer[BUFFER_SIZE];
-	 // is there a better way than a map? e.g. a vector of socket objects? --> but how to find the socket_fd in that case in the event loop?
 	socklen_t addr_size;
 	int num_listening_sockets = 2; // getting this info from config file
 
@@ -81,8 +80,8 @@ int	main(void)
 		return (perror("Failure when creating kqueue object"), 1);
 	
 	// attach sockets to kqueue
-	// define what events we are interested in (in case of the listening socket we are only interested in the EVFILT_READ)
-	// since it is only used for accepting incoming connections
+	// define what events we are interested in (in case of the listening socket we are only interested in the EVFILT_READ
+	// since it is only used for accepting incoming connections)
 	struct kevent listening_event[num_listening_sockets];
 	struct addrinfo *unique_identifier;
 	for (int i = 0; i < num_listening_sockets; i++)
