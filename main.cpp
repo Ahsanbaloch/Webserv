@@ -62,6 +62,7 @@ int	main(void)
 	char buffer[BUFFER_SIZE];
 	 // is there a better way than a map? e.g. a vector of socket objects? --> but how to find the socket_fd in that case in the event loop?
 	socklen_t addr_size;
+	int num_listening_sockets = 2; // getting this info from config file
 
 	// setting up listening sockets
 	std::vector<ListeningSocket> listening_sockets = createSockets();
@@ -80,15 +81,14 @@ int	main(void)
 		return (perror("Failure when creating kqueue object"), 1);
 	
 	// attach sockets to kqueue
-	// define what events we are interested in
-	struct kevent listening_event[1];
+	// define what events we are interested in (in case of the listening socket we are only interested in the EVFILT_READ)
+	// since it is only used for accepting incoming connections
+	struct kevent listening_event[num_listening_sockets];
 	struct addrinfo *unique_identifier;
-	for (std::vector<ListeningSocket>::iterator it = listening_sockets.begin(); it != listening_sockets.end(); it++)
-	{
-		EV_SET(listening_event, it->getSocketFd(), EVFILT_READ, EV_ADD, 0, 0, (void *)unique_identifier); // may add EV_CLEAR
-		if (kevent(kq_fd, listening_event, 1, NULL, 0, NULL) == -1)
-			return (perror("Failure in registering event"), 1);
-	}
+	for (int i = 0; i < num_listening_sockets; i++)
+		EV_SET(&listening_event[i], listening_sockets[i].getSocketFd(), EVFILT_READ, EV_ADD, 0, 0, (void *)unique_identifier);
+	if (kevent(kq_fd, listening_event, num_listening_sockets, NULL, 0, NULL) == -1)
+		return (perror("Failure in registering event"), 1);
 
 	// create event loop
 	struct kevent eventSet[1];
