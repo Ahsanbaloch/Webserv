@@ -28,58 +28,64 @@ void	setNonblocking(int fd) // --> do when doing socket creation and socketopt
 		perror("fcntl failure"); // is perror allowed?
 }
 
+// function to create server socket
+std::vector<ListeningSocket>	createSockets()
+{
+	std::vector<ListeningSocket> listening_sockets;
+
+	// for testing multiple ports --> info incl. ip comes from config file
+	std::vector<int> ports_test;
+	ports_test.push_back(4242);
+	ports_test.push_back(8080);
+
+	for (std::vector<int>::iterator it = ports_test.begin(); it != ports_test.end(); it++)
+	{
+		int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+		if (socket_fd == -1)
+			throw std::exception();
+
+		ListeningSocket serverSocket(socket_fd);
+		serverSocket.setSockOptions();
+		serverSocket.initSockConfig(*it, 0);
+		serverSocket.bindSock();
+
+		// storing all socket data in a vector (at least for now)
+		listening_sockets.push_back(serverSocket);
+	}
+	return (listening_sockets);
+}
+
 
 int	main(void)
 {
 	struct sockaddr_storage client_addr;
 	char buffer[BUFFER_SIZE];
-	std::map<int, ListeningSocket> listening_sockets; // is there a better way than a map? e.g. a vector of socket objects? --> but how to find the socket_fd in that case in the event loop?
+	 // is there a better way than a map? e.g. a vector of socket objects? --> but how to find the socket_fd in that case in the event loop?
 	socklen_t addr_size;
 
-	int enable = 1;
-	// creating multiple server sockets (here just two for testing purposes --> info comes from config file)
-	for (int i = 0; i < 2; i++)
+	// setting up listening sockets
+	std::vector<ListeningSocket> listening_sockets = createSockets();
+
+	//listening to incoming requests and setting listening socket to non-blocking (actually does not matter that much as long as I/O is not edge-triggered)
+	for (std::vector<ListeningSocket>::iterator it = listening_sockets.begin(); it != listening_sockets.end(); it++)
 	{
-		// creating server socket 
-		int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
-		if (socket_fd == -1)
-			return (perror("Failure creating server socket"), 1);
-
-		ListeningSocket serverSocket(socket_fd);
-		serverSocket.setSockOptions();
-
-		// for testing (data incl. ports and ip address comes from config file)
-		if (i == 0)
-			serverSocket.initSockConfig(4242, 0);
-		else
-			serverSocket.initSockConfig(8080, 0);
-		
-		serverSocket.bindSock();
-
-		// storing all socket data in a map --> ideally there is another container (e.g. vector) to only store the objects. But how to quickly check whether an object holds a specific file descriptor?
-		listening_sockets.insert(std::pair<int, ListeningSocket>(socket_fd, serverSocket));
-	}
-
-	//listening to incoming requests and setting listening socket to non-blocking (actually does not matter that much as long as async I/O is not edge-triggered)
-	for (std::map<int, ListeningSocket>::iterator it = listening_sockets.begin(); it != listening_sockets.end(); it++)
-	{
-		setNonblocking(it->first);
-		if (listen(it->first, SOMAXCONN) < 0)
+		setNonblocking(it->getSocketFd());
+		if (listen(it->getSocketFd(), SOMAXCONN) < 0)
 			return (perror("Failure when listening for requests"), 1);
 	}
 
-
-	// create kqueue object by calling kqueue()
+	// create kqueue object
 	int kq_fd = kqueue();
 	if (kq_fd == -1)
 		return (perror("Failure when creating kqueue object"), 1);
 	
 	// attach sockets to kqueue
-	// define what events we are interested in by calling kevent()
+	// define what events we are interested in
 	struct kevent listening_event[1];
-	for (std::map<int, ListeningSocket>::iterator it = listening_sockets.begin(); it != listening_sockets.end(); it++)
+	struct addrinfo *unique_identifier;
+	for (std::vector<ListeningSocket>::iterator it = listening_sockets.begin(); it != listening_sockets.end(); it++)
 	{
-		EV_SET(listening_event, it->first, EVFILT_READ, EV_ADD, 0, 0, 0); // may add EV_CLEAR
+		EV_SET(listening_event, it->getSocketFd(), EVFILT_READ, EV_ADD, 0, 0, (void *)unique_identifier); // may add EV_CLEAR
 		if (kevent(kq_fd, listening_event, 1, NULL, 0, NULL) == -1)
 			return (perror("Failure in registering event"), 1);
 	}
@@ -123,7 +129,7 @@ int	main(void)
 				close(event_lst[i].ident); // is this enough to remove from queue?
 			}
 			// event came from listening socket --> we have to create the connection
-			else if (listening_sockets.find((event_lst[i]).ident) != listening_sockets.end())
+			else if (event_lst[i].udata == unique_identifier)
 			{
 				printf("new connection incoming\n");
 				// accept basically performs the 3-way TCP handshake
@@ -157,9 +163,9 @@ int	main(void)
 		}
 	}
 	// close all listening sockets (this removes them from kqueue) --> do I need to do something similar with the connection sockets
-	for (std::map<int, ListeningSocket>::iterator it = listening_sockets.begin(); it != listening_sockets.end(); it++)
+	for (std::vector<ListeningSocket>::iterator it = listening_sockets.begin(); it != listening_sockets.end(); it++)
 	{
-		close(it->first);
+		close(it->getSocketFd());
 	}
 	close(kq_fd);
 
