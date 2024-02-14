@@ -8,30 +8,32 @@
 #include <fcntl.h>
 #include <sys/event.h>
 #include <map>
+#include <vector>
+
+#include "ListeningSocket.hpp"
 
 #define BUFFER_SIZE 1024
 #define MAX_EVENTS 64 // how to determine what to set here?
 
 
 // next steps:
-// - how to make it work with multiple listening socket
 // - accept connections in a loop (--> do we need an array for the connection fds?)
+// create a listening socket class and then have a vector of listening socket objects?
 
 // function to set fd as nonblocking // could also be done with open() call
 void	setNonblocking(int fd) // --> do when doing socket creation and socketopt
 {
-
 	// the correct way to make the fd non-blocking would be to first get the current flags with F_GETFL and then add the non-blocking one. However, F_GETFL is not allowed
 	if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1)
 		perror("fcntl failure"); // is perror allowed?
-	
 }
+
 
 int	main(void)
 {
 	struct sockaddr_storage client_addr;
 	char buffer[BUFFER_SIZE];
-	std::map<int, sockaddr_in> listening_sockets;
+	std::map<int, ListeningSocket> listening_sockets; // is there a better way than a map? e.g. a vector of socket objects? --> but how to find the socket_fd in that case in the event loop?
 	socklen_t addr_size;
 
 	int enable = 1;
@@ -43,39 +45,29 @@ int	main(void)
 		if (socket_fd == -1)
 			return (perror("Failure creating server socket"), 1);
 
-		// set socket options
-		// enabling SO_REUSEADDR for the socket indicates that the socket can be reused even if it is in a TIME_WAIT state. This can be helpful in scenarios where you want to restart a server quickly after it has been shut down, without waiting for the operating system to release the socket.
-		// A TCP local socket address that has been bound is unavailable for some time after closing, unless the SO_REUSEADDR flag has been
-		// set.  Care should be taken when using this flag as it makes TCP less reliable.
-		// how is it related to timeout functionality (RFC 9112 (HTTP 1.1) section 9.5) and do we implement it?
-		if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable)) == -1)
-			return (perror("Failure setting socket options"), 1);
+		ListeningSocket serverSocket(socket_fd);
+		serverSocket.setSockOptions();
 
-		// binding
-		// see man bind(2) and man ip7
-		struct sockaddr_in my_addr; // this structure describes an IPv4 Internet domain socket address. Relevant for binding
-		memset(&my_addr, 0, sizeof(my_addr));
-		my_addr.sin_family = AF_INET;
-		// for testing
+		// for testing (data incl. ports and ip address comes from config file)
 		if (i == 0)
-			my_addr.sin_port = htons(4242); // port in network byte order --> here using 8080
+			serverSocket.initSockConfig(4242, 0);
 		else
-			my_addr.sin_port = htons(8080);
-		my_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK); // ip host address --> here using 127.0.0.1 (man ip7)
-		if (bind(socket_fd, (struct sockaddr*)&my_addr, sizeof(my_addr)) < 0)
-			return (perror("Failure when binding socket"), 1);
+			serverSocket.initSockConfig(8080, 0);
+		
+		serverSocket.bindSock();
 
-		// storing all socket data in a map
-		listening_sockets.insert(std::pair<int, sockaddr_in>(socket_fd, my_addr));
+		// storing all socket data in a map --> ideally there is another container (e.g. vector) to only store the objects. But how to quickly check whether an object holds a specific file descriptor?
+		listening_sockets.insert(std::pair<int, ListeningSocket>(socket_fd, serverSocket));
 	}
 
-	// listening to incoming requests and setting listening socket to non-blocking (actually does not matter that much as long as async I/O is not edge-triggered)
-	for (std::map<int, sockaddr_in>::iterator it = listening_sockets.begin(); it != listening_sockets.end(); it++)
+	//listening to incoming requests and setting listening socket to non-blocking (actually does not matter that much as long as async I/O is not edge-triggered)
+	for (std::map<int, ListeningSocket>::iterator it = listening_sockets.begin(); it != listening_sockets.end(); it++)
 	{
-		setNonblocking(it->first); // this holds the value of the listening socket fd
+		setNonblocking(it->first);
 		if (listen(it->first, SOMAXCONN) < 0)
 			return (perror("Failure when listening for requests"), 1);
 	}
+
 
 	// create kqueue object by calling kqueue()
 	int kq_fd = kqueue();
@@ -85,21 +77,29 @@ int	main(void)
 	// attach sockets to kqueue
 	// define what events we are interested in by calling kevent()
 	struct kevent listening_event[1];
-	for (std::map<int, sockaddr_in>::iterator it = listening_sockets.begin(); it != listening_sockets.end(); it++)
+	for (std::map<int, ListeningSocket>::iterator it = listening_sockets.begin(); it != listening_sockets.end(); it++)
 	{
-		EV_SET(listening_event, it->first, EVFILT_READ, EV_ADD, 0, 0, 0); // may add EV_CLEAR and/or EV_ENABLE flags in addition to EV_ADD
+		EV_SET(listening_event, it->first, EVFILT_READ, EV_ADD, 0, 0, 0); // may add EV_CLEAR
 		if (kevent(kq_fd, listening_event, 1, NULL, 0, NULL) == -1)
 			return (perror("Failure in registering event"), 1);
 	}
 
 	// create event loop
 	struct kevent eventSet[1];
+	int flag = 0;
 
 	while (1)
 	{
 		// check for new events that are registered in our kqueue (could come from a listening or conncetion socket), but do not register them with the kqueue yet. 5th arg specifies the number of new events to handle per each iteration
-		struct kevent event_lst[MAX_EVENTS]; 
-		int new_events = kevent(kq_fd, NULL, 0, event_lst, MAX_EVENTS, NULL);
+		struct kevent event_lst[MAX_EVENTS]; // should the corresponding kevent struct be added to a fd class?
+		int new_events;
+		if (flag == 0)
+			new_events = kevent(kq_fd, NULL, 0, event_lst, MAX_EVENTS, NULL);
+		else
+		{
+			new_events = kevent(kq_fd, eventSet, 1, event_lst, MAX_EVENTS, NULL);
+			flag = 0;
+		}
 		if (new_events == -1)
 			return (perror("Checking for new events"), 1);
 		
@@ -107,6 +107,14 @@ int	main(void)
 		for (int i = 0; new_events > i; i++)
 		{
 			printf("new event detected; num events: %d\n", new_events);
+			// printf("event_lst contents: \n");
+			// printf("ident: %lu\n", event_lst[i].ident);
+			// printf("filter: %i\n", event_lst[i].filter);
+			// printf("flags: %i\n", event_lst[i].flags);
+			// printf("fflags: %i\n", event_lst[i].fflags);
+			printf("data: %li\n", event_lst[i].data); //--> this the size of the listen backlog
+			// printf("udata: %s\n", event_lst[i].udata);
+
 			// when client discounnected an EOF is sent. Close fd to rm event from kqueue
 			// event_lst[i].ident is basically the file descriptor of the socket that triggered
 			if (event_lst[i].flags & EV_EOF)
@@ -115,7 +123,6 @@ int	main(void)
 				close(event_lst[i].ident); // is this enough to remove from queue?
 			}
 			// event came from listening socket --> we have to create the connection
-			// else if (event_lst[i].ident == socket_fd)
 			else if (listening_sockets.find((event_lst[i]).ident) != listening_sockets.end())
 			{
 				printf("new connection incoming\n");
@@ -132,8 +139,10 @@ int	main(void)
 					// attach conncetion to kqueue to be able to receive updates
 					// we later also want to add write
 					EV_SET(eventSet, connection_fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
-					if (kevent(kq_fd, eventSet, 1, NULL, 0, NULL) < 0)
-						perror("Failure when registering event");
+					// to further improve performance registration is delayed and done in the first kevent call in the while loop
+					flag = 1;
+					// if (kevent(kq_fd, eventSet, 1, NULL, 0, NULL) < 0)
+					// 	perror("Failure when registering event");
 				}
 			}
 
@@ -147,33 +156,12 @@ int	main(void)
 			}
 		}
 	}
-	// close all listening sockets
-	for (std::map<int, sockaddr_in>::iterator it = listening_sockets.begin(); it != listening_sockets.end(); it++)
+	// close all listening sockets (this removes them from kqueue) --> do I need to do something similar with the connection sockets
+	for (std::map<int, ListeningSocket>::iterator it = listening_sockets.begin(); it != listening_sockets.end(); it++)
 	{
 		close(it->first);
 	}
 	close(kq_fd);
-
-
-	// while (1)
-	// {
-	// 	int connect_fd = accept(socket_fd, (struct sockaddr *)&client_addr, &addr_size);
-	// 	printf("Successful connection\n");
-     
-	// 	// Read the HTTP request
-	// 	ssize_t bytes_read = recv(connect_fd, buffer, BUFFER_SIZE, 0);
-
-	// 	// Print the HTTP request
-	// 	printf("Received HTTP request:\n%s\n", buffer);
-
-	// 	const char* response = "HTTP/1.1 200 OK\r\nContent-Length: 12\r\n\r\nHello, World!";
-	// 	send(connect_fd, response, strlen(response), 0);
-	// 	close(connect_fd);
-	// }
-	// close(socket_fd);
-
-	// close kqueue object
-
 
 }
 
