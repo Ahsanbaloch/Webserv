@@ -13,7 +13,7 @@
 #include "ListeningSocket.hpp"
 
 #define BUFFER_SIZE 1024
-#define MAX_EVENTS 64 // how to determine what to set here?
+#define MAX_EVENTS 128 // how to determine what to set here? --> maybe partly related to SOMAXCONN, but apparently not entirely
 
 
 // next steps:
@@ -83,44 +83,40 @@ int	main(void)
 	// define what events we are interested in (in case of the listening socket we are only interested in the EVFILT_READ
 	// since it is only used for accepting incoming connections)
 	struct kevent listening_event[num_listening_sockets];
-	struct addrinfo *unique_identifier;
+	struct addrinfo *listening_sock_ident;
 	for (int i = 0; i < num_listening_sockets; i++)
-		EV_SET(&listening_event[i], listening_sockets[i].getSocketFd(), EVFILT_READ, EV_ADD, 0, 0, (void *)unique_identifier);
+		EV_SET(&listening_event[i], listening_sockets[i].getSocketFd(), EVFILT_READ, EV_ADD, 0, 0, (void *)listening_sock_ident);
 	if (kevent(kq_fd, listening_event, num_listening_sockets, NULL, 0, NULL) == -1)
 		return (perror("Failure in registering event"), 1);
 
 	// create event loop
-	struct kevent eventSet[1];
-	int flag = 0;
+	// std::vector<struct kevent> eventSet2;
+	// struct kevent eventSet[1];
+
+	// q: Accepting requests in a loop and adding the connections to kqueue immediately VS Not accepting requests in a loop and delaying the adding of the connection to the beginning of the event loop when kevent is called anyway
+	std::vector<int> pending_fds;
+
 
 	while (1)
 	{
-		// check for new events that are registered in our kqueue (could come from a listening or conncetion socket), but do not register them with the kqueue yet. 5th arg specifies the number of new events to handle per each iteration
+		// check for new events that are registered in our kqueue (could come from a listening or connection socket).
+		// 5th arg specifies the number of new events to handle per each iteration
+		// it depends on several kernel-internal factors whether kevent returns one or multiple events for several conncetion requests. That's why ideally one makes acception checks in a loop per each event
 		struct kevent event_lst[MAX_EVENTS]; // should the corresponding kevent struct be added to a fd class?
 		int new_events;
-		if (flag == 0)
-			new_events = kevent(kq_fd, NULL, 0, event_lst, MAX_EVENTS, NULL);
-		else
-		{
-			new_events = kevent(kq_fd, eventSet, 1, event_lst, MAX_EVENTS, NULL);
-			flag = 0;
-		}
+		// printf("size eventSet: %lu\n", eventSet2.size());
+		
+		new_events = kevent(kq_fd, NULL, 0, event_lst, MAX_EVENTS, NULL);
 		if (new_events == -1)
-			return (perror("Checking for new events"), 1);
+			return (perror("Failure when checking for new events"), 1);
 		
 		// go through all the events we have been notified of
 		for (int i = 0; new_events > i; i++)
 		{
 			printf("new event detected; num events: %d\n", new_events);
-			// printf("event_lst contents: \n");
-			// printf("ident: %lu\n", event_lst[i].ident);
-			// printf("filter: %i\n", event_lst[i].filter);
-			// printf("flags: %i\n", event_lst[i].flags);
-			// printf("fflags: %i\n", event_lst[i].fflags);
 			printf("data: %li\n", event_lst[i].data); //--> this the size of the listen backlog
-			// printf("udata: %s\n", event_lst[i].udata);
 
-			// when client discounnected an EOF is sent. Close fd to rm event from kqueue
+			// when client disconnected an EOF is sent. Close fd to rm event from kqueue
 			// event_lst[i].ident is basically the file descriptor of the socket that triggered
 			if (event_lst[i].flags & EV_EOF)
 			{
@@ -128,27 +124,50 @@ int	main(void)
 				close(event_lst[i].ident); // is this enough to remove from queue?
 			}
 			// event came from listening socket --> we have to create the connection
-			else if (event_lst[i].udata == unique_identifier)
+			else if (event_lst[i].udata == listening_sock_ident)
 			{
-				printf("new connection incoming\n");
-				// accept basically performs the 3-way TCP handshake
-				// here could actually have a loop and try to make as many accepts as possible (--> see eklitzke)
-				// probably need to be store an array or so
-				int connection_fd = accept(event_lst[i].ident, (struct sockaddr *)&client_addr, &addr_size);
-				if (connection_fd == -1)
-					perror("Failure when trying to establish connection");
-					// close connection_fd?
-				else
+				struct addrinfo *test;
+				while (1)
 				{
-					setNonblocking(connection_fd);
-					// attach conncetion to kqueue to be able to receive updates
-					// we later also want to add write
-					EV_SET(eventSet, connection_fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
-					// to further improve performance registration is delayed and done in the first kevent call in the while loop
-					flag = 1;
-					// if (kevent(kq_fd, eventSet, 1, NULL, 0, NULL) < 0)
-					// 	perror("Failure when registering event");
+					printf("new connection incoming\n");
+					// accept basically performs the 3-way TCP handshake
+					// here could actually have a loop and try to make as many accepts as possible (--> see eklitzke)
+					// probably need to be store an array or so
+					int connection_fd = accept(event_lst[i].ident, (struct sockaddr *)&client_addr, &addr_size);
+					if (connection_fd == -1)
+					{
+						if (errno == EAGAIN || errno == EWOULDBLOCK)
+						{
+							int size = pending_fds.size();
+							struct kevent eventSet2[size];
+							for (int j = 0; j < size; j++)
+							{
+								setNonblocking(pending_fds[j]);
+								EV_SET(&eventSet2[j], pending_fds[j], EVFILT_READ, EV_ADD, 0, 0, (void *)test);
+							}
+							if (kevent(kq_fd, eventSet2, size, NULL, 0, NULL) < 0)
+								return (perror("Failure when registering event"), 1);
+							pending_fds.clear();
+							break;
+						}
+						else
+							return (perror("Failure when trying to establish connection"), 1);
+							// close connection_fd?
+					}
+					pending_fds.push_back(connection_fd);
+					// else
+					// {
+					// 	setNonblocking(connection_fd);
+					// 	// attach conncetion to kqueue to be able to receive updates
+					// 	// we later also want to add write
+					// 	EV_SET(eventSet, connection_fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
+					// 	// to further improve performance registration is delayed and done in the first kevent call in the while loop
+					// 	// but then, how do we know the size of eventSet?
+					// 	if (kevent(kq_fd, eventSet, 1, NULL, 0, NULL) < 0)
+					// 		return (perror("Failure when registering event"), 1);
+					// }
 				}
+				
 			}
 
 			// event came from conncetion socket and had been added with read filter
