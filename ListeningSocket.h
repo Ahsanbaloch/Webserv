@@ -1,6 +1,6 @@
 
-#ifndef LISTENINGSOCKET_HPP
-# define LISTENINGSOCKET_HPP
+#ifndef LISTENINGSOCKET_H
+# define LISTENINGSOCKET_H
 
 # include <sys/socket.h>
 # include <netinet/in.h>

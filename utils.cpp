@@ -38,14 +38,17 @@ std::vector<ListeningSocket>	createSockets()
 }
 
 // read request handler
-void	handleReadRequest(struct kevent event_lst_item)
+void	handleRequest(struct kevent event_lst_item)
 {
 	char buf[BUFFER_SIZE];
-	size_t bytes_read = recv(event_lst_item.ident, buf, sizeof(buf), 0);
-	printf("read %zu bytes\n", bytes_read);
+	if (event_lst_item.filter == EVFILT_READ)
+	{
+		size_t bytes_read = recv(event_lst_item.ident, buf, sizeof(buf), 0);
+		printf("read %zu bytes\n", bytes_read);	
+	}
 }
 
-int	addConnectionToKernelQueue(int kq_fd, std::vector<int> pending_fds, struct addrinfo *connection_sock_ident)
+int	addConnectionToKernelQueue(KQueue Queue, std::vector<int> pending_fds, struct addrinfo *connection_sock_ident)
 {
 	int size = pending_fds.size();
 	struct kevent connection_event[size];
@@ -54,14 +57,13 @@ int	addConnectionToKernelQueue(int kq_fd, std::vector<int> pending_fds, struct a
 		setNonblocking(pending_fds[i]);
 		EV_SET(&connection_event[i], pending_fds[i], EVFILT_READ, EV_ADD, 0, 0, (void *)connection_sock_ident);
 	}
-	if (kevent(kq_fd, connection_event, size, NULL, 0, NULL) < 0)
+	if (kevent(Queue.kqueue_fd, connection_event, size, NULL, 0, NULL) < 0)
 		return (perror("Failure when registering event"), 1);
 	return (0);
 }
 
-
-// function to run event loop
-int runEventLoop(int kq_fd, struct addrinfo *listening_sock_ident)
+//function to run event loop
+int	runEventLoop(KQueue Queue)
 {
 	std::vector<int> pending_fds;
 	struct sockaddr_storage client_addr;
@@ -73,7 +75,7 @@ int runEventLoop(int kq_fd, struct addrinfo *listening_sock_ident)
 		struct kevent event_lst[MAX_EVENTS];
 		
 		// check for new events that are registered in our kqueue (could come from a listening or connection socket)
-		int new_events = kevent(kq_fd, NULL, 0, event_lst, MAX_EVENTS, NULL); // it depends on several kernel-internal factors whether kevent returns one or multiple events for several conncetion requests. That's why ideally one makes acception checks in a loop per each event
+		int new_events = kevent(Queue.kqueue_fd, NULL, 0, event_lst, MAX_EVENTS, NULL); // it depends on several kernel-internal factors whether kevent returns one or multiple events for several conncetion requests. That's why ideally one makes acception checks in a loop per each event
 		if (new_events == -1)
 			return (perror("Failure when checking for new events"), 1);
 		
@@ -87,7 +89,7 @@ int runEventLoop(int kq_fd, struct addrinfo *listening_sock_ident)
 				close(event_lst[i].ident); // event_lst[i].ident is the file descriptor of the socket that triggered
 			}
 			// event came from listening socket --> we have to create a connection
-			else if (event_lst[i].udata == listening_sock_ident)
+			else if (event_lst[i].udata == Queue.listening_sock_ident)
 			{
 				while (1) // to improve efficiency (reducing calls to kevent), we accept all connection requests related to the event in a loop
 				{
@@ -97,7 +99,7 @@ int runEventLoop(int kq_fd, struct addrinfo *listening_sock_ident)
 					{
 						if (errno == EAGAIN || errno == EWOULDBLOCK)
 						{
-							addConnectionToKernelQueue(kq_fd, pending_fds, connection_sock_ident);
+							addConnectionToKernelQueue(Queue, pending_fds, connection_sock_ident);
 							pending_fds.clear();
 							break;
 						}
@@ -108,8 +110,9 @@ int runEventLoop(int kq_fd, struct addrinfo *listening_sock_ident)
 				}
 			}
 			// event came from conncetion, so that we want to handle the request
-			else if (event_lst[i].filter == EVFILT_READ)
-				handleReadRequest(event_lst[i]);
+			else if (event_lst[i].udata == connection_sock_ident)
+				handleRequest(event_lst[i]);
+				
 		}
 	}
 }
