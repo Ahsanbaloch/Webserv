@@ -73,7 +73,7 @@ int	DarwinWorker::runEventLoop()
 			}
 			// event came from conncetion, so that we want to handle the request
 			else if (*reinterpret_cast<int*>(event_lst[i].udata) == Q.connection_sock_ident)
-				handleRequest(event_lst[i]);
+				RequestHandler.handleRequest(event_lst[i]);
 				
 		}
 	}

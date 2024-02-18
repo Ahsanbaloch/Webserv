@@ -20,13 +20,10 @@
 #include "DarwinWorker.h"
 
 
-#define BUFFER_SIZE 1024
 
 void							setNonblocking(int fd);
 std::vector<ListeningSocket>	createSockets();
-void	handleRequest(struct kevent event_lst_item);
-// int	addConnectionToKernelQueue(DarwinWorker Worker, std::vector<int> pending_fds);
-// int	runEventLoop(DarwinWorker Worker);
+
 
 
 #endif
