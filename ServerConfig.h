@@ -6,8 +6,6 @@
 #include <vector>
 #include "ListeningSocket.h"
 
-std::vector<ListeningSocket>	createSockets();
-
 class ServerConfig
 {
 private:
