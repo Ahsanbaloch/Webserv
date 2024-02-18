@@ -25,7 +25,7 @@
 void							setNonblocking(int fd);
 std::vector<ListeningSocket>	createSockets();
 void	handleRequest(struct kevent event_lst_item);
-int	addConnectionToKernelQueue(KQueue Queue, std::vector<int> pending_fds, struct addrinfo *connection_sock_ident);
+int	addConnectionToKernelQueue(KQueue Queue, std::vector<int> pending_fds);
 int	runEventLoop(KQueue Queue);
 
 

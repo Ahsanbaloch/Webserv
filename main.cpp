@@ -25,7 +25,7 @@ int	main(void)
 	struct kevent listening_event[Server.num_listening_sockets];
 	// struct addrinfo *listening_sock_ident;
 	for (int i = 0; i < Server.num_listening_sockets; i++)
-		EV_SET(&listening_event[i], Server.listening_sockets[i].getSocketFd(), EVFILT_READ, EV_ADD, 0, 0, (void *)Queue.listening_sock_ident);
+		EV_SET(&listening_event[i], Server.listening_sockets[i].getSocketFd(), EVFILT_READ, EV_ADD, 0, 0, &Queue.listening_sock_ident);
 	if (kevent(Queue.kqueue_fd, listening_event, Server.num_listening_sockets, NULL, 0, NULL) == -1)
 		return (perror("Failure in registering event"), 1);
 

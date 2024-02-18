@@ -48,14 +48,14 @@ void	handleRequest(struct kevent event_lst_item)
 	}
 }
 
-int	addConnectionToKernelQueue(KQueue Queue, std::vector<int> pending_fds, struct addrinfo *connection_sock_ident)
+int	addConnectionToKernelQueue(KQueue Queue, std::vector<int> pending_fds)
 {
 	int size = pending_fds.size();
 	struct kevent connection_event[size];
 	for (int i = 0; i < size; i++)
 	{
 		setNonblocking(pending_fds[i]);
-		EV_SET(&connection_event[i], pending_fds[i], EVFILT_READ, EV_ADD, 0, 0, (void *)connection_sock_ident);
+		EV_SET(&connection_event[i], pending_fds[i], EVFILT_READ, EV_ADD, 0, 0, &Queue.connection_sock_ident);
 	}
 	if (kevent(Queue.kqueue_fd, connection_event, size, NULL, 0, NULL) < 0)
 		return (perror("Failure when registering event"), 1);
@@ -67,7 +67,6 @@ int	runEventLoop(KQueue Queue)
 {
 	std::vector<int> pending_fds;
 	struct sockaddr_storage client_addr;
-	struct addrinfo *connection_sock_ident;
 	socklen_t addr_size;
 
 	while (1)
@@ -89,7 +88,7 @@ int	runEventLoop(KQueue Queue)
 				close(event_lst[i].ident); // event_lst[i].ident is the file descriptor of the socket that triggered
 			}
 			// event came from listening socket --> we have to create a connection
-			else if (event_lst[i].udata == Queue.listening_sock_ident)
+			else if (*reinterpret_cast<int*>(event_lst[i].udata) == Queue.listening_sock_ident)
 			{
 				while (1) // to improve efficiency (reducing calls to kevent), we accept all connection requests related to the event in a loop
 				{
@@ -99,7 +98,7 @@ int	runEventLoop(KQueue Queue)
 					{
 						if (errno == EAGAIN || errno == EWOULDBLOCK)
 						{
-							addConnectionToKernelQueue(Queue, pending_fds, connection_sock_ident);
+							addConnectionToKernelQueue(Queue, pending_fds);
 							pending_fds.clear();
 							break;
 						}
@@ -110,7 +109,7 @@ int	runEventLoop(KQueue Queue)
 				}
 			}
 			// event came from conncetion, so that we want to handle the request
-			else if (event_lst[i].udata == connection_sock_ident)
+			else if (*reinterpret_cast<int*>(event_lst[i].udata) == Queue.connection_sock_ident)
 				handleRequest(event_lst[i]);
 				
 		}

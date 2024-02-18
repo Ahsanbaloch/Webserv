@@ -12,8 +12,8 @@ class KQueue
 private:
 public:
 	int kqueue_fd;
-	struct addrinfo *listening_sock_ident;
-	struct addrinfo *connecting_sock_ident;
+	int listening_sock_ident;
+	int connection_sock_ident;
 	KQueue();
 	~KQueue();
 };
