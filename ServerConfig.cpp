@@ -45,6 +45,7 @@ void	ServerConfig::setNonblocking(int fd)
 		perror("fcntl failure"); // is perror allowed?
 }
 
+// may add to ListeningSocket class instead?
 void	ServerConfig::listen2()
 {
 	for (std::vector<ListeningSocket>::iterator it = listening_sockets.begin(); it != listening_sockets.end(); it++)

@@ -3,6 +3,12 @@
 #include "KQueue.h"
 #include "DarwinWorker.h"
 
+// next:
+// - finish clean up -> partiuclarly Server Config / listeningSocket class
+// - check exception handling
+// - create Makefile
+// - add support for write requests
+
 int	main(void)
 {
 	// Create Server object (create listening sockets and bind them)
