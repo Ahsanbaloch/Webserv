@@ -1,8 +1,8 @@
 
-#include "KQueue.h"
+#include "DarwinWorker.h"
 #include "utils.h"
 
-KQueue::KQueue()
+DarwinWorker::DarwinWorker()
 {
 	kqueue_fd = kqueue();
 	if (kqueue_fd == -1)
@@ -11,7 +11,7 @@ KQueue::KQueue()
 	connection_sock_ident = 1;
 }
 
-
-KQueue::~KQueue()
+DarwinWorker::~DarwinWorker()
 {
 }
+

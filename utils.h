@@ -16,7 +16,7 @@
 #include <string>
 
 #include "ListeningSocket.h"
-#include "KQueue.h"
+#include "DarwinWorker.h"
 
 #define BUFFER_SIZE 1024
 #define MAX_EVENTS 128 // how to determine what to set here? --> maybe partly related to SOMAXCONN, but apparently not entirely
@@ -25,8 +25,8 @@
 void							setNonblocking(int fd);
 std::vector<ListeningSocket>	createSockets();
 void	handleRequest(struct kevent event_lst_item);
-int	addConnectionToKernelQueue(KQueue Queue, std::vector<int> pending_fds);
-int	runEventLoop(KQueue Queue);
+int	addConnectionToKernelQueue(DarwinWorker Worker, std::vector<int> pending_fds);
+int	runEventLoop(DarwinWorker Worker);
 
 
 #endif

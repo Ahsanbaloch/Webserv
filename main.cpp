@@ -1,7 +1,7 @@
 
 #include "utils.h"
 #include "ServerConfig.h"
-#include "KQueue.h"
+#include "DarwinWorker.h"
 
 int	main(void)
 {
@@ -17,7 +17,7 @@ int	main(void)
 	}
 
 	// create kqueue object
-	KQueue Queue;
+	DarwinWorker Worker;
 	
 	// attach sockets to kqueue
 	// define what events we are interested in (in case of the listening socket we are only interested in the EVFILT_READ
@@ -25,18 +25,18 @@ int	main(void)
 	struct kevent listening_event[Server.num_listening_sockets];
 	// struct addrinfo *listening_sock_ident;
 	for (int i = 0; i < Server.num_listening_sockets; i++)
-		EV_SET(&listening_event[i], Server.listening_sockets[i].getSocketFd(), EVFILT_READ, EV_ADD, 0, 0, &Queue.listening_sock_ident);
-	if (kevent(Queue.kqueue_fd, listening_event, Server.num_listening_sockets, NULL, 0, NULL) == -1)
+		EV_SET(&listening_event[i], Server.listening_sockets[i].getSocketFd(), EVFILT_READ, EV_ADD, 0, 0, &Worker.listening_sock_ident);
+	if (kevent(Worker.kqueue_fd, listening_event, Server.num_listening_sockets, NULL, 0, NULL) == -1)
 		return (perror("Failure in registering event"), 1);
 
 	// run event loop
 	// Queue.runEventLoop();
-	runEventLoop(Queue);
+	runEventLoop(Worker);
 
 	// close all listening sockets (this removes them from kqueue) --> do I need to do something similar with the connection sockets
 	for (std::vector<ListeningSocket>::iterator it = Server.listening_sockets.begin(); it != Server.listening_sockets.end(); it++)
 	{
 		close(it->getSocketFd());
 	}
-	close(Queue.kqueue_fd);
+	close(Worker.kqueue_fd);
 }
