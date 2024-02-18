@@ -7,8 +7,6 @@
 #include <vector>
 #include "ServerConfig.h"
 
-void	setNonblocking(int fd);
-
 class KQueue
 {
 private:
