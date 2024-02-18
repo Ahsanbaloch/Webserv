@@ -1,11 +1,9 @@
 
 #include "DarwinWorker.h"
-#include "KQueue.h"
-
 
 DarwinWorker::DarwinWorker(KQueue Queue)
+	: Q(Queue)
 {
-	Q = Queue;
 }
 
 DarwinWorker::~DarwinWorker()
@@ -15,9 +13,6 @@ DarwinWorker::~DarwinWorker()
 //function to run event loop
 int	DarwinWorker::runEventLoop()
 {
-	struct sockaddr_storage client_addr;
-	socklen_t addr_size;
-
 	while (1)
 	{
 		// check for new events that are registered in our kqueue (could come from a listening or connection socket)
@@ -59,7 +54,6 @@ int	DarwinWorker::runEventLoop()
 			// event came from conncetion, so that we want to handle the request
 			else if (*reinterpret_cast<int*>(event_lst[i].udata) == Q.connection_sock_ident)
 				RequestHandler.handleRequest(event_lst[i]);
-				
 		}
 	}
 }

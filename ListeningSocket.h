@@ -2,9 +2,7 @@
 #ifndef LISTENINGSOCKET_H
 # define LISTENINGSOCKET_H
 
-# include <sys/socket.h>
 # include <netinet/in.h>
-# include <fcntl.h>
 # include <iostream>
 
 class ListeningSocket

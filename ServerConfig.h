@@ -1,6 +1,8 @@
 #ifndef SERVERCONFIG_H
 # define SERVERCONFIG_H
 
+#include <fcntl.h>
+#include <unistd.h>
 #include <vector>
 #include "ListeningSocket.h"
 
@@ -18,7 +20,7 @@ public:
 	std::vector<ListeningSocket>	createSockets();
 	static void						setNonblocking(int fd);
 	void	listen2();
-
+	void closeSockets();
 };
 
 

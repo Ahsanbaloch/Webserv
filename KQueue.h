@@ -2,10 +2,8 @@
 #ifndef KQUEUE_H
 # define KQUEUE_H
 
-#include <sys/socket.h>
 #include <sys/event.h>
-#include <sys/types.h>
-#include <iostream>
+#include <unistd.h>
 #include <vector>
 #include "ServerConfig.h"
 
@@ -24,6 +22,7 @@ public:
 
 	int	attachListeningSockets(ServerConfig Server);
 	int attachConnectionSockets(std::vector<int> pending_fds);
+	void closeQueue();
 };
 
 

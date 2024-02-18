@@ -41,3 +41,7 @@ int KQueue::attachConnectionSockets(std::vector<int> pending_fds)
 	return (0);
 }
 
+void	KQueue::closeQueue()
+{
+	close(kqueue_fd);
+}

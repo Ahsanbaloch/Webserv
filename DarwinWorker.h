@@ -3,10 +3,9 @@
 
 #include <sys/socket.h>
 #include <sys/event.h>
-#include <sys/types.h>
 #include <iostream>
 #include <vector>
-#include "utils.h"
+#include "KQueue.h"
 #include "RequestHandler.h"
 
 #define MAX_EVENTS 128 // how to determine what to set here? --> maybe partly related to SOMAXCONN, but apparently not entirely
@@ -19,6 +18,8 @@ public:
 	KQueue Q;
 	RequestHandler RequestHandler;
 	std::vector<int> pending_fds;
+	struct sockaddr_storage client_addr;
+	socklen_t addr_size;
 	struct kevent event_lst[MAX_EVENTS];
 	explicit DarwinWorker(KQueue);
 	DarwinWorker(/* args */);

@@ -54,3 +54,11 @@ void	ServerConfig::listen2()
 			perror("Failure when listening for requests");
 	}
 }
+
+void	ServerConfig::closeSockets()
+{
+	for (std::vector<ListeningSocket>::iterator it = listening_sockets.begin(); it != listening_sockets.end(); it++)
+	{
+		close(it->getSocketFd());
+	}
+}
