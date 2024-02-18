@@ -15,6 +15,10 @@ public:
 	std::vector<ListeningSocket> listening_sockets;
 	ServerConfig();
 	~ServerConfig();
+	std::vector<ListeningSocket>	createSockets();
+	static void						setNonblocking(int fd);
+	void	listen2();
+
 };
 
 

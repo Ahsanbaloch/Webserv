@@ -10,12 +10,13 @@ int	main(void)
 	ServerConfig Server;
 
 	//listening to incoming requests and setting listening socket to non-blocking (actually does not matter that much as long as I/O is not edge-triggered)
-	for (std::vector<ListeningSocket>::iterator it = Server.listening_sockets.begin(); it != Server.listening_sockets.end(); it++)
-	{
-		setNonblocking(it->getSocketFd());
-		if (listen(it->getSocketFd(), SOMAXCONN) < 0)
-			return (perror("Failure when listening for requests"), 1);
-	}
+	// for (std::vector<ListeningSocket>::iterator it = Server.listening_sockets.begin(); it != Server.listening_sockets.end(); it++)
+	// {
+	// 	setNonblocking(it->getSocketFd());
+	// 	if (listen(it->getSocketFd(), SOMAXCONN) < 0)
+	// 		return (perror("Failure when listening for requests"), 1);
+	// }
+	Server.listen2();
 
 	// create KQueue object
 	KQueue Queue;

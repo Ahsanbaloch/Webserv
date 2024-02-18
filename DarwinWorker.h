@@ -18,15 +18,12 @@ private:
 public:
 	KQueue Q;
 	RequestHandler RequestHandler;
-	// int kqueue_fd;
-	// int listening_sock_ident;
-	// int connection_sock_ident;
+	std::vector<int> pending_fds;
 	struct kevent event_lst[MAX_EVENTS];
 	explicit DarwinWorker(KQueue);
 	DarwinWorker(/* args */);
 	~DarwinWorker();
 	int	runEventLoop();
-	// int	addConnectionToKernelQueue(std::vector<int> pending_fds);
 };
 
 
