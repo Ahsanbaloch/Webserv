@@ -2,7 +2,9 @@
 # define SERVERCONFIG_H
 
 #include <vector>
-#include "utils.h"
+#include "ListeningSocket.h"
+
+std::vector<ListeningSocket>	createSockets();
 
 class ServerConfig
 {
