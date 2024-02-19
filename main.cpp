@@ -4,7 +4,6 @@
 #include "DarwinWorker.h"
 
 // next:
-// - check exception handling
 // - create Makefile
 // - add support for write requests
 
