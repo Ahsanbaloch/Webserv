@@ -11,8 +11,8 @@ int	main(void)
 {
 	// for testing multiple ports --> info incl. ip comes from config file
 	std::vector<int> ports_test;
-	ports_test.push_back(4242);
-	ports_test.push_back(8080);
+	ports_test.push_back(4241);
+	ports_test.push_back(8081);
 
 	try
 	{
@@ -42,6 +42,7 @@ int	main(void)
 	catch(const std::exception& e)
 	{
 		std::cerr << e.what() << '\n';
+		// close fds?
 	}
 	
 }

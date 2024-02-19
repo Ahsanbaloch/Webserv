@@ -1,5 +1,6 @@
 
 #include "../includes/ListeningSocket.h"
+#include <unistd.h>
 
 ListeningSocket::ListeningSocket(int fd)
 {
@@ -34,7 +35,9 @@ void	ListeningSocket::initSockConfig(int port, u_int32_t ip)
 void	ListeningSocket::bindSock()
 {
 	if (bind(socket_fd, (struct sockaddr*)&sock_config, sizeof(sock_config)) < 0)
+	{
 		throw CustomException("Failed when calling bind()\n");
+	}
 }
 
 int	ListeningSocket::getSocketFd() const
