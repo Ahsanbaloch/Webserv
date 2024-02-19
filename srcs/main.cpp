@@ -4,7 +4,7 @@
 #include "../includes/DarwinWorker.h"
 
 // next:
-// - add support for write requests
+// 
 
 int	main(void)
 {

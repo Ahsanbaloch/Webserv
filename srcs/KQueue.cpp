@@ -18,7 +18,6 @@ void	KQueue::attachListeningSockets(const ListeningSocketsBlock& SocketsBlock)
 {
 	// define what events we are interested in (in case of the listening socket we are only interested in the EVFILT_READ
 	// since it is only used for accepting incoming connections)
-	// struct kevent listening_event[SocketsBlock.num_listening_sockets];
 	struct kevent* listening_event = new struct kevent[SocketsBlock.num_listening_sockets];
 	for (int i = 0; i < SocketsBlock.num_listening_sockets; i++)
 		EV_SET(&listening_event[i], SocketsBlock.listening_sockets[i].getSocketFd(), EVFILT_READ, EV_ADD, 0, 0, &listening_sock_ident);
@@ -33,7 +32,6 @@ void	KQueue::attachListeningSockets(const ListeningSocketsBlock& SocketsBlock)
 void	KQueue::attachConnectionSockets(std::vector<int> pending_fds)
 {
 	int size = pending_fds.size();
-	// struct kevent connection_event[size];
 	struct kevent* connection_event = new struct kevent[size * 2];
 	int j = 0;
 	for (int i = 0; i < size; i++)
