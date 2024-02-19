@@ -52,9 +52,9 @@ void	DarwinWorker::runEventLoop()
 					pending_fds.push_back(connection_fd);
 				}
 			}
-			// event came from conncetion, so that we want to handle the request
+			// event came from connection, so that we want to handle the request
 			else if (*reinterpret_cast<int*>(event_lst[i].udata) == Q.connection_sock_ident)
-				RequestHandler.handleRequest(event_lst[i]);
+				RequestHandler.handleRequest(event_lst[i]); // probably make connection_fd the input so that it is independent from kevent/epoll; also keep track of connection_fd in case not everything can be built at once
 		}
 	}
 }
