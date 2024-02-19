@@ -16,8 +16,6 @@ public:
 	ListeningSocketsBlock();
 	~ListeningSocketsBlock();
 	std::vector<ListeningSocket>	createSockets();
-	static void						setNonblocking(int fd);
-	void	listen2();
 	void closeSockets();
 };
 

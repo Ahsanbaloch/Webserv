@@ -33,7 +33,7 @@ int KQueue::attachConnectionSockets(std::vector<int> pending_fds)
 	struct kevent connection_event[size];
 	for (int i = 0; i < size; i++)
 	{
-		ListeningSocketsBlock::setNonblocking(pending_fds[i]);
+		ListeningSocket::setNonblocking(pending_fds[i]);
 		EV_SET(&connection_event[i], pending_fds[i], EVFILT_READ, EV_ADD, 0, 0, &connection_sock_ident);
 	}
 	if (kevent(kqueue_fd, connection_event, size, NULL, 0, NULL) < 0)

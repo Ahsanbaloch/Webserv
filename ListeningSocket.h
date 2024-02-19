@@ -3,6 +3,7 @@
 # define LISTENINGSOCKET_H
 
 # include <netinet/in.h>
+# include <fcntl.h>
 # include <iostream>
 
 class ListeningSocket
@@ -18,6 +19,8 @@ public:
 	void	initSockConfig(int, u_int32_t);
 	void	bindSock();
 	int		getSocketFd() const;
+	void	makeListen();
+	static void	setNonblocking(int fd);
 };
 
 #endif

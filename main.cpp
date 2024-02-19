@@ -11,17 +11,14 @@
 
 int	main(void)
 {
-	// Create Server object (create listening sockets and bind them)
-	ListeningSocketsBlock Server;
-
-	//listening to incoming requests and setting listening socket to non-blocking (actually does not matter that much as long as I/O is not edge-triggered)
-	Server.listen2();
+	// Create Server object (create listening sockets, bind, set non-blocking, listen)
+	ListeningSocketsBlock SocketsBlock;
 
 	// create KQueue object
 	KQueue Queue;
 
 	// attach sockets to kqueue
-	Queue.attachListeningSockets(Server);
+	Queue.attachListeningSockets(SocketsBlock);
 
 	// create Worker object
 	DarwinWorker Worker(Queue);
@@ -30,7 +27,7 @@ int	main(void)
 	Worker.runEventLoop();
 
 	// close all listening sockets (this removes them from kqueue) --> do I need to do something similar with the connection sockets
-	Server.closeSockets();
+	SocketsBlock.closeSockets();
 
 	// close connection sockets?
 

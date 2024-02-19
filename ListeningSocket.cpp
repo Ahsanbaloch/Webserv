@@ -41,3 +41,17 @@ int	ListeningSocket::getSocketFd() const
 {
 	return (socket_fd);
 }
+
+void	ListeningSocket::setNonblocking(int fd)
+{
+	// the correct way to make the fd non-blocking would be to first get the current flags with F_GETFL and then add the non-blocking one. However, F_GETFL is not allowed
+	if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1)
+		perror("fcntl failure"); // is perror allowed?
+}
+
+void	ListeningSocket::makeListen()
+{
+	setNonblocking(socket_fd);
+	if (listen(socket_fd, SOMAXCONN) < 0)
+		perror("Failure when listening for requests");
+}

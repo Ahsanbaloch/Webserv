@@ -31,31 +31,13 @@ std::vector<ListeningSocket>	ListeningSocketsBlock::createSockets()
 		serverSocket.setSockOptions();
 		serverSocket.initSockConfig(*it, 0);
 		serverSocket.bindSock();
+		serverSocket.makeListen();
 
 		// storing all socket data in a vector (at least for now)
 		listening_sockets.push_back(serverSocket);
 	}
 	return (listening_sockets);
 }
-
-void	ListeningSocketsBlock::setNonblocking(int fd)
-{
-	// the correct way to make the fd non-blocking would be to first get the current flags with F_GETFL and then add the non-blocking one. However, F_GETFL is not allowed
-	if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1)
-		perror("fcntl failure"); // is perror allowed?
-}
-
-// may add to ListeningSocket class instead?
-void	ListeningSocketsBlock::listen2()
-{
-	for (std::vector<ListeningSocket>::iterator it = listening_sockets.begin(); it != listening_sockets.end(); it++)
-	{
-		setNonblocking(it->getSocketFd());
-		if (listen(it->getSocketFd(), SOMAXCONN) < 0)
-			perror("Failure when listening for requests");
-	}
-}
-
 void	ListeningSocketsBlock::closeSockets()
 {
 	for (std::vector<ListeningSocket>::iterator it = listening_sockets.begin(); it != listening_sockets.end(); it++)
