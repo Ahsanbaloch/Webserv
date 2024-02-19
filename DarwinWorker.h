@@ -5,6 +5,7 @@
 #include <sys/event.h>
 #include <iostream>
 #include <vector>
+#include "CustomException.h"
 #include "KQueue.h"
 #include "RequestHandler.h"
 
@@ -26,7 +27,7 @@ public:
 	DarwinWorker();
 	~DarwinWorker();
 
-	int	runEventLoop();
+	void	runEventLoop();
 };
 
 

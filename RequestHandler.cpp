@@ -16,6 +16,8 @@ void	RequestHandler::handleRequest(struct kevent event_lst_item)
 	if (event_lst_item.filter == EVFILT_READ)
 	{
 		size_t bytes_read = recv(event_lst_item.ident, buf, sizeof(buf), 0);
+		if (bytes_read == -1)
+			throw CustomException("Failed when processing read request\n");
 		printf("read %zu bytes\n", bytes_read);	
 	}
 }

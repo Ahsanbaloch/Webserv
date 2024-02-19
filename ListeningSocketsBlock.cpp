@@ -18,7 +18,7 @@ void	ListeningSocketsBlock::createSockets(std::vector<int> ports_test)
 	{
 		int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
 		if (socket_fd == -1)
-			throw std::exception();
+			throw CustomException("Failed when calling socket()\n");
 
 		ListeningSocket serverSocket(socket_fd);
 		serverSocket.setSockOptions();

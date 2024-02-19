@@ -4,6 +4,7 @@
 
 #include <sys/socket.h>
 #include <sys/event.h>
+#include "CustomException.h"
 #include <string>
 
 #define BUFFER_SIZE 1024

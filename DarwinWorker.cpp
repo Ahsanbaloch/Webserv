@@ -11,14 +11,14 @@ DarwinWorker::~DarwinWorker()
 }
 
 //function to run event loop
-int	DarwinWorker::runEventLoop()
+void	DarwinWorker::runEventLoop()
 {
 	while (1)
 	{
 		// check for new events that are registered in our kqueue (could come from a listening or connection socket)
 		int new_events = kevent(Q.kqueue_fd, NULL, 0, event_lst, MAX_EVENTS, NULL); // it depends on several kernel-internal factors whether kevent returns one or multiple events for several conncetion requests. That's why ideally one makes acception checks in a loop per each event
 		if (new_events == -1)
-			return (perror("Failure when checking for new events"), 1);
+			throw CustomException("Failed when checking for new events\n");
 		
 		// go through all the events we have been notified of
 		for (int i = 0; new_events > i; i++)
@@ -45,7 +45,7 @@ int	DarwinWorker::runEventLoop()
 							break;
 						}
 						else
-							return (perror("Failure when trying to establish connection"), 1);
+							throw CustomException("Failed when trying to establish connection\n");
 					}
 					pending_fds.push_back(connection_fd);
 				}

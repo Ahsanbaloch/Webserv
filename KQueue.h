@@ -5,6 +5,7 @@
 #include <sys/event.h>
 #include <unistd.h>
 #include <vector>
+#include "CustomException.h"
 #include "ListeningSocketsBlock.h"
 
 class KQueue
@@ -19,8 +20,8 @@ public:
 	KQueue();
 	~KQueue();
 
-	int		attachListeningSockets(const ListeningSocketsBlock&);
-	int		attachConnectionSockets(std::vector<int>);
+	void	attachListeningSockets(const ListeningSocketsBlock&);
+	void	attachConnectionSockets(std::vector<int>);
 	void	closeQueue();
 };
 
