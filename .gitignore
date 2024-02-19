@@ -5,6 +5,7 @@
 build/
 *.exe
 *.out
+webserv
 
 # Ignore debug files
 *.dSYM/
