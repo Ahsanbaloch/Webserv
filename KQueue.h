@@ -5,7 +5,7 @@
 #include <sys/event.h>
 #include <unistd.h>
 #include <vector>
-#include "ServerConfig.h"
+#include "ListeningSocketsBlock.h"
 
 class KQueue
 {
@@ -18,7 +18,7 @@ public:
 	KQueue(/* args */);
 	~KQueue();
 
-	int	attachListeningSockets(ServerConfig Server);
+	int	attachListeningSockets(ListeningSocketsBlock Server);
 	int attachConnectionSockets(std::vector<int> pending_fds);
 	void closeQueue();
 };

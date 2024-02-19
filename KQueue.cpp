@@ -14,7 +14,7 @@ KQueue::~KQueue()
 {
 }
 
-int	KQueue::attachListeningSockets(ServerConfig Server)
+int	KQueue::attachListeningSockets(ListeningSocketsBlock Server)
 {
 	// define what events we are interested in (in case of the listening socket we are only interested in the EVFILT_READ
 	// since it is only used for accepting incoming connections)
@@ -33,7 +33,7 @@ int KQueue::attachConnectionSockets(std::vector<int> pending_fds)
 	struct kevent connection_event[size];
 	for (int i = 0; i < size; i++)
 	{
-		ServerConfig::setNonblocking(pending_fds[i]);
+		ListeningSocketsBlock::setNonblocking(pending_fds[i]);
 		EV_SET(&connection_event[i], pending_fds[i], EVFILT_READ, EV_ADD, 0, 0, &connection_sock_ident);
 	}
 	if (kevent(kqueue_fd, connection_event, size, NULL, 0, NULL) < 0)

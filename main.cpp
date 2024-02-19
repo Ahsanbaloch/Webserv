@@ -1,5 +1,5 @@
 
-#include "ServerConfig.h"
+#include "ListeningSocketsBlock.h"
 #include "KQueue.h"
 #include "DarwinWorker.h"
 
@@ -12,7 +12,7 @@
 int	main(void)
 {
 	// Create Server object (create listening sockets and bind them)
-	ServerConfig Server;
+	ListeningSocketsBlock Server;
 
 	//listening to incoming requests and setting listening socket to non-blocking (actually does not matter that much as long as I/O is not edge-triggered)
 	Server.listen2();

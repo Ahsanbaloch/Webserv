@@ -1,20 +1,20 @@
-#ifndef SERVERCONFIG_H
-# define SERVERCONFIG_H
+#ifndef LISTENINGSOCKETSBLOCK_H
+# define LISTENINGSOCKETSBLOCK_H
 
 #include <fcntl.h>
 #include <unistd.h>
 #include <vector>
 #include "ListeningSocket.h"
 
-class ServerConfig
+class ListeningSocketsBlock
 {
 private:
 	/* data */
 public:
 	int num_listening_sockets; // getting this info from config file
 	std::vector<ListeningSocket> listening_sockets;
-	ServerConfig();
-	~ServerConfig();
+	ListeningSocketsBlock();
+	~ListeningSocketsBlock();
 	std::vector<ListeningSocket>	createSockets();
 	static void						setNonblocking(int fd);
 	void	listen2();

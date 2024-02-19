@@ -1,18 +1,18 @@
 
-#include "ServerConfig.h"
+#include "ListeningSocketsBlock.h"
 
-ServerConfig::ServerConfig()
+ListeningSocketsBlock::ListeningSocketsBlock()
 	: num_listening_sockets(2)
 {
 	listening_sockets = createSockets();
 }
 
-ServerConfig::~ServerConfig()
+ListeningSocketsBlock::~ListeningSocketsBlock()
 {
 }
 
 // function to create server socket
-std::vector<ListeningSocket>	ServerConfig::createSockets()
+std::vector<ListeningSocket>	ListeningSocketsBlock::createSockets()
 {
 	std::vector<ListeningSocket> listening_sockets;
 
@@ -38,7 +38,7 @@ std::vector<ListeningSocket>	ServerConfig::createSockets()
 	return (listening_sockets);
 }
 
-void	ServerConfig::setNonblocking(int fd)
+void	ListeningSocketsBlock::setNonblocking(int fd)
 {
 	// the correct way to make the fd non-blocking would be to first get the current flags with F_GETFL and then add the non-blocking one. However, F_GETFL is not allowed
 	if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1)
@@ -46,7 +46,7 @@ void	ServerConfig::setNonblocking(int fd)
 }
 
 // may add to ListeningSocket class instead?
-void	ServerConfig::listen2()
+void	ListeningSocketsBlock::listen2()
 {
 	for (std::vector<ListeningSocket>::iterator it = listening_sockets.begin(); it != listening_sockets.end(); it++)
 	{
@@ -56,7 +56,7 @@ void	ServerConfig::listen2()
 	}
 }
 
-void	ServerConfig::closeSockets()
+void	ListeningSocketsBlock::closeSockets()
 {
 	for (std::vector<ListeningSocket>::iterator it = listening_sockets.begin(); it != listening_sockets.end(); it++)
 	{
