@@ -14,15 +14,15 @@ KQueue::~KQueue()
 {
 }
 
-int	KQueue::attachListeningSockets(ListeningSocketsBlock Server)
+int	KQueue::attachListeningSockets(const ListeningSocketsBlock& SocketsBlock)
 {
 	// define what events we are interested in (in case of the listening socket we are only interested in the EVFILT_READ
 	// since it is only used for accepting incoming connections)
-	struct kevent listening_event[Server.num_listening_sockets];
+	struct kevent listening_event[SocketsBlock.num_listening_sockets];
 	// struct addrinfo *listening_sock_ident;
-	for (int i = 0; i < Server.num_listening_sockets; i++)
-		EV_SET(&listening_event[i], Server.listening_sockets[i].getSocketFd(), EVFILT_READ, EV_ADD, 0, 0, &listening_sock_ident);
-	if (kevent(kqueue_fd, listening_event, Server.num_listening_sockets, NULL, 0, NULL) == -1)
+	for (int i = 0; i < SocketsBlock.num_listening_sockets; i++)
+		EV_SET(&listening_event[i], SocketsBlock.listening_sockets[i].getSocketFd(), EVFILT_READ, EV_ADD, 0, 0, &listening_sock_ident);
+	if (kevent(kqueue_fd, listening_event, SocketsBlock.num_listening_sockets, NULL, 0, NULL) == -1)
 		return (perror("Failure in registering event"), 1);
 	return (0);
 }

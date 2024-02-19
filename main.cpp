@@ -4,15 +4,19 @@
 #include "DarwinWorker.h"
 
 // next:
-// - finish clean up -> partiuclarly Server Config / listeningSocket class
 // - check exception handling
 // - create Makefile
 // - add support for write requests
 
 int	main(void)
 {
+	// for testing multiple ports --> info incl. ip comes from config file
+	std::vector<int> ports_test;
+	ports_test.push_back(4242);
+	ports_test.push_back(8080);
+
 	// Create Server object (create listening sockets, bind, set non-blocking, listen)
-	ListeningSocketsBlock SocketsBlock;
+	ListeningSocketsBlock SocketsBlock(ports_test);
 
 	// create KQueue object
 	KQueue Queue;

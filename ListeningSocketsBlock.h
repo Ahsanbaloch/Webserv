@@ -9,17 +9,17 @@
 class ListeningSocketsBlock
 {
 private:
-	/* data */
-public:
-	int num_listening_sockets; // getting this info from config file
-	std::vector<ListeningSocket> listening_sockets;
 	ListeningSocketsBlock();
+public:
+	int								num_listening_sockets; // getting this info from config file
+	std::vector<ListeningSocket>	listening_sockets;
+
+	explicit ListeningSocketsBlock(std::vector<int>);
 	~ListeningSocketsBlock();
-	std::vector<ListeningSocket>	createSockets();
-	void closeSockets();
+
+	void	createSockets(std::vector<int>);
+	void	closeSockets();
 };
-
-
 
 
 #endif

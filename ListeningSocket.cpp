@@ -4,7 +4,7 @@
 ListeningSocket::ListeningSocket(int fd)
 {
 	socket_fd = fd;
-	memset(&sock_config, 0, sizeof(sock_config)); // allowed in subject?
+	memset(&sock_config, 0, sizeof(sock_config)); // allowed in subject? // also do for other structures?
 }
 
 ListeningSocket::~ListeningSocket()

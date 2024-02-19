@@ -1,7 +1,7 @@
 
 #include "DarwinWorker.h"
 
-DarwinWorker::DarwinWorker(KQueue Queue)
+DarwinWorker::DarwinWorker(const KQueue& Queue)
 	: Q(Queue)
 {
 }
@@ -41,7 +41,6 @@ int	DarwinWorker::runEventLoop()
 						if (errno == EAGAIN || errno == EWOULDBLOCK)
 						{
 							Q.attachConnectionSockets(pending_fds);
-							// addConnectionToKernelQueue(pending_fds);
 							pending_fds.clear();
 							break;
 						}

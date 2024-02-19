@@ -15,15 +15,17 @@ class DarwinWorker
 private:
 	/* data */
 public:
-	KQueue Q;
-	RequestHandler RequestHandler;
-	std::vector<int> pending_fds;
-	struct sockaddr_storage client_addr;
-	socklen_t addr_size;
-	struct kevent event_lst[MAX_EVENTS];
-	explicit DarwinWorker(KQueue);
-	DarwinWorker(/* args */);
+	KQueue					Q;
+	RequestHandler			RequestHandler;
+	std::vector<int>		pending_fds;
+	struct sockaddr_storage	client_addr;
+	socklen_t				addr_size;
+	struct kevent			event_lst[MAX_EVENTS];
+
+	explicit	DarwinWorker(const KQueue&);
+	DarwinWorker();
 	~DarwinWorker();
+
 	int	runEventLoop();
 };
 

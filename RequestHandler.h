@@ -15,7 +15,8 @@ private:
 public:
 	RequestHandler(/* args */);
 	~RequestHandler();
-	void	handleRequest(struct kevent event_lst_item);
+
+	void	handleRequest(struct kevent);
 };
 
 #endif

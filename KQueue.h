@@ -13,14 +13,15 @@ private:
 	/* data */
 public:
 	int	kqueue_fd;
-	int listening_sock_ident;
-	int connection_sock_ident;
-	KQueue(/* args */);
+	int	listening_sock_ident;
+	int	connection_sock_ident;
+
+	KQueue();
 	~KQueue();
 
-	int	attachListeningSockets(ListeningSocketsBlock Server);
-	int attachConnectionSockets(std::vector<int> pending_fds);
-	void closeQueue();
+	int		attachListeningSockets(const ListeningSocketsBlock&);
+	int		attachConnectionSockets(std::vector<int>);
+	void	closeQueue();
 };
 
 
