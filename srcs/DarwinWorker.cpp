@@ -5,6 +5,7 @@ DarwinWorker::DarwinWorker(const KQueue& Queue)
 	: Q(Queue)
 {
 	memset(&client_addr, 0, sizeof(client_addr));
+	addr_size = 0;
 }
 
 DarwinWorker::~DarwinWorker()
