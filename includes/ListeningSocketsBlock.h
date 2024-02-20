@@ -10,12 +10,13 @@
 class ListeningSocketsBlock
 {
 private:
-	ListeningSocketsBlock();
+	
 public:
 	int								num_listening_sockets; // getting this info from config file
 	std::vector<ListeningSocket>	listening_sockets;
 
 	explicit ListeningSocketsBlock(std::vector<int>);
+	ListeningSocketsBlock();
 	~ListeningSocketsBlock();
 
 	void	createSockets(std::vector<int>);
