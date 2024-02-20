@@ -1,9 +1,9 @@
 
 #include "../includes/EPoll.h"
 
-EPoll::EPoll(const ListeningSocketsBlock& SocketsBlock)
+EPoll::EPoll(const ListeningSocketsBlock& Sockets)
 {
-	this->SocketsBlock = SocketsBlock;
+	SocketsBlock = Sockets;
 	epoll_fd = epoll_create(1);
 	if (epoll_fd == -1)
 		throw std::exception();
