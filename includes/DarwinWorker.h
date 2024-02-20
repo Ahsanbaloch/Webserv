@@ -4,7 +4,6 @@
 #include <sys/socket.h>
 #include <sys/event.h>
 #include <iostream>
-#include <algorithm>
 #include <vector>
 #include "CustomException.h"
 #include "KQueue.h"
