@@ -6,10 +6,8 @@ LinuxWorker::LinuxWorker(const EPoll& Queue)
 {
 	memset(&client_addr, 0, sizeof(client_addr));
 	addr_size = 0;
-	for (std::vector<ListeningSocket>::iterator it = Q.SocketsBlock.listening_sockets.begin(); it != Q.SocketsBlock.listening_sockets.begin(); it++)
-	{
+	for (std::vector<ListeningSocket>::iterator it = Q.SocketsBlock.listening_sockets.begin(); it != Q.SocketsBlock.listening_sockets.end(); it++)
 		listening_socks_fd.push_back(it->getSocketFd());
-	}
 }
 
 LinuxWorker::~LinuxWorker()
