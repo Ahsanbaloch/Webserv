@@ -7,7 +7,7 @@
 class CustomException : public std::runtime_error
 {
 	public:
-		explicit CustomException(std::string msg): runtime_error(msg) {}
+		explicit CustomException(std::string msg): std::runtime_error(msg) {}
 };
 
 #endif
