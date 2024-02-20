@@ -5,6 +5,7 @@
 # include <netinet/in.h>
 # include <fcntl.h>
 # include <iostream>
+# include <cstring>
 #include "CustomException.h"
 
 class ListeningSocket
