@@ -1,7 +1,13 @@
 
+#ifdef __APPLE__
+	#include "../includes/KQueue.h"
+	#include "../includes/DarwinWorker.h"
+#else
+	#include "../includes/EPoll.h"
+	#include "../includes/LinuxWorker.h"
+#endif
 #include "../includes/ListeningSocketsBlock.h"
-#include "../includes/KQueue.h"
-#include "../includes/DarwinWorker.h"
+
 
 
 // next:
