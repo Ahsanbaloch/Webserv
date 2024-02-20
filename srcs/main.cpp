@@ -33,7 +33,7 @@ int	main(void)
 			// create Worker object
 			DarwinWorker Worker(Queue);
 		#else
-			EPoll Queue;
+			EPoll Queue(SocketsBlock);
 			Queue.attachListeningSockets();
 			LinuxWorker Worker(Queue);
 		#endif
