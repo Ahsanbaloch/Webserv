@@ -3,6 +3,7 @@
 
 #include <sys/socket.h>
 #include <sys/epoll.h>
+#include <cerrno>
 #include <iostream>
 #include <vector>
 #include "CustomException.h"
