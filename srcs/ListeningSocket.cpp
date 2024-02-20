@@ -54,7 +54,7 @@ void	ListeningSocket::setNonblocking(int fd)
 
 void	ListeningSocket::makeListen()
 {
-	setNonblocking(socket_fd);
+	// setNonblocking(socket_fd);
 	if (listen(socket_fd, SOMAXCONN) < 0)
 		throw CustomException("Failed when making sockets listening\n");
 }

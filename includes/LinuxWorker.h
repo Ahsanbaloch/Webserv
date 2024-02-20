@@ -1,31 +1,31 @@
-#ifndef DARWINWORKER_H
-# define DARWINWORKER_H
+#ifndef LINUXWORKER_H
+# define LINUXWORKER_H
 
 #include <sys/socket.h>
-#include <sys/event.h>
+#include <sys/epoll.h>
 #include <iostream>
 #include <vector>
 #include "CustomException.h"
-#include "KQueue.h"
+#include "EPoll.h"
 #include "RequestHandler.h"
 
 #define MAX_EVENTS 128 // how to determine what to set here? --> maybe partly related to SOMAXCONN, but apparently not entirely
 
-class DarwinWorker
+class LinuxWorker
 {
 private:
 	/* data */
 public:
-	KQueue				Q;
+	EPoll				Q;
 	RequestHandler		RequestHandler;
 	std::vector<int>	pending_fds;
 	struct sockaddr		client_addr;
 	socklen_t			addr_size;
-	struct kevent		event_lst[MAX_EVENTS];
+	struct epoll_event	event_lst[MAX_EVENTS];
 
-	explicit	DarwinWorker(const KQueue&);
-	DarwinWorker();
-	~DarwinWorker();
+	explicit	LinuxWorker(const EPoll&);
+	LinuxWorker();
+	~LinuxWorker();
 
 	void	runEventLoop();
 };

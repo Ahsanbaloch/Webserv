@@ -3,6 +3,7 @@
 #include "../includes/KQueue.h"
 #include "../includes/DarwinWorker.h"
 
+
 // next:
 // 
 
@@ -19,13 +20,17 @@ int	main(void)
 		ListeningSocketsBlock SocketsBlock(ports_test);
 
 		// create KQueue object
-		KQueue Queue;
-
-		// attach sockets to kqueue
-		Queue.attachListeningSockets(SocketsBlock);
-
-		// create Worker object
-		DarwinWorker Worker(Queue);
+		#ifdef __APPLE__
+			KQueue Queue;
+			// attach sockets to kqueue
+			Queue.attachListeningSockets(SocketsBlock);
+			// create Worker object
+			DarwinWorker Worker(Queue);
+		#else
+			EPoll Queue;
+			Queue.attachListeningSockets();
+			LinuxWorker Worker(Queue);
+		#endif
 
 		// run event loop
 		Worker.runEventLoop();
@@ -41,7 +46,7 @@ int	main(void)
 	catch(const std::exception& e)
 	{
 		std::cerr << e.what() << '\n';
-		// close fds?
 	}
+	// close fds?
 	
 }

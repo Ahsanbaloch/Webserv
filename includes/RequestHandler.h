@@ -17,7 +17,7 @@ public:
 	RequestHandler(/* args */);
 	~RequestHandler();
 
-	void	handleRequest(struct kevent);
+	void	handleRequest(int);
 };
 
 #endif
