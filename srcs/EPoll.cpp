@@ -37,7 +37,7 @@ void	EPoll::attachConnectionSockets(std::vector<int> pending_fds)
 	{
 		ListeningSocket::setNonblocking(pending_fds[i]); // check if this can be done without fcntl for epoll
 		connection_event.data.fd = pending_fds[i];
-		connection_event.events = EPOLLIN; // might also use EPOLLOUT
+		connection_event.events = EPOLLIN | EPOLLHUP | EPOLLRDHUP; // might also use EPOLLOUT
 		if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, pending_fds[i], &connection_event) == -1)
 			throw CustomException("Failed when registering events for conncetion sockets\n");
 	}

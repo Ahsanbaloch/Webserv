@@ -28,7 +28,10 @@ void	LinuxWorker::runEventLoop()
 		for (int i = 0; new_events > i; i++)
 		{
 			// double check what this is exactly checking
-			if ((event_lst[i].events & EPOLLERR) || (event_lst[i].events & EPOLLHUP) || (!(event_lst[i].events & EPOLLIN)))
+			if ((event_lst[i].events & EPOLLERR)
+			    || (event_lst[i].events & EPOLLHUP)
+				|| (event_lst[i].events & EPOLLRDHUP)
+				|| (!(event_lst[i].events & EPOLLIN)))
 			{
 				std::cout << "client disconnected\n"; // or epoll error?
 				close(event_lst[i].data.fd);

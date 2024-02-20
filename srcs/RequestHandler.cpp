@@ -17,11 +17,11 @@ void	RequestHandler::handleRequest(int event_lst_item_fd)
 	int bytes_read = recv(event_lst_item_fd, buf, sizeof(buf), 0);
 	if (bytes_read == -1)
 		throw CustomException("Failed when processing read request\n");
-	else if (bytes_read == 0)
+	/* else if (bytes_read == 0)
 	{
 		std::cout << "client disconnected\n";
 		close(event_lst_item_fd);
-	}
+	} */
 	else
 		printf("read %i bytes\n", bytes_read);	
 
