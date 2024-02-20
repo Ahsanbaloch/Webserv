@@ -17,7 +17,7 @@ private:
 	/* data */
 public:
 	EPoll				Q;
-	RequestHandler		RequestHandler;
+	RequestHandler		Handler;
 	std::vector<int>	pending_fds;
 	struct sockaddr		client_addr;
 	socklen_t			addr_size;

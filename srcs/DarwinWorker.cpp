@@ -56,7 +56,7 @@ void	DarwinWorker::runEventLoop()
 			else if (*reinterpret_cast<int*>(event_lst[i].udata) == Q.connection_sock_ident)
 			{
 				if (event_lst[i].filter == EVFILT_READ)
-					RequestHandler.handleRequest(event_lst[i].ident); // probably make connection_fd the input so that it is independent from kevent/epoll; also keep track of connection_fd in case not everything can be built at once
+					Handler.handleRequest(event_lst[i].ident); // probably make connection_fd the input so that it is independent from kevent/epoll; also keep track of connection_fd in case not everything can be built at once
 			}
 		}
 	}

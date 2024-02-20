@@ -54,7 +54,7 @@ void	LinuxWorker::runEventLoop()
 			}
 			// event came from connection, so that we want to handle the request
 			else
-				RequestHandler.handleRequest(event_lst[i].event.fd); // probably make connection_fd the input so that it is independent from kevent/epoll; also keep track of connection_fd in case not everything can be built at once
+				Handler.handleRequest(event_lst[i].event.fd); // probably make connection_fd the input so that it is independent from kevent/epoll; also keep track of connection_fd in case not everything can be built at once
 		}
 	}
 }
