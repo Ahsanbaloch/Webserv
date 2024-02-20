@@ -2,7 +2,9 @@
 # define DARWINWORKER_H
 
 #include <sys/socket.h>
-#include <sys/event.h>
+#ifdef __APPLE__
+	#include <sys/event.h>
+#endif
 #include <iostream>
 #include <vector>
 #include "CustomException.h"

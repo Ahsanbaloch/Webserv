@@ -2,7 +2,9 @@
 #ifndef KQUEUE_H
 # define KQUEUE_H
 
-#include <sys/event.h>
+#ifdef __APPLE__
+	#include <sys/event.h>
+#endif
 #include <unistd.h>
 #include <vector>
 #include "CustomException.h"
