@@ -1,9 +1,9 @@
 
 #include "../includes/EPoll.h"
 
-EPoll::EPoll(const ListeningSocketsBlock& SocketsBlock)
+EPoll::EPoll(const ListeningSocketsBlock& Sockets)
 {
-	this->SocketsBlock = SocketsBlock;
+	SocketsBlock = Sockets;
 	epoll_fd = epoll_create(1);
 	if (epoll_fd == -1)
 		throw std::exception();
@@ -24,7 +24,7 @@ void	EPoll::attachListeningSockets()
 		struct epoll_event listening_event;
 		listening_event.data.fd = SocketsBlock.listening_sockets[i].getSocketFd();
 		listening_event.events = EPOLLIN;
-		if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, sock, &event) == -1)
+		if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, SocketsBlock.listening_sockets[i], &listening_event) == -1)
 			throw CustomException("Failed when registering events for listening sockets\n");
 	}
 }
