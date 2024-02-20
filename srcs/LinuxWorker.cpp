@@ -6,6 +6,10 @@ LinuxWorker::LinuxWorker(const EPoll& Queue)
 {
 	memset(&client_addr, 0, sizeof(client_addr));
 	addr_size = 0;
+	for (std::vector<ListeningSocket>::iterator it = Q.SocketsBlock.listening_sockets.begin(); it != Q.SocketsBlock.listening_sockets.begin(); it++)
+	{
+		listening_socks_fd.push_back(it->getSocketFd());
+	}
 }
 
 LinuxWorker::~LinuxWorker()
@@ -32,7 +36,7 @@ void	LinuxWorker::runEventLoop()
 				close(event_lst[i].data.fd);
 			}
 			// event came from listening socket --> we have to create a connection // maybe there is a different way for checking instead of using a lambda function?
-			else if (std::find_if(Q.SocketsBlock.listening_sockets.begin(), Q.SocketsBlock.listening_sockets.end(), [event_lst[i].data.fd](const ListeningSocket& obj) {return obj.getSocketFd() == event_lst[i].data.fd}) != Q.SocketsBlock.listening_sockets.end())
+			else if (std::find(listening_socks_fd.begin(), listening_socks_fd.end(), event_lst[i].data.fd) != listening_socks_fd.end())
 			{
 				while (1) // to improve efficiency (reducing calls to kevent), we accept all connection requests related to the event in a loop
 				{
