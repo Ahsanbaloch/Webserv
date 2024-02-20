@@ -3,7 +3,6 @@
 # define REQUESTHANDLER_H
 
 #include <sys/socket.h>
-#include <sys/event.h>
 #include "CustomException.h"
 #include <string>
 
