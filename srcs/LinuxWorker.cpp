@@ -35,7 +35,7 @@ void	LinuxWorker::runEventLoop()
 				std::cout << "client disconnected\n"; // or epoll error?
 				close(event_lst[i].data.fd);
 			}
-			// event came from listening socket --> we have to create a connection // maybe there is a different way for checking instead of using a lambda function?
+			// event came from listening socket --> we have to create a connection // maybe there is a different way for checking?
 			else if (std::find(listening_socks_fd.begin(), listening_socks_fd.end(), event_lst[i].data.fd) != listening_socks_fd.end())
 			{
 				while (1) // to improve efficiency (reducing calls to kevent), we accept all connection requests related to the event in a loop

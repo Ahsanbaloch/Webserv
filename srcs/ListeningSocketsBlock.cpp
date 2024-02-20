@@ -7,6 +7,10 @@ ListeningSocketsBlock::ListeningSocketsBlock(std::vector<int> config_info)
 	createSockets(config_info);
 }
 
+ListeningSocketsBlock::ListeningSocketsBlock()
+{
+}
+
 ListeningSocketsBlock::~ListeningSocketsBlock()
 {
 }
