@@ -6,6 +6,7 @@
 #include <cerrno>
 #include <iostream>
 #include <vector>
+#include <algorithm>
 #include "CustomException.h"
 #include "EPoll.h"
 #include "RequestHandler.h"
