@@ -1,5 +1,5 @@
 
-#include "../includes/KQueue.h"
+#include "KQueue.h"
 
 KQueue::KQueue(/* args */)
 {

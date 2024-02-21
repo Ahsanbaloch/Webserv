@@ -1,5 +1,5 @@
 
-#include "../includes/LinuxWorker.h"
+#include "LinuxWorker.h"
 
 LinuxWorker::LinuxWorker(const EPoll& Queue)
 	: Q(Queue)

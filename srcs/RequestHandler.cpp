@@ -1,5 +1,5 @@
 
-#include "../includes/RequestHandler.h"
+#include "RequestHandler.h"
 
 RequestHandler::RequestHandler(/* args */)
 {
@@ -17,13 +17,9 @@ void	RequestHandler::handleRequest(int event_lst_item_fd)
 	int bytes_read = recv(event_lst_item_fd, buf, sizeof(buf), 0);
 	if (bytes_read == -1)
 		throw CustomException("Failed when processing read request\n");
-	/* else if (bytes_read == 0)
-	{
-		std::cout << "client disconnected\n";
-		close(event_lst_item_fd);
-	} */
-	else
-		printf("read %i bytes\n", bytes_read);	
+	buf[bytes_read] = '\0';
+	printf("buf: %s\n", buf);
+	printf("read %i bytes\n", bytes_read);	
 
 	// close fd in case bytes_read == 0 ???
 }
