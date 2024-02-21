@@ -4,6 +4,8 @@
 
 # include <string>
 # include <stdexcept>
+# include <iostream>
+# include <unistd.h>
 
 class CustomException: public std::runtime_error
 {
