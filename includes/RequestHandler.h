@@ -8,6 +8,9 @@
 #include <cstdio> // remove later
 
 #define BUFFER_SIZE 1024
+#define LF 10
+#define CR 13
+#define SP 32
 
 class RequestHandler
 {
@@ -18,6 +21,7 @@ public:
 	~RequestHandler();
 
 	void	handleRequest(int);
+	void	parseRequestLine(char *buf);
 };
 
 #endif
