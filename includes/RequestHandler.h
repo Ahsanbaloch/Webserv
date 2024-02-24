@@ -21,6 +21,7 @@ public:
 	~RequestHandler();
 
 	std::string	method;
+	std::string path;
 	int			error;
 	char		buf[BUFFER_SIZE]; // use std::vector<char> buf(BUFFER_SIZE); instead?
 	int			buf_pos;
@@ -33,7 +34,8 @@ public:
 		rl_start = 0,
 		rl_method,
 		rl_first_divider,
-		rl_uri,
+		rl_path,
+		rl_second_divider,
 		rl_http
 	} state;
 };

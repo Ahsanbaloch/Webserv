@@ -34,37 +34,30 @@ void	RequestHandler::handleRequest(int event_lst_item_fd)
 
 void	RequestHandler::checkMethod()
 {
+	//How to make buf[buf_pos] unsigned char?
+
 	switch (buf[buf_pos])
 	{
 		case 'G':
 			// check if next characters are E and T
-			if (buf[buf_pos + 1] == 'E' && buf[buf_pos + 2] == 'T')
-			{
+			if (buf[++buf_pos] == 'E' && buf[++buf_pos] == 'T')
 				method = "GET";
-				buf_pos += 2;
-			}
 			else
 				error = 400;
 			break;
 		
 		case 'P':
 			// check if next characters are O S and T
-			if (buf[buf_pos + 1] == 'O' && buf[buf_pos + 2] == 'S' && buf[buf_pos + 3] == 'T')
-			{
+			if (buf[++buf_pos] == 'O' && buf[++buf_pos] == 'S' && buf[++buf_pos] == 'T')
 				method = "POST";
-				buf_pos += 3;
-			}
 			else
 				error = 400;
 			break;
 
 		case 'D':
 			// check of next characters are E L E T E
-			if (buf[buf_pos + 1] == 'E' && buf[buf_pos + 2] == 'L' && buf[buf_pos + 3] == 'E' && buf[buf_pos + 4] == 'T' && buf[buf_pos + 5] == 'E')
-			{
+			if (buf[++buf_pos] == 'E' && buf[++buf_pos] == 'L' && buf[++buf_pos] == 'E' && buf[++buf_pos] == 'T' && buf[++buf_pos] == 'E')
 				method = "DELETE";
-				buf_pos += 5;
-			}
 			else
 				error = 400;
 			break;
@@ -108,14 +101,25 @@ void	RequestHandler::parseRequestLine()
 			case rl_first_divider:
 				if (ch == SP)
 				{
-					state = rl_uri;
+					state = rl_path;
 					break;
 				}
 				error = 400;
 				throw CustomException("Bad request: syntax");
 				
-			case rl_uri:
-				
+			case rl_path:
+				// do we have to handle authority request lines? Is there always a "host" in the header?
+				// query line goes to nginx? --> Query string env variable
+				switch (ch)
+				{
+					case '/': // how many / can there be after each other?
+						break;
+
+				}
+				path.append(1, static_cast<char>(ch));
+				break;
+
+			case rl_second_divider:
 				break;
 
 			case rl_http:
