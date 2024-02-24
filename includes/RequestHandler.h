@@ -20,8 +20,22 @@ public:
 	RequestHandler(/* args */);
 	~RequestHandler();
 
+	std::string	method;
+	int			error;
+	char		buf[BUFFER_SIZE]; // use std::vector<char> buf(BUFFER_SIZE); instead?
+	int			buf_pos;
+
 	void	handleRequest(int);
-	void	parseRequestLine(char *buf);
+	void	parseRequestLine();
+	void	checkMethod();
+
+	enum {
+		rl_start = 0,
+		rl_method,
+		rl_first_divider,
+		rl_uri,
+		rl_http
+	} state;
 };
 
 #endif
