@@ -5,6 +5,10 @@ RequestHandler::RequestHandler(/* args */)
 {
 	error = 0;
 	buf_pos = -1;
+	parsing_done = 0;
+	method = ""; // does this reset the string?
+	path = ""; // does this reset the string?
+	query = ""; // does this reset the string?
 	memset(&buf, 0, sizeof(buf));
 }
 
@@ -86,7 +90,7 @@ void	RequestHandler::parseRequestLine()
 
 	state = rl_start;
 
-	while (buf_pos++ < bytes_read)
+	while (buf_pos++ < bytes_read && !parsing_done)
 	{
 		ch = buf[buf_pos];
 	
@@ -101,15 +105,15 @@ void	RequestHandler::parseRequestLine()
 					break;
 				state = rl_method;
 
-			case rl_method:
+			case rl_method: // can this also be termined by CRLF?
 				checkMethod();
 				if (error == 400)
-					throw CustomException("Bad request: method");
+					throw CustomException("Bad request");
 				state = rl_first_divider;
 				break;
 
 			case rl_first_divider: // may add to method check
-				if (ch == SP) // do I want to allow multiple spaces?
+				if (ch == SP) // do we want to allow multiple spaces?
 					break;
 				else if (ch == '/')
 				{
@@ -118,22 +122,27 @@ void	RequestHandler::parseRequestLine()
 					break;
 				}
 				error = 400;
-				throw CustomException("Bad request: syntax");
+				throw CustomException("Bad request");
 				
 			case rl_path:
-				// do we have to handle authority request lines? Is there always a "host" in the header?
+				// do we have to handle authority request lines?
 				// query line goes to cgi --> Query string env variable
 
 				switch (ch)
 				{
-					// do I need to check for CRLF here? (chunked transmission?)
 					case SP:
 						state = rl_http;
+						break;
+					case CR: // what if this occurs and no http version is specified?
+						state = rl_cr;
+						break;
+					case LF: // what if this occurs and no http version is specified?
+						state = rl_done;
 						break;
 					case '.': // nginx does not allow two dots at the beginning if nothing comes after; a single dot leads to index (also on some websites with two dots); three dots to file not found
 						break;
 					case '%':
-						complex_path = 1; // when interpreting request needs to be decoded
+						path_encoded = 1; // when interpreting request needs to be decoded
 						state = rl_percent_encoded; // need to be followed by numercial code that needs to be interpreted --> otherwise 400 bad request (not the case for query)
 						break;
 					case '/': // checking with nginx, there can be several slashes after each other
@@ -141,21 +150,21 @@ void	RequestHandler::parseRequestLine()
 					case '?':
 						state = rl_query;
 						break;
-					case '#':
-						state = rl_fragment;
 					case '+': // means space; needs to be decoded when interpreting request
-						complex_path = 1;
+						path_encoded = 1;
 						break;
 					default:
 						if (ch < 32 || ch == 127)
 						{
 							error = 400;
-							throw CustomException("Bad request: syntax");
+							throw CustomException("Bad request");
 						}
 						break;
 
+					// case '#': // in what case is this character even encountered in a http message? probably only in the query part and when interpreting // fragments are not sent in the http request messages. The reason is that the fragment identifier is only used by the browser
+
 				}
-				if (state == rl_path)
+				if (state == rl_path || state == rl_percent_encoded)
 					path.append(1, static_cast<char>(ch));
 				break;
 
@@ -164,24 +173,44 @@ void	RequestHandler::parseRequestLine()
 				{
 					loops++;
 					path.append(1, static_cast<char>(ch));
-					if (loops == 2)
+					if (loops % 2 == 0)
 						state = rl_path;
 					break;
 				}
 				error = 400;
-				throw CustomException("Bad request: syntax");
+				throw CustomException("Bad request");
 
 			case rl_query:
-				break;
-
-			case rl_fragment:
+				switch (ch)
+				{
+					case SP:
+						state = rl_http;
+						break;
+					case CR:
+						state = rl_cr;
+						break;
+					case LF:
+						state = rl_done;
+						break;
+				}
 				break;
 
 			case rl_http:
 				break;
+
+			case rl_cr:
+				if (ch == LF)
+					state = rl_done;
+				break;
+				error = 400;
+				throw CustomException("Bad request");
+			
+			case rl_done:
+				std::cout << "request line fully parsed\n";
+				parsing_done = 1;
+				break;
 		}
 
-		// why does fragment doesn't add up in buffer when making request with postman?
 
 		// enforce single-space grammar rule? --> check how nginx implements it
 

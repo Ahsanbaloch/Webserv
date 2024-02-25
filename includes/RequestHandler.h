@@ -20,18 +20,20 @@ public:
 	RequestHandler(/* args */);
 	~RequestHandler();
 
-	std::string	method;
-	std::string path;
-	int			error;
+	std::string	method; // probably needs to be reset after being used
+	std::string path; // probably needs to be reset after being used
+	std::string query; // probably needs to be reset after being used
+	int			error; // probably needs to be reset after being used
 	char		buf[BUFFER_SIZE]; // use std::vector<char> buf(BUFFER_SIZE); instead?
 	int			buf_pos;
 	int			bytes_read;
+	int			parsing_done; // probably needs to be reset after being used
 
 	void	handleRequest(int);
 	void	parseRequestLine();
 	void	checkMethod();
 
-	int	complex_path;
+	int	path_encoded; // probably needs to be reset after being used
 
 	enum {
 		rl_start = 0,
@@ -40,8 +42,9 @@ public:
 		rl_path,
 		rl_percent_encoded,
 		rl_query,
-		rl_fragment,
-		rl_http
+		rl_http,
+		rl_cr,
+		rl_done
 	} state;
 };
 
