@@ -23,6 +23,7 @@ public:
 	std::string	method; // probably needs to be reset after being used
 	std::string path; // probably needs to be reset after being used
 	std::string query; // probably needs to be reset after being used
+	std::string version; // probably needs to be reset after being used
 	int			error; // probably needs to be reset after being used
 	char		buf[BUFFER_SIZE]; // use std::vector<char> buf(BUFFER_SIZE); instead?
 	int			buf_pos;
@@ -32,6 +33,7 @@ public:
 	void	handleRequest(int);
 	void	parseRequestLine();
 	void	checkMethod();
+	void	checkHttpVersion();
 
 	int	path_encoded; // probably needs to be reset after being used
 

@@ -9,6 +9,7 @@ RequestHandler::RequestHandler(/* args */)
 	method = ""; // does this reset the string?
 	path = ""; // does this reset the string?
 	query = ""; // does this reset the string?
+	version = ""; // does this reset the string?
 	memset(&buf, 0, sizeof(buf));
 }
 
@@ -31,6 +32,9 @@ void	RequestHandler::handleRequest(int event_lst_item_fd)
 
 	std::cout << "identified method: " << method << '\n';
 	std::cout << "identified path: " << path << '\n';
+	std::cout << "identified query: " << query << '\n';
+	std::cout << "identified version: " << version << '\n';
+
 
 	printf("read %i bytes\n", bytes_read);	
 
@@ -71,6 +75,20 @@ void	RequestHandler::checkMethod()
 			error = 400; // What is the correct error code?
 			break;
 		}
+}
+
+void	RequestHandler::checkHttpVersion()
+{
+	//How to make buf[buf_pos] unsigned char?
+
+	if (buf[buf_pos] == 'H' && buf[++buf_pos] == 'T' && buf[++buf_pos] == 'T' && buf[++buf_pos] == 'P' && buf[++buf_pos] == '/' && buf[++buf_pos] == '1'
+		&& buf[++buf_pos] == '.' && buf[++buf_pos] == '1')
+	{
+		version = "HTTP/1.1";
+		buf_pos++;
+	}
+	else
+		error = 400;
 }
 
 void	RequestHandler::parseRequestLine()
@@ -192,10 +210,33 @@ void	RequestHandler::parseRequestLine()
 					case LF:
 						state = rl_done;
 						break;
+					default:
+						if (ch < 32 || ch == 127)
+						{
+							error = 400;
+							throw CustomException("Bad request");
+						}
+						break;
 				}
+				if (state == rl_query)
+					query.append(1, static_cast<char>(ch));
 				break;
 
-			case rl_http:
+			case rl_http: // do we need to check for diffferent versions?
+				if (ch == CR)
+				{
+					state = rl_cr;
+					break;
+				}
+				if (ch == LF)
+				{
+					state = rl_done;
+					break;
+				}
+				if (ch == 'H')
+					checkHttpVersion();
+				if (error == 400)
+					throw CustomException("Bad request");
 				break;
 
 			case rl_cr:
