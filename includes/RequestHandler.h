@@ -25,17 +25,22 @@ public:
 	int			error;
 	char		buf[BUFFER_SIZE]; // use std::vector<char> buf(BUFFER_SIZE); instead?
 	int			buf_pos;
+	int			bytes_read;
 
 	void	handleRequest(int);
 	void	parseRequestLine();
 	void	checkMethod();
+
+	int	complex_path;
 
 	enum {
 		rl_start = 0,
 		rl_method,
 		rl_first_divider,
 		rl_path,
-		rl_second_divider,
+		rl_percent_encoded,
+		rl_query,
+		rl_fragment,
 		rl_http
 	} state;
 };
