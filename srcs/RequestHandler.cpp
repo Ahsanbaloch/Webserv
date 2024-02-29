@@ -7,6 +7,7 @@ RequestHandler::RequestHandler(/* args */)
 	buf_pos = -1;
 	rl_parsing_done = 0;
 	headers_parsing_done = 0;
+	body_exists = 0;
 	method = ""; // does this reset the string?
 	path = ""; // does this reset the string?
 	query = ""; // does this reset the string?
@@ -31,13 +32,11 @@ void	RequestHandler::handleRequest(int event_lst_item_fd)
 	parseRequestLine();
 	buf_pos--; // put into request line parser?
 	parseHeaders();
+
+	if (body_exists)
+	parseBody();
 	
-	printf("\nheaders\n");
-	for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
-	{
-		std::cout << "key: " << it->first << " ";
-		std::cout << "value: " << it->second << std::endl;
-	}
+	
 
 	std::cout << "identified method: " << method << '\n';
 	std::cout << "identified path: " << path << '\n';
@@ -165,6 +164,9 @@ void	RequestHandler::parseHeaders()
 			case he_done:
 				std::cout << "header line fully parsed\n";
 				headers.insert(std::pair<std::string, std::string>(header_name, header_value));
+				// check if there is a body in the message
+				if (header_name == "content-length" || header_name == "transfer-encoding")
+					body_exists = 1;
 				header_name.clear();
 				header_value.clear();
 				headers_state = he_start;

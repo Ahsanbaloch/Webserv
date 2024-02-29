@@ -32,10 +32,12 @@ public:
 	int									bytes_read;
 	int									rl_parsing_done; // probably needs to be reset after being used
 	int									headers_parsing_done;
+	int									body_exists;
 
 	void	handleRequest(int);
 	void	parseRequestLine();
 	void	parseHeaders();
+	void	parseBody();
 	void	checkMethod();
 	void	checkHttpVersion();
 
