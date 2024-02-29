@@ -32,7 +32,8 @@ public:
 	int									bytes_read;
 	int									rl_parsing_done; // probably needs to be reset after being used
 	int									headers_parsing_done;
-	int									body_exists;
+	int									transfer_encoding_exists;
+	int									content_length_exists;
 
 	void	handleRequest(int);
 	void	parseRequestLine();
