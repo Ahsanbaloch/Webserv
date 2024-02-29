@@ -30,11 +30,17 @@ void	RequestHandler::handleRequest(int event_lst_item_fd)
 	printf("buf: %s\n", buf);
 
 	parseRequestLine();
-	buf_pos--; // put into request line parser?
 	parseHeaders();
 
+	printf("\nheaders\n");
+	for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
+	{
+		std::cout << "key: " << it->first << " ";
+		std::cout << "value: " << it->second << std::endl;
+	}
+
 	if (body_exists)
-	parseBody();
+		parseBody();
 	
 	
 
@@ -47,6 +53,13 @@ void	RequestHandler::handleRequest(int event_lst_item_fd)
 	printf("read %i bytes\n", bytes_read);	
 
 	// close fd in case bytes_read == 0 ???
+}
+
+void	RequestHandler::parseBody()
+{
+	buf_pos++;
+	printf("I am a body\n");
+	printf("buffer pos: %c\n", buf[buf_pos]);
 }
 
 void	RequestHandler::parseHeaders()
@@ -402,7 +415,10 @@ void	RequestHandler::parseRequestLine()
 
 			case rl_cr:
 				if (ch == LF)
+				{
 					rl_state = rl_done;
+					break;
+				}
 				else 
 				{
 					error = 400;
@@ -412,6 +428,7 @@ void	RequestHandler::parseRequestLine()
 			case rl_done:
 				std::cout << "request line fully parsed\n";
 				rl_parsing_done = 1;
+				buf_pos--;
 				break;
 		}
 
