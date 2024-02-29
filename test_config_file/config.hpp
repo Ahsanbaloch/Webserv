@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/02/27 17:01:26 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/02/27 17:28:46 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/02/28 16:20:07 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,12 +22,20 @@
 class config
 {
 
+protected:
+    /* data */
+    std::vector<std::string> servers;
+
 public:
-    config(/* args */){};
-    ~config(){};
+    config(/* args */);
+    ~config();
     std::vector<std::string> file_read(char *config_file);
     std::vector<std::string> server_parts(std::string content);
-    std::vector<std::string> location_parts(std::vector<std::string> servers);
+    //void server_parts(std::string content);
+    //std::vector<std::string> location_parts(std::vector<std::string> servers);
+
+    // int id;
+    // std::string name;
 };
 
 #endif
