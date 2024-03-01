@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/02/28 11:40:57 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/02/29 19:27:30 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/01 18:24:25 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,73 +49,42 @@ std::vector<std::string> server_block_pars::server_pars_location(std::vector<std
     }
     return server_blocks;
 }
-/* 
-std::vector<std::string> server_block_pars::server_pars_others(std::vector<std::string> servers)
+
+std::vector<std::string> server_block_pars::outside_location(std::vector<std::string> servers)
 {
-    std::vector<std::string> server_other_properties;
+    std::vector<std::string> outside_block;
     for (size_t i = 0; i < servers.size(); i++)
     {
-        //Parse each server block
-        server_block_pars serverProperties;
-
-        //Extract properties from the server block
+        std::string outside;
         size_t pos = 0;
-        //Extract 'listen' property
-        pos = servers[i].find("listen");
-        //std::cout << "Pos: " << pos << "npos" << std::string::npos << std::endl;
-        if (pos != std::string::npos)
+        while (pos < servers[i].size())
         {
-            //std::cout << "Pos: " << servers[i].find_first_of(" \t;", pos) << std::endl;
-            pos = servers[i].find_first_not_of(" \t", pos + 6); // Skip 'listen' keyword
-            size_t end = servers[i].find_first_of("\n;", pos);
-            serverProperties.set_listen(servers[i].substr(pos, end - pos));
-        }
-        if (!serverProperties.get_listen().empty())
-            std::cout << "Listen: " << serverProperties.get_listen() << std::endl; 
+            size_t start = servers[i].find("location", pos);
+            if (start == std::string::npos)
+            {
+                    outside += servers[i].substr(pos);
+                    break;
+            }
+            else
+            {
+                outside += servers[i].substr(pos, start - pos);
 
-        //Extract 'index' property
-        pos = servers[i].find("index");
-        if (pos != std::string::npos)
-        {
-            //std::cout << "Listen found" << std::endl;
-            pos = servers[i].find_first_not_of(" \t", pos + 5); // Skip 'index' keyword
-            size_t end = servers[i].find_first_of("\n;", pos);
-            serverProperties.set_Index(servers[i].substr(pos, end - pos));
-        }
-        if (!serverProperties.get_Index().empty())
-            std::cout << "Index: " << serverProperties.get_Index() << std::endl;
-        
-        //Extract 'error_page' property
-        pos = servers[i].find("error_page");
-        if (pos != std::string::npos)
-        {
-            pos = servers[i].find_first_not_of(" \t", pos + 10); // Skip 'error_page' keyword
-            size_t end = servers[i].find_first_of("\n;", pos);
-            serverProperties.set_error_page(servers[i].substr(pos, end - pos));
-        }
-        if (!serverProperties.get_error_page().empty())
-            std::cout << "Error Page: " << serverProperties.get_error_page() << std::endl;
+                size_t openBrackets = 0;
+                start = servers[i].find('{', start);
+                do
+                {
+                    if (servers[i][start] == '{')
+                        ++openBrackets;
+                    else if (servers[i][start] == '}')
+                        --openBrackets;
+                    ++start;
+                }
+            while (start < servers[i].size() && openBrackets > 0);
 
-        //Extract 'server_name' property
-        pos = servers[i].find("server_name");
-        if (pos != std::string::npos)
-        {
-            pos = servers[i].find_first_not_of(" \t", pos + 11); // Skip 'server_name' keyword
-            size_t end = servers[i].find_first_of("\n;", pos);
-            serverProperties.set_server_name(servers[i].substr(pos, end - pos));
+            pos = start;
+            }
         }
-        if (!serverProperties.get_server_name().empty())
-            std::cout << "Server Name: " << serverProperties.get_server_name() << std::endl;
-        //Add the extracted properties to the list
-        server_other_properties.push_back(servers[i]);
-
+            outside_block.push_back(outside);
     }
-    for (size_t i = 0; i < server_other_properties.size(); i++)
-    {
-        std::cout << "Server Block " << i << std::endl;
-        std::cout << server_other_properties[i] << std::endl;
-    }
-    
-    return server_other_properties;
+    return outside_block;
 }
- */

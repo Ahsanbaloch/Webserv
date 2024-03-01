@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/02/29 19:20:52 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/02/29 21:30:11 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/01 18:29:18 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,16 +22,16 @@ server_other_pars::~server_other_pars()
 
 void server_other_pars::pars_server_name(std::vector<std::string> servers)
 {
+    //std::cout << "Hello World" << std::endl;   
     for (size_t i = 0; i < servers.size(); i++)
     {
         //Parse each server block
         size_t pos = servers[i].find("server_name");
         if (pos != std::string::npos)
         {
-            std::cout << "server_name : "  << get_server_name() <<  std::endl;
             pos = servers[i].find_first_not_of(" \t", pos + 11);
             size_t end = servers[i].find(";", pos);
-            std::string server_name = servers[i].substr(pos, end - pos);
+            server_name.push_back(servers[i].substr(pos, end - pos));
         }
     }
 }
@@ -47,7 +47,7 @@ void server_other_pars::pars_root(std::vector<std::string> servers)
         {
             pos = servers[i].find_first_not_of(" \t", pos + 4);
             size_t end = servers[i].find(";", pos);
-            std::string root = servers[i].substr(pos, end - pos);
+            root.push_back(servers[i].substr(pos, end - pos));
         }
     }
 }
@@ -62,7 +62,7 @@ void server_other_pars::pars_index(std::vector<std::string> servers)
         {
             pos = servers[i].find_first_not_of(" \t", pos + 5);
             size_t end = servers[i].find(";", pos);
-            std::string index = servers[i].substr(pos, end - pos);
+            index.push_back(servers[i].substr(pos, end - pos));
         }
     }
 }
@@ -77,7 +77,7 @@ void server_other_pars::pars_error_page(std::vector<std::string> servers)
         {
             pos = servers[i].find_first_not_of(" \t", pos + 10);
             size_t end = servers[i].find(";", pos);
-            std::string error_page = servers[i].substr(pos, end - pos);
+            error_page.push_back(servers[i].substr(pos, end - pos));
         }
     }
 }
@@ -93,6 +93,21 @@ void server_other_pars::pars_listen(std::vector<std::string> servers)
             pos = servers[i].find_first_not_of(" \t", pos + 6);
             size_t end = servers[i].find(";", pos);
             listen.push_back(servers[i].substr(pos, end - pos));
+        }
+    }
+}
+
+void server_other_pars::pars_max_size_client_body(std::vector<std::string> servers)
+{
+    for (size_t i = 0; i < servers.size(); i++)
+    {
+        //Parse each server block
+        size_t pos = servers[i].find("max_size_client_body");
+        if (pos != std::string::npos)
+        {
+            pos = servers[i].find_first_not_of(" \t", pos + 20);
+            size_t end = servers[i].find(";", pos);
+            max_size_client_body.push_back(servers[i].substr(pos, end - pos));
         }
     }
 }
