@@ -41,7 +41,14 @@ void	RequestHandler::handleRequest(int event_lst_item_fd)
 	}
 
 	if (transfer_encoding_exists || content_length_exists)
+	{
+		if (transfer_encoding_exists && content_length_exists)
+		{
+			error = 400;
+			throw CustomException("Bad request");
+		}
 		parseBody();
+	}
 	
 	
 
@@ -56,8 +63,30 @@ void	RequestHandler::handleRequest(int event_lst_item_fd)
 	// close fd in case bytes_read == 0 ???
 }
 
+// A server MAY reject a request that contains a message body but not a Content-Length by responding with 411 (Length Required).
+
 void	RequestHandler::parseBody()
 {
+	// A server that receives a request message with a transfer coding it does not understand SHOULD respond with 501 (Not Implemented)
+	// This is why Transfer-Encoding is defined as overriding Content-Length, as opposed to them being mutually incompatible.
+	// A server MAY reject a request that contains both Content-Length and Transfer-Encoding or process such a request in accordance with the 
+	// Transfer-Encoding alone. Regardless, the server MUST close the connection after responding to such a request to avoid the potential attacks.
+
+	// If a valid Content-Length header field is present without Transfer-Encoding, its decimal value defines the expected message body length in octets. 
+	//If the sender closes the connection or the recipient times out before the indicated number of octets are received, the recipient MUST 
+	// consider the message to be incomplete and close the connection.
+
+	// A recipient MUST ignore unrecognized chunk extensions. A server ought to limit the total length of chunk extensions received in a request 
+	// to an amount reasonable for the services provided, in the same way that it applies length limitations and timeouts for other parts of a 
+	// message, and generate an appropriate 4xx (Client Error) response if that amount is exceeded
+
+	// use ostringstream to store body?
+	
+	// chunked-body   = *chunk
+                   //last-chunk
+                   //trailer-section
+                   //CRLF
+
 	buf_pos++;
 	printf("I am a body\n");
 	printf("buffer pos: %c\n", buf[buf_pos]);
