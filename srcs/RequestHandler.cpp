@@ -40,32 +40,61 @@ void	RequestHandler::handleRequest(int event_lst_item_fd)
 		std::cout << "value: " << it->second << std::endl;
 	}
 
-	if (transfer_encoding_exists || content_length_exists)
+	if (transfer_encoding_exists && !content_length_exists)
+		parseEncodedBody();
+	else if (content_length_exists && !transfer_encoding_exists)
+		parseContentBody();
+	else
 	{
-		if (transfer_encoding_exists && content_length_exists)
-		{
-			error = 400;
-			throw CustomException("Bad request");
-		}
-		parseBody();
+		error = 400;
+		throw CustomException("Bad request");
+		// A server MAY reject a request that contains a message body but not a Content-Length by responding with 411 (Length Required).
 	}
 	
-	
-
 	std::cout << "identified method: " << method << '\n';
 	std::cout << "identified path: " << path << '\n';
 	std::cout << "identified query: " << query << '\n';
 	std::cout << "identified version: " << version << '\n';
 
+	// check what has been written into body
+	std::cout << "identified body: \n";
+	body.open(".body.txt");
+	if (body.is_open())
+	{
+		std::string line;
+		while (std::getline(body, line))
+		{
+			std::cout << line << std::endl;
+		}
+		body.close();
+	}
+	else
+	{
+		throw CustomException("Failed to open body file");
+	}
 
 	printf("read %i bytes\n", bytes_read);	
 
 	// close fd in case bytes_read == 0 ???
 }
 
-// A server MAY reject a request that contains a message body but not a Content-Length by responding with 411 (Length Required).
 
-void	RequestHandler::parseBody()
+void	RequestHandler::parseContentBody()
+{
+	body.open(".body.txt", std::ios::out | std::ios::trunc); // add std::ios::binary?
+	if (body.is_open())
+	{
+		body.write(&(buf[buf_pos + 1]), body_length);
+		if (!body)
+		{
+			perror("The issue: ");
+			throw CustomException("Issue when reading body"); // set specific error code?
+		}
+	}
+	body.close();
+}
+
+void	RequestHandler::parseEncodedBody()
 {
 	// A server that receives a request message with a transfer coding it does not understand SHOULD respond with 501 (Not Implemented)
 	// This is why Transfer-Encoding is defined as overriding Content-Length, as opposed to them being mutually incompatible.
@@ -90,6 +119,35 @@ void	RequestHandler::parseBody()
 	buf_pos++;
 	printf("I am a body\n");
 	printf("buffer pos: %c\n", buf[buf_pos]);
+}
+
+void	RequestHandler::checkBodyLength(std::string value)
+{
+	std::cout << "Value: " << value << std::endl;
+	for(std::string::iterator it = value.begin(); it != value.end(); it++)
+	{
+		if (*it == '.')
+		{
+			value.erase(*it);
+			it++;
+			for (;it != value.end(); it++)
+			{
+				if (isdigit(*it))
+					value.erase(*it);
+				else
+				{
+					error = 400;
+					throw CustomException("Bad request"); // other error code?
+				}
+			}
+		}
+		else if (!isdigit(*it))
+		{
+			error = 400;
+			throw CustomException("Bad request"); // other error code?
+		}
+	}
+	body_length = std::atoi(value.c_str());
 }
 
 void	RequestHandler::parseHeaders()
@@ -209,7 +267,10 @@ void	RequestHandler::parseHeaders()
 				headers.insert(std::pair<std::string, std::string>(header_name, header_value));
 				// check if there is a body in the message
 				if (header_name == "content-length")
+				{
 					content_length_exists = 1;
+					checkBodyLength(header_value);
+				}
 				if (header_name == "transfer-encoding")
 					transfer_encoding_exists = 1;
 				header_name.clear();

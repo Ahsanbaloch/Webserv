@@ -6,6 +6,7 @@
 #include "CustomException.h"
 #include <string>
 #include <map>
+#include <fstream>
 #include <cstdio> // remove later
 
 #define BUFFER_SIZE 1024
@@ -26,6 +27,7 @@ public:
 	std::string							query; // probably needs to be reset after being used
 	std::string							version; // probably needs to be reset after being used
 	std::map<std::string, std::string>	headers; // probably needs to be reset after being used
+	std::fstream						body;
 	int									error; // probably needs to be reset after being used
 	char								buf[BUFFER_SIZE]; // use std::vector<char> buf(BUFFER_SIZE); instead?
 	int									buf_pos;
@@ -34,13 +36,17 @@ public:
 	int									headers_parsing_done;
 	int									transfer_encoding_exists;
 	int									content_length_exists;
+	int									body_length;
 
 	void	handleRequest(int);
 	void	parseRequestLine();
 	void	parseHeaders();
+	void	parseEncodedBody();
+	void	parseContentBody();
 	void	parseBody();
 	void	checkMethod();
 	void	checkHttpVersion();
+	void	checkBodyLength(std::string);
 
 	int	path_encoded; // probably needs to be reset after being used
 
@@ -66,6 +72,11 @@ public:
 		he_done,
 		hes_end
 	} headers_state;
+
+	enum {
+
+	} te_state;
+
 };
 
 #endif
