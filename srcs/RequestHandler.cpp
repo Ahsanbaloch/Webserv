@@ -80,20 +80,25 @@ void	RequestHandler::parseEncodedBody()
 {
 	// check somewhere that when the transfer encoding contains something different than "chunked" to return an error
 
-	// check chunk-size (first part of body) and translate from hex to integer; followed by CRLF if chunk extension is not provided
-		// if chunk-size is 0 and followd by CRLF, the end of the transmission has been reached
+	// run in a loop using buffer size
 
-	// check for chunk extension (there can be multiple extensions?), this is followed by CRLF
-		// A recipient MUST ignore unrecognized chunk extensions.
+		// check chunk-size (first part of body) and translate from hex to integer; followed by CRLF if chunk extension is not provided
+			// if chunk-size is 0 and followd by CRLF, the end of the transmission has been reached
 
-	// run through the chunk data using chunk-size as a delimiter (why not use the buffer size instead?)
-		// add content to stream until CRLF is reached
-		// count data length
-		// check again for chunk size in this loop?
+		// check for chunk extension, this is followed by CRLF
+			// A recipient MUST ignore unrecognized chunk extensions // how to recognize an invalid one?
+			// Where to store that extension?
 
-	// if end of data transimission (chunk size 0), check for trailer (finally terminated by empty line --> CRLFCRLF??)
-		// store somewhere
-		// what info does trailer entail?
+		// run through the chunk data using chunk-size as a delimiter
+			// add content to stream until CRLF is reached
+			// count data length
+			// check again for chunk size in this loop?
+
+		// if end of data transimission (chunk size 0), check for trailer (finally terminated by empty line --> CRLFCRLF??)
+			// store somewhere
+			// what info does trailer entail?
+
+	// empty line termination --> always? or only when chunk size == 0?
 	
 	// set content-length in headers to counted data length --> for what purpose?
 	
