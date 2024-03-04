@@ -83,7 +83,7 @@ void	RequestHandler::parseEncodedBody()
 	// check chunk-size (first part of body) and translate from hex to integer; followed by CRLF if chunk extension is not provided
 		// if chunk-size is 0 and followd by CRLF, the end of the transmission has been reached
 
-	// check for chunk extension (there can be multiple extensions), this is followed by CRLF
+	// check for chunk extension (there can be multiple extensions?), this is followed by CRLF
 		// A recipient MUST ignore unrecognized chunk extensions.
 
 	// run through the chunk data using chunk-size as a delimiter (why not use the buffer size instead?)
@@ -91,10 +91,9 @@ void	RequestHandler::parseEncodedBody()
 		// count data length
 		// check again for chunk size in this loop?
 
-	// if end of data transimission (chunk size 0)(?), check for trailer (finally terminated by empty line --> CRLFCRLF??)
+	// if end of data transimission (chunk size 0), check for trailer (finally terminated by empty line --> CRLFCRLF??)
 		// store somewhere
 		// what info does trailer entail?
-		// mutliple trailers?
 	
 	// set content-length in headers to counted data length --> for what purpose?
 	
