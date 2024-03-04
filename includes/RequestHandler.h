@@ -6,7 +6,7 @@
 #include "CustomException.h"
 #include <string>
 #include <map>
-#include <fstream>
+#include <sstream>
 #include <cstdio> // remove later
 
 #define BUFFER_SIZE 1024
@@ -27,7 +27,7 @@ public:
 	std::string							query; // probably needs to be reset after being used
 	std::string							version; // probably needs to be reset after being used
 	std::map<std::string, std::string>	headers; // probably needs to be reset after being used
-	std::fstream						body;
+	std::stringstream					body;
 	int									error; // probably needs to be reset after being used
 	char								buf[BUFFER_SIZE]; // use std::vector<char> buf(BUFFER_SIZE); instead?
 	int									buf_pos;

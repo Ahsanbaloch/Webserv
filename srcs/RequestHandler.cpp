@@ -58,22 +58,13 @@ void	RequestHandler::handleRequest(int event_lst_item_fd)
 
 	// check what has been written into body
 	std::cout << "identified body: \n";
-	body.open(".body.txt");
-	if (body.is_open())
+	std::string line;
+	while (std::getline(body, line))
 	{
-		std::string line;
-		while (std::getline(body, line))
-		{
-			std::cout << line << std::endl;
-		}
-		body.close();
-	}
-	else
-	{
-		throw CustomException("Failed to open body file");
+		std::cout << line << std::endl;
 	}
 
-	printf("read %i bytes\n", bytes_read);	
+	printf("read %i bytes\n", bytes_read);
 
 	// close fd in case bytes_read == 0 ???
 }
@@ -81,21 +72,39 @@ void	RequestHandler::handleRequest(int event_lst_item_fd)
 
 void	RequestHandler::parseContentBody()
 {
-	body.open(".body.txt", std::ios::out | std::ios::trunc); // add std::ios::binary?
-	if (body.is_open())
-	{
-		body.write(&(buf[buf_pos + 1]), body_length);
-		if (!body)
-		{
-			perror("The issue: ");
-			throw CustomException("Issue when reading body"); // set specific error code?
-		}
-	}
-	body.close();
+	// should be checked as a sequence of octets instead
+	body.write(&(buf[buf_pos + 1]), body_length);
 }
 
 void	RequestHandler::parseEncodedBody()
 {
+	// check somewhere that when the transfer encoding contains something different than "chunked" to return an error
+
+	// check chunk-size (first part of body) and translate from hex to integer; followed by CRLF if chunk extension is not provided
+		// if chunk-size is 0 and followd by CRLF, the end of the transmission has been reached
+
+	// check for chunk extension (there can be multiple extensions), this is followed by CRLF
+		// A recipient MUST ignore unrecognized chunk extensions.
+
+	// run through the chunk data using chunk-size as a delimiter (why not use the buffer size instead?)
+		// add content to stream until CRLF is reached
+		// count data length
+		// check again for chunk size in this loop?
+
+	// if end of data transimission (chunk size 0)(?), check for trailer (finally terminated by empty line --> CRLFCRLF??)
+		// store somewhere
+		// what info does trailer entail?
+		// mutliple trailers?
+	
+	// set content-length in headers to counted data length --> for what purpose?
+	
+	
+
+
+	// The chunked coding does not define any parameters. Their presence SHOULD be treated as an error. --> what is meant by that?
+
+
+
 	// A server that receives a request message with a transfer coding it does not understand SHOULD respond with 501 (Not Implemented)
 	// This is why Transfer-Encoding is defined as overriding Content-Length, as opposed to them being mutually incompatible.
 	// A server MAY reject a request that contains both Content-Length and Transfer-Encoding or process such a request in accordance with the 
