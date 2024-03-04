@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 14:22:42 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/04 16:27:34 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/04 20:21:07 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,13 +18,14 @@
 #include <fstream>
 #include <vector>
 #include <cstdlib>
+#include "serverIntegration.hpp"
 
 class config_pars
 {
 	private:
 	std::map<int, std::map<std::string, t_server_config> > _configMap;
 	//config_pars();
-	void parse_server(std::string &server_config);
+	//void parse_server(std::string &server_config);
 	
 
 	public: 
@@ -36,6 +37,7 @@ class config_pars
 	void readconfig(char *argv, std::string &fileContent);
 	void parse_server_configs(std::string &sever_config);
 	void extractServerBlocks(std::vector<std::string> &serverBlocks, std::string &server_config);
+	void extractServer(std::vector<std::string> &server_block,const std::string &server_config);
 
 };
 
