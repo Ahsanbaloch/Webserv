@@ -1,16 +1,16 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   serverIntegration.cpp                              :+:      :+:    :+:   */
+/*   config_pars_utils.cpp                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 16:53:25 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/04 20:21:37 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/05 13:39:33 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "serverIntegration.hpp"
+#include "config_pars_utils.hpp"
 
 /* void checkBasicServerBlockIntegrity(const std::string &rawConfig, const size_t &start, const size_t &end)
 {
