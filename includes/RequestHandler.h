@@ -28,6 +28,7 @@ public:
 	std::string							version; // probably needs to be reset after being used
 	std::map<std::string, std::string>	headers; // probably needs to be reset after being used
 	std::stringstream					body;
+	std::string							body_test;
 	int									error; // probably needs to be reset after being used
 	char								buf[BUFFER_SIZE]; // use std::vector<char> buf(BUFFER_SIZE); instead?
 	int									buf_pos;
@@ -81,6 +82,7 @@ public:
 		chunk_size_cr,
 		chunk_extension,
 		chunk_data,
+		chunk_data_cr,
 		chunk_trailer,
 		body_end
 	} te_state;

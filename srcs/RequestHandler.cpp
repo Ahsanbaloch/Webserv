@@ -145,7 +145,7 @@ void	RequestHandler::parseEncodedBody()
 					}
 					else if (ch == SP)
 					{
-						te_state == chunk_extension; // are there more seperators? // seperate state for last extension?
+						te_state = chunk_extension; // are there more seperators? // seperate state for last extension?
 						break;
 					}
 					else
@@ -194,19 +194,56 @@ void	RequestHandler::parseEncodedBody()
 
 			case chunk_extension:
 				// read extension
-				// go to chunk data reading
+				// go to chunk data reading or chung_size_cr
+				break;
 
 			case chunk_data:
-				// read chunks in a for loop using chunk size as a delimiter
-				// count data length
-				// once read, go back to body start
+				for (int i = 0; i < chunk_length; i++)
+				{
+					ch = buf[buf_pos];
+					if (ch == CR)
+					{
+						te_state = chunk_data_cr;
+						break;
+					}
+					else if (ch == LF)
+					{
+						te_state = body_start;
+						break;
+					}
+					else
+					{
+						body_test.append(ch, 1);
+						buf_pos++;
+					}
+				}
+				// calc content-length
+				te_state = body_start;
+				break;
+
+			
+			case chunk_data_cr:
+				if (ch == LF)
+				{
+					te_state = body_start;
+					break;
+				}
+				else
+				{
+					error = 400; // what is the correct error code?
+					throw CustomException("Bad request"); // other exception?
+				}
 			
 			case chunk_trailer:
+				body_parsing_done = 1;
+				te_state = body_end;
+				break;
 				// check if trailer is existing
 				// read trailer
 
 			case body_end:
-				// termination --> maybe do differently
+				break;
+				// termination
 
 		}		
 
