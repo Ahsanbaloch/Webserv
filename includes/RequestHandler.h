@@ -34,6 +34,7 @@ public:
 	int									bytes_read;
 	int									rl_parsing_done; // probably needs to be reset after being used
 	int									headers_parsing_done;
+	int									body_parsing_done;
 	int									transfer_encoding_exists;
 	int									content_length_exists;
 	int									body_length;
@@ -74,7 +75,12 @@ public:
 	} headers_state;
 
 	enum {
-
+		body_start = 0,
+		chunk_size,
+		chunk_extension,
+		chunk_data,
+		chunk_trailer,
+		body_end
 	} te_state;
 
 };

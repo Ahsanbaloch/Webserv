@@ -7,6 +7,7 @@ RequestHandler::RequestHandler(/* args */)
 	buf_pos = -1;
 	rl_parsing_done = 0;
 	headers_parsing_done = 0;
+	body_parsing_done = 0;
 	transfer_encoding_exists = 0;
 	content_length_exists = 0;
 	method = ""; // does this reset the string?
@@ -80,7 +81,42 @@ void	RequestHandler::parseEncodedBody()
 {
 	// check somewhere that when the transfer encoding contains something different than "chunked" to return an error
 
-	// run in a loop using buffer size
+	while (!body_parsing_done && buf_pos++ < bytes_read)
+	{
+		u_char ch = buf[buf_pos];
+
+		te_state = body_start;
+
+		switch (te_state) 
+		{
+			case body_start:
+				// check if body starts with a hex value
+				// if yes, move to size
+
+			case chunk_size:
+				// get chunk_size
+				// go to chunk data reading or extension reading
+				// if chunk_size is 0 --> check for chunk trailer
+
+			case chunk_extension:
+				// read extension
+				// go to chunk data reading
+
+			case chunk_data:
+				// read chunks in a for loop using chunk size as a delimiter
+				// count data length
+				// once read, go back to body start
+			
+			case chunk_trailer:
+				// check if trailer is existing
+				// read trailer
+
+			case body_end:
+				// termination --> maybe do differently
+
+		}		
+
+	}
 
 		// check chunk-size (first part of body) and translate from hex to integer; followed by CRLF if chunk extension is not provided
 			// if chunk-size is 0 and followd by CRLF, the end of the transmission has been reached
@@ -92,7 +128,7 @@ void	RequestHandler::parseEncodedBody()
 		// run through the chunk data using chunk-size as a delimiter
 			// add content to stream until CRLF is reached
 			// count data length
-			// check again for chunk size in this loop?
+			// check again for chunk size and chunk extension
 
 		// if end of data transimission (chunk size 0), check for trailer (finally terminated by empty line --> CRLFCRLF??)
 			// store somewhere
