@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 14:22:42 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/05 13:46:58 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/05 18:06:16 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,7 +38,8 @@ class config_pars
 	void parse_server_configs(std::string &sever_config);
 	void extractServerBlocks(std::vector<std::string> &serverBlocks, std::string &server_config);
 	void extractServer(std::vector<std::string> &server_block,const std::string &server_config);
-
+	void findAndCheckServerBlocks(const std::string &raw_data, size_t &start, size_t &end);
+	void findServerBlockEnd(const std::string &raw_data, size_t &start, size_t &end);
 };
 
 #endif

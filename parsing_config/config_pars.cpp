@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/05 14:42:45 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/05 19:02:55 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,7 +46,7 @@ void config_pars::readconfig(char *argv, std::string &fileConetnt)
 	}
 	else
 	{
-		std::cerr << "Error: Unable to open file" << std::endl;
+		std::cerr << "Error: Unable to open file" << std::endl; //throw std::runtime_error("Unable to open file");
 		exit(1);
 	}
 }
@@ -57,45 +57,18 @@ void config_pars::parse_server_configs(std::string &server_config)
 	extractServer(server_block, server_config);
 	for (size_t i = 0; i < server_block.size(); i++)
 	{
-		//t_server_config default_server;
-		std::cout << server_block[i] << std::endl;
+		t_server_config default_server_config;
 	}
 }
 
 void config_pars::extractServer(std::vector<std::string> &serverblocks, const std::string &raw_data)
 {
-    size_t start = 0, end;
+    size_t start = 0;
+    size_t end = 0;
     size_t serverNum = 0;
-	/* 
-    // Check for consecutive brackets with possible spaces, tabs, or line breaks in between
-    std::string::size_type pos = 0;
-    while (pos < raw_data.length()) {
-        if (raw_data[pos] == '{' || raw_data[pos] == '}') {
-            char bracket = raw_data[pos];
-            pos++;
-            // Skip spaces, tabs, and line breaks
-            while (pos < raw_data.length() && 
-                   (raw_data[pos] == ' ' || raw_data[pos] == '\t' || raw_data[pos] == '\n')) {
-                pos++;
-            }
-            // Check for another bracket of the same kind
-            if (pos < raw_data.length() && raw_data[pos] == bracket) {
-                throw std::runtime_error("Found consecutive " + std::string(1, bracket) + " at position: " + std::to_string(pos));
-            }
-        } else {
-            pos++;
-        }
-    }
-
-    // ... existing code to process the "server" blocks ...
-    size_t start = 0, end;
-    size_t serverNum = 0;
-    // ... rest of your code ...
-}
-	 */
+    checkConsecutiveSameBraces(raw_data);
     while ((start = raw_data.find("server", start)) != std::string::npos)
     {
-		//checkServerBlockSeparators(raw_data, start, end); // TODO: implement this function
         // Move past "server"
         start += 6; // Length of "server"
         // Skip whitespace
@@ -110,7 +83,6 @@ void config_pars::extractServer(std::vector<std::string> &serverblocks, const st
         // Find the end of the server block
         int braceCount = 1; // Count the number of open braces
         end = start + 1;
-		std::cout << "end: " << end << std::endl;
         while (end < raw_data.length())
         {
             if (raw_data[end] == '{')
@@ -120,21 +92,17 @@ void config_pars::extractServer(std::vector<std::string> &serverblocks, const st
             end++;
         }
         if (braceCount > 0)
-            {
-				std::cout << "Malformed server block1" << std::endl;
-				start = end;
-				continue;
-				//break; // Malformed server block
-				//return;
-			}
-		else if (braceCount < 0)
-			{
-				std::cout << "Malformed server block2" << std::endl;
-				start = end;
-				continue;
-				//return;
-				//break; // Malformed server block
-			}
+        {
+            std::cout << "Malformed server block1" << std::endl;
+            end = start + 1; // Reset end
+            break;
+        }
+        else if (braceCount < 0)
+        {
+            std::cout << "Malformed server block2" << std::endl;
+            end = start + 1; // Reset end
+            break;
+        }
         // Extract the server block
         std::string serverBlock = raw_data.substr(start, end - start);
         if (serverBlock.empty())
@@ -143,7 +111,11 @@ void config_pars::extractServer(std::vector<std::string> &serverblocks, const st
         serverNum++;
         if (serverNum >= 10)
             std::cout << "Max capacity" << std::endl;    //throw NoServerBlockException();
+
+        // Update start to be end for the next iteration
+        start = end;
     }
     if (serverblocks.empty())
         std::cout << "No server block" << std::endl;    //throw NoServerBlockException();
 }
+
