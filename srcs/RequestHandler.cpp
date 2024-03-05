@@ -10,6 +10,7 @@ RequestHandler::RequestHandler(/* args */)
 	body_parsing_done = 0;
 	transfer_encoding_exists = 0;
 	content_length_exists = 0;
+	chunk_length = 0;
 	method = ""; // does this reset the string?
 	path = ""; // does this reset the string?
 	query = ""; // does this reset the string?
@@ -90,13 +91,106 @@ void	RequestHandler::parseEncodedBody()
 		switch (te_state) 
 		{
 			case body_start:
-				// check if body starts with a hex value
-				// if yes, move to size
+				if ((ch >= '0' && ch <= '9'))
+				{
+					chunk_length = ch - '0';
+					te_state = chunk_size;
+					break;
+				}
+				else if (ch >= 'a' && ch <= 'f')
+				{
+					chunk_length = ch - 'a' + 10;
+					te_state = chunk_size;
+					break;
+				}
+				else if (ch >= 'A' && ch <= 'F')
+				{
+					chunk_length = ch - 'A' + 10;
+					te_state = chunk_size;
+					break;
+				}
+				else
+				{
+					error = 400; // what is the correct error code?
+					throw CustomException("Bad request"); // other exception?
+				}
 
 			case chunk_size:
-				// get chunk_size
-				// go to chunk data reading or extension reading
-				// if chunk_size is 0 --> check for chunk trailer
+				if (ch >= '0' && ch <= '9')
+				{
+					chunk_length = chunk_length * 16 + (ch - '0');
+					break;
+				}
+				else if (ch >= 'a' && ch <= 'f')
+				{
+					chunk_length = chunk_length * 16 + (ch - 'a' + 10);
+					break;
+				}
+				else if (ch >= 'A' && ch <= 'F')
+				{
+					chunk_length = chunk_length * 16 + (ch - 'A' + 10);
+					break;
+				}
+				else if (chunk_length == 0)
+				{
+					if (ch == CR)
+					{
+						te_state = chunk_size_cr;
+						break;
+					}
+					else if (ch == LF)
+					{
+						te_state = chunk_trailer;
+						break;
+					}
+					else if (ch == SP)
+					{
+						te_state == chunk_extension; // are there more seperators? // seperate state for last extension?
+						break;
+					}
+					else
+					{
+						error = 400; // what is the correct error code?
+						throw CustomException("Bad request"); // other exception?
+					}
+				}
+				else if (ch == CR)
+				{
+					te_state = chunk_size_cr;
+					break;
+				}
+				else if (ch == LF)
+				{
+					te_state = chunk_data;
+					break;
+				}
+				else if (ch == SP) // are there more seperators?
+				{
+					te_state = chunk_extension;
+					break;
+				}
+				else
+				{
+					error = 400; // what is the correct error code?
+					throw CustomException("Bad request"); // other exception?
+				}
+			
+			case chunk_size_cr:
+				if (ch == LF && chunk_length > 0)
+				{
+					te_state = chunk_data;
+					break;
+				}
+				else if (ch == LF && chunk_length == 0)
+				{
+					te_state = chunk_trailer;
+					break;
+				}
+				else
+				{
+					error = 400; // what is the correct error code?
+					throw CustomException("Bad request"); // other exception?
+				}
 
 			case chunk_extension:
 				// read extension

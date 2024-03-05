@@ -38,6 +38,7 @@ public:
 	int									transfer_encoding_exists;
 	int									content_length_exists;
 	int									body_length;
+	int									chunk_length;
 
 	void	handleRequest(int);
 	void	parseRequestLine();
@@ -77,6 +78,7 @@ public:
 	enum {
 		body_start = 0,
 		chunk_size,
+		chunk_size_cr,
 		chunk_extension,
 		chunk_data,
 		chunk_trailer,
