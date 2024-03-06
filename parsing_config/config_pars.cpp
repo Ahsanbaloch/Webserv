@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/06 16:39:14 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/06 20:52:46 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -72,12 +72,61 @@ void config_pars::parse_server_block(t_server_config &server_config, const std::
     //server_config.bodySize = extractBodySize(BODY_SIZE, server_block); //TODO: create this function and convert string in int
     if (server_config.port < 0 || server_config.port > 65535)
         std::cout << "Invalid port" << std::endl;    //throw InvalidPortException();
-    //Location_block(server_config, server_block); //TODO: create this function
+    Location_block(server_config, server_block);
 }
 
 void config_pars::Location_block(t_server_config &server_config, const std::string &server_block)
 {
+    std::vector<std::string> location_blocks;
 
+    splitLocationBlocks(location_blocks, server_block);
+	if (location_blocks.empty())
+		std::cout << "No location block" << std::endl;    //throw NoLocationBlockException();
+	for (size_t i = 0; i < location_blocks.size(); i++)
+	{
+		t_location_config location_config;
+		parseLocationBlock(location_config, location_blocks[i]); //TODO: create this function
+		if (server_config.locationMap.count(location_config.cgi_path) != 0)
+			std::cout << "Duplicate location block" << std::endl;    //throw DuplicateLocationBlockException();
+		else
+			server_config.locationMap[location_config.cgi_path] = location_config;
+	}
+	if (server_config.locationMap.count("/") == 0)
+		std::cout << "No root location block" << std::endl;    //throw NoRootLocationBlockException();
+}
+
+
+
+void config_pars::parseLocationBlock(t_location_config &location_config, const std::string &location_block)
+{
+    location_config
+    //location_config.root = extractRoot(location_block); //TODO: create this function
+    //location_config.index = extractIndex(location_block); //TODO: create this function
+    //location_config.cgi_path = extractCgiPath(location_block); //TODO: create this function
+    //location_config.cgi_ex = extractCgiEx(location_block); //TODO: create this function
+    //location_config.redirect = extractRedirect(location_block); //TODO: create this function
+    //location_config.allowedMethods = extractAllowedMethods(location_block); //TODO: create this function
+    //location_config.autoIndex = extractAutoIndex(location_block); //TODO: create this function
+}
+
+std::
+
+void config_pars::splitLocationBlocks(std::vector<std::string> &location_blocks, const std::string &server_block)
+{
+   size_t end = 0;
+   size_t locationNum = 0;
+   size_t start = server_block.find("location", end);
+   while (start < server_block.length() && end < server_block.length())
+   {
+       if (server_block.find('}', start) == std::string::npos || server_block.find('}', start) > server_block.find('location', start + 9))
+			std::cout << "Malformed location block" << std::endl;    //throw MalformedLocationBlockException();
+		end = server_block.find('}', start);
+		location_blocks.push_back(server_block.substr(start, end - start + 1));
+		start = server_block.find("location", end);
+		if (locationNum >= 10)
+			std::cout << "Max capacity" << std::endl;    //throw NoLocationBlockException();
+		locationNum++;
+   }
 }
 
 std::string config_pars::extractErrorPage(int num, const std::string &server_block)

@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 14:14:51 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/06 13:57:03 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/06 20:53:38 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,9 +32,9 @@ enum ErrorCode {
 };
 
 typedef struct s_location_config {
+	std::string	path;
 	std::string	root;
 	std::string	index;
-	std::string	cgi_path;
 	std::string	cgi_ex;
 	std::string	redirect;
 	std::string	allowedMethods;

@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 14:22:42 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/06 16:41:24 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/06 20:43:55 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,7 +43,9 @@ class config_pars
 	std::string extractServerName(int num, const std::string &server_block); //extract server name
 	int extractListen(int num, const std::string &server_block); //extract listen
 	std::string extractErrorPage(int num, const std::string &server_block); //extract error page
-	void Location_block(t_server_config &server_config, const std::string &server_block);
+	void Location_block(t_server_config &server_config, const std::string &server_block); //parse location block
+	void splitLocationBlocks(std::vector<std::string> &location_blocks, const std::string &server_block); //split location blocks
+	void parseLocationBlock(t_location_config &location_config, const std::string &location_block); //parse location block
 	
 	
 };
