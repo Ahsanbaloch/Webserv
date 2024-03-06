@@ -30,6 +30,7 @@ public:
 	std::stringstream					body;
 	int									error; // probably needs to be reset after being used
 	char								buf[BUFFER_SIZE]; // use std::vector<char> buf(BUFFER_SIZE); instead?
+	std::stringstream					raw_buf;
 	int									buf_pos;
 	int									bytes_read;
 	int									rl_parsing_done; // probably needs to be reset after being used
@@ -39,6 +40,7 @@ public:
 	int									content_length_exists;
 	int									body_length;
 	int									chunk_length;
+	int									testing;
 
 	void	handleRequest(int);
 	void	parseRequestLine();

@@ -42,7 +42,16 @@ void	RequestHandler::handleRequest(int event_lst_item_fd)
 		std::cout << "value: " << it->second << std::endl;
 	}
 
-	if (transfer_encoding_exists && !content_length_exists)
+	// check if header includes Expect: 100-continue
+	// if (testing)
+	// {
+	// 	std::string response = "HTTP/1.1 100 Continue\r\n\r\n";
+	// 	send(event_lst_item_fd, response.c_str(), response.size(), 0);
+	// }
+
+	// if (transfer_encoding_exists && !content_length_exists) // creates issue with postman
+	// 	parseEncodedBody();
+	if (transfer_encoding_exists)
 		parseEncodedBody();
 	else if (content_length_exists && !transfer_encoding_exists)
 		parseContentBody();
@@ -114,10 +123,11 @@ void	RequestHandler::parseEncodedBody()
 				else
 				{
 					error = 400; // what is the correct error code?
-					throw CustomException("Bad request"); // other exception?
+					throw CustomException("Bad request 1"); // other exception?
 				}
 
 			case chunk_size:
+				std::cout << "len: " << chunk_length << std::endl;
 				if (ch >= '0' && ch <= '9')
 				{
 					chunk_length = chunk_length * 16 + (ch - '0');
@@ -153,7 +163,7 @@ void	RequestHandler::parseEncodedBody()
 					else
 					{
 						error = 400; // what is the correct error code?
-						throw CustomException("Bad request"); // other exception?
+						throw CustomException("Bad request 2"); // other exception?
 					}
 				}
 				else if (ch == CR)
@@ -174,7 +184,7 @@ void	RequestHandler::parseEncodedBody()
 				else
 				{
 					error = 400; // what is the correct error code?
-					throw CustomException("Bad request"); // other exception?
+					throw CustomException("Bad request 3"); // other exception?
 				}
 			
 			case chunk_size_cr:
@@ -191,7 +201,7 @@ void	RequestHandler::parseEncodedBody()
 				else
 				{
 					error = 400; // what is the correct error code?
-					throw CustomException("Bad request"); // other exception?
+					throw CustomException("Bad request 4"); // other exception?
 				}
 
 			case chunk_extension:
@@ -208,11 +218,11 @@ void	RequestHandler::parseEncodedBody()
 						te_state = chunk_data_cr;
 						break;
 					}
-					else if (ch == LF)
-					{
-						te_state = body_start;
-						break;
-					}
+					// else if (ch == LF) // remove here?
+					// {
+					// 	te_state = body_start;
+					// 	break;
+					// }
 					else
 					{
 						body << ch;
@@ -234,7 +244,7 @@ void	RequestHandler::parseEncodedBody()
 				else
 				{
 					error = 400; // what is the correct error code?
-					throw CustomException("Bad request"); // other exception?
+					throw CustomException("Bad request 5"); // other exception?
 				}
 
 			
@@ -247,7 +257,7 @@ void	RequestHandler::parseEncodedBody()
 				else
 				{
 					error = 400; // what is the correct error code?
-					throw CustomException("Bad request"); // other exception?
+					throw CustomException("Bad request 6"); // other exception?
 				}
 			
 			// is the existence of trailers indicated in the headers
@@ -468,6 +478,8 @@ void	RequestHandler::parseHeaders()
 				}
 				if (header_name == "transfer-encoding")
 					transfer_encoding_exists = 1;
+				if (header_name == "expect") // refactor
+					testing = 1;
 				header_name.clear();
 				header_value.clear();
 				headers_state = he_start;
