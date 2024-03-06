@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 16:51:42 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/05 18:08:44 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/06 13:46:11 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,8 @@
 #include "config_pars.hpp"
 
 
-void checkServerBlockSeparators(const std::string &rawConfig, const size_t &start, const size_t &end);
 void checkConsecutiveSameBraces(const std::string &raw_data);
+size_t findServerBlockEnd(const std::string &raw_data, size_t start, int &braceCount); //find server block end
+size_t skipWhitespace(const std::string &raw_data, size_t start);	//skip whitespace
 
 #endif

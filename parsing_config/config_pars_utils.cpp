@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 16:53:25 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/05 18:23:23 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/06 13:45:11 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,62 +31,25 @@ void checkConsecutiveSameBraces(const std::string &raw_data)
     }
 }
 
-/* 
-void config_pars::findServerBlockEnd(const std::string &raw_data, size_t &start, size_t &end)
+// Function to skip whitespace
+size_t skipWhitespace(const std::string &raw_data, size_t start)
 {
-	int braceCount = 1;
-	end = start + 1;
-	while (end < raw_data.length())
-	{
-		if (raw_data[end] == '{')
-			braceCount++;
-		else if (raw_data[end] == '}')
-			braceCount--;
-		end++;
-		//if (braceCount == 0) //check this condition later
-		  //  break; 
-	}
-	if (braceCount > 0)
-		throw std::runtime_error("Malformed server block");
-	else if (braceCount < 0)
-		throw std::runtime_error("Malformed server block");
+    while (start < raw_data.length() && (raw_data[start] == ' ' || raw_data[start] == '\t' || raw_data[start] == '\n'))
+        start++;
+    return start;
 }
 
-void config_pars::findAndCheckServerBlocks(const std::string &raw_data, size_t &start, size_t &end)
+// Function to find the end of a server block
+size_t findServerBlockEnd(const std::string &raw_data, size_t start, int &braceCount)
 {
-	size_t serverNum = 0;
-	while ((start = raw_data.find("server", start)) != std::string::npos)
-	{
-		start += 6;
-		while (start < raw_data.length() && (raw_data[start] == ' ' || raw_data[start] == '\t' || raw_data[start] == '\n'))
-			start++;
-		if (raw_data[start] != '{')
-		{
-			start++;
-			continue;
-		}
-		findServerBlockEnd(raw_data, start, end);
-		serverNum++;
-		if (serverNum >= 10)
-			throw std::runtime_error("Max capacity"); //TODO: implement this exception
-		
-	}
-
+    size_t end = start + 1;
+    while (end < raw_data.length() && braceCount > 0)
+    {
+        if (raw_data[end] == '{')
+            braceCount++;
+        else if (raw_data[end] == '}')
+            braceCount--;
+        end++;
+    }
+    return end;
 }
-
-void config_pars::extractServer(std::vector<std::string> &serevrblock, const std::string &raw_data)
-{
-	size_t start = 0;
-	size_t end = 0;
-	checkConsecutiveSameBraces(raw_data); //TODO: implement this function
-	findAndCheckServerBlocks(raw_data, start, end); //TODO: implement this function
-	std::string serevrBlock = raw_data.substr(start, end - start);
-	std::cout << "server block: "  << serevrBlock << std::endl;
-	if (serevrBlock.empty())
-		std::cout<< "empty server block..." << std::endl; //throw ServerBlockSeparatorException();
-	serevrblock.push_back(serevrBlock);
-	if (serevrblock.empty())
-		std::cout<< "No server block..." << std::endl; //throw NoServerBlockException();
-}
-
- */
