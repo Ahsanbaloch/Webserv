@@ -58,13 +58,15 @@ void	RequestHandler::handleRequest(int event_lst_item_fd)
 	std::cout << "identified query: " << query << '\n';
 	std::cout << "identified version: " << version << '\n';
 
-	// check what has been written into body
-	std::cout << "identified body: \n";
-	std::string line;
-	while (std::getline(body, line))
-	{
-		std::cout << line << std::endl;
-	}
+	// //check what has been written into body
+	// std::cout << "full body: \n";
+	// std::string line;
+	// while (std::getline(body, line))
+	// {
+	// 	std::cout << line << std::endl;
+	// }
+
+	std::cout << "identified body: " << body.str() << '\n';
 
 	printf("read %i bytes\n", bytes_read);
 
@@ -82,11 +84,11 @@ void	RequestHandler::parseEncodedBody()
 {
 	// check somewhere that when the transfer encoding contains something different than "chunked" to return an error
 
+	te_state = body_start;
+
 	while (!body_parsing_done && buf_pos++ < bytes_read)
 	{
 		u_char ch = buf[buf_pos];
-
-		te_state = body_start;
 
 		switch (te_state) 
 		{
@@ -213,13 +215,27 @@ void	RequestHandler::parseEncodedBody()
 					}
 					else
 					{
-						body_test.append(ch, 1);
+						body << ch;
 						buf_pos++;
 					}
 				}
+				ch = buf[buf_pos];
 				// calc content-length
-				te_state = body_start;
-				break;
+				if (ch == CR)
+				{
+					te_state = chunk_data_cr;
+					break;
+				}
+				else if (ch == LF)
+				{
+					te_state = body_start;
+					break;
+				}
+				else
+				{
+					error = 400; // what is the correct error code?
+					throw CustomException("Bad request"); // other exception?
+				}
 
 			
 			case chunk_data_cr:
@@ -234,6 +250,7 @@ void	RequestHandler::parseEncodedBody()
 					throw CustomException("Bad request"); // other exception?
 				}
 			
+			// is the existence of trailers indicated in the headers
 			case chunk_trailer:
 				body_parsing_done = 1;
 				te_state = body_end;
@@ -297,8 +314,6 @@ void	RequestHandler::parseEncodedBody()
                    //CRLF
 
 	buf_pos++;
-	printf("I am a body\n");
-	printf("buffer pos: %c\n", buf[buf_pos]);
 }
 
 void	RequestHandler::checkBodyLength(std::string value)

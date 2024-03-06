@@ -10,4 +10,4 @@
 #      --data-binary "Chunk 2"\
 #      --data-binary "Chunk 3"
 
-curl -H "Transfer-Encoding: chunked" -d @file_test http://localhost:4141
+curl -H "Transfer-Encoding: chunked" -d "Hello World" http://localhost:4141
