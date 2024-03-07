@@ -11,6 +11,7 @@ RequestHandler::RequestHandler(/* args */)
 	transfer_encoding_exists = 0;
 	content_length_exists = 0;
 	chunk_length = 0;
+	testing = 0;
 	method = ""; // does this reset the string?
 	path = ""; // does this reset the string?
 	query = ""; // does this reset the string?
@@ -24,13 +25,34 @@ RequestHandler::~RequestHandler()
 
 // read request handler
 void	RequestHandler::handleRequest(int event_lst_item_fd)
-{	
-	bytes_read = recv(event_lst_item_fd, buf, sizeof(buf), 0);
+{
+	bytes_read = recv(event_lst_item_fd, buf, sizeof(buf), 0); // what if buffer is not large enough?
 	if (bytes_read == -1)
 		throw CustomException("Failed when processing read request\n");
-	buf[bytes_read] = '\0'; // correct or bytes_read +1?
+	if (bytes_read == 0)
+		return ;
 
-	printf("buf: %s\n", buf);
+	// next steps:
+		// figure out if you need to check whether everything has been received before parsing
+		// figure out how the body needs to be parsed given different header settings (and if a stringstream() binary needs to be used
+		// in order to be able to handle binary files)
+	
+	// You need to read the HTTP headers until you reach the terminating \r\n\r\n, 
+	// THEN parse the headers to know the transmission format of the body, THEN read the body accordingly. 
+
+	// is there a way to check that everything has been received? so that the full parsing can be done safely (tested with small buffer size)
+	// video: 2h mark --> set stringstream flags
+
+	// char * buffer;     //buffer to store file contents
+	// long size;     //file size
+	// ifstream file (filename, ios::in|ios::binary|ios::ate);     //open file in binary mode, get pointer at the end of the file (ios::ate)
+	// size = file.tellg();     //retrieve get pointer position
+	// file.seekg (0, ios::beg);     //position get pointer at the begining of the file
+	// buffer = new char [size];     //initialize the buffer
+	// file.read (buffer, size);     //read file to buffer
+	// file.close();     //close file
+
+	buf[bytes_read] = '\0'; // correct or bytes_read +1?
 
 	parseRequestLine();
 	parseHeaders();

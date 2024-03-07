@@ -9,7 +9,7 @@
 #include <sstream>
 #include <cstdio> // remove later
 
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 8192
 #define LF 10
 #define CR 13
 #define SP 32
