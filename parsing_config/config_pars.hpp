@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 14:22:42 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/07 14:26:53 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/07 20:02:00 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <sstream>
 #include <cstdlib>
 #include "config_pars_utils.hpp"
 
@@ -50,6 +51,7 @@ class config_pars
 	std::string extractPath(const std::string &location_block); //extract path
 	std::string extractVariables(const std::string &variable, const std::string &location_block); //extract variables
 	bool extractAutoIndex(const std::string &location_block); //extract autoindex
+	int	extractBodySize(const std::string &server_block); //extract body size
 	
 };
 

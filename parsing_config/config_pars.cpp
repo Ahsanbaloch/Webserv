@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/07 14:37:56 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/07 20:56:07 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,14 +65,41 @@ void config_pars::parse_server_configs(std::string &server_config)
 void config_pars::parse_server_block(t_server_config &server_config, const std::string &server_block)
 {
     server_config.serverName = extractServerName(SERVERNAME, server_block);
-   // server_config.port = extractListen(PORT, server_block); //convert the data from string to int
+    server_config.port = extractListen(PORT, server_block); //convert the data from string to int
+    //std::cout << "port: " << server_config.port << std::endl;
     server_config.errorDir = extractErrorPage(ERRORDIR, server_block);
-    //std::cout << "error page: " << server_config.errorDir << std::endl;
-    //server_config.bodySize = extractBodySize(BODY_SIZE, server_block); //TODO: create this function and convert string in int
+    /* issue in body size... check it again*/
+    server_config.bodySize = extractBodySize(server_block);
+    std::cout << "bodySize: " << server_config.bodySize << std::endl;
     if (server_config.port < 0 || server_config.port > 65535)
         std::cout << "Invalid port" << std::endl;    //throw InvalidPortException();
     Location_block(server_config, server_block);
 }
+
+int config_pars::extractBodySize(const std::string &server_block)
+{
+    size_t start = 0;
+    size_t end = 0;
+    int bodySize = -1;
+    if ((start = server_block.find("client_max_body_size", start)) != std::string::npos)
+    {
+        start = skipWhitespace(server_block, start + 20);
+        end = server_block.find(";", start);
+        std::string value = server_block.substr(start, end - start);
+        removeLeadingWhitespaces(value);
+        if (value.empty())
+            std::cout << "No body size" << std::endl;    //throw NoBodySizeException();
+        std::istringstream ss(value);
+        if (ss >> bodySize)
+            return bodySize;
+        else
+            std::cerr << "Invalid port" << std::endl; // throw exception
+    }
+    else
+        std::cout << "No body size" << std::endl;    //throw NoBodySizeException();
+    return bodySize;
+}
+
 
 void config_pars::Location_block(t_server_config &server_config, const std::string &server_block)
 {
@@ -115,9 +142,9 @@ bool config_pars::extractAutoIndex(const std::string &location_block)
 	size_t end = location_block.find(";", start);
 	std::string value = location_block.substr(start, end - start);
 	removeLeadingWhitespaces(value);
-	if (value.empty())
-		std::cout << "No autoIndex" << std::endl;    //throw NoAutoIndexException();
-	std::cout << "autoIndex: " << value << std::endl;
+	/* if (value.empty())
+		std::cout << "No autoIndex" << std::endl;  */   //throw NoAutoIndexException();
+	//std::cout << "autoIndex: " << value << std::endl;
 	if (value == "on")
 		return true;
 	else if (value == "off")
@@ -135,11 +162,10 @@ std::string config_pars::extractVariables(const std::string &variable, const std
 	removeLeadingWhitespaces(value);
 	if (location_block.empty())
 		std::cout << ".....Nothing.... " << variable << std::endl;    //throw NoVariableException();
-	else if (!value.empty())
-		std::cout << "value: " << value << std::endl;
+/* 	else if (!value.empty())
+		std::cout << "value: " << value << std::endl; */
 	return (value);
 }
-
 
 std::string config_pars::extractPath(const std::string &location_block)
 {
@@ -188,23 +214,27 @@ std::string config_pars::extractErrorPage(int num, const std::string &server_blo
     return error_page;
 }
 
-/* int config_pars::extractListen(int num, const std::string &server_block)
+int config_pars::extractListen(int num, const std::string &server_block)
 {
     size_t start = 0;
+    num = 0;
     size_t end = num; //change back to 0 instead of num
-    int port;
+    int port = -1;
     std::string listen;
     if ((start = server_block.find("listen", start)) != std::string::npos)
     {
         start = skipWhitespace(server_block, start + 6);
         end = server_block.find(";", start);
-        port = server_block.substr(start, end - start);
+        listen = server_block.substr(start, end - start);
+        //std::cout << listen << std::endl;
+        port = checkHostPort(listen);
     }
     else
         std::cout << "No port" << std::endl;    //throw NoPortException();
-    return port;
+    return (port);
 }
- */
+
+
 std::string config_pars::extractServerName(int num, const std::string &server_block)
 {
     size_t start = 0;
@@ -220,7 +250,6 @@ std::string config_pars::extractServerName(int num, const std::string &server_bl
         std::cout << "No server name" << std::endl;  */   //give default name to server
     return serverName;
 }
-
 
 // The main function to extract server blocks
 void config_pars::extractServer(std::vector<std::string> &serverblocks, const std::string &raw_data)

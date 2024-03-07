@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 16:53:25 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/07 11:58:52 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/07 20:19:21 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,4 +62,29 @@ void	removeLeadingWhitespaces(std::string &string)
 		start++;
 	}
 	string = string.substr(start, string.size() - start);
+}
+
+int checkHostPort(const std::string &host_port)
+{
+    std::string host;
+    std::string port_str;
+    size_t start = 0;
+    int port = 0;
+    size_t end = host_port.length() - 1;
+    if ((start = host_port.find(':', start)) != std::string::npos)
+    {
+        host = host_port.substr(0, host_port.find(':', start));
+        if (host == "127.0.0.1" || host == "localhost" || host == "0.0.0.0")
+        {
+            port_str = host_port.substr(host_port.find(':', start) + 1, end);
+            std::istringstream ss(port_str);
+            if (ss >> port)
+                return port;
+            else
+                std::cerr << "Invalid port" << std::endl; // throw exception
+        }
+        else
+            std::cerr << "Invalid host" << std::endl; // throw exception
+    }
+    return (-1);
 }
