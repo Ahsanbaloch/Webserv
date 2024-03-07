@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/06 20:52:46 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/07 14:37:56 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,7 +65,6 @@ void config_pars::parse_server_configs(std::string &server_config)
 void config_pars::parse_server_block(t_server_config &server_config, const std::string &server_block)
 {
     server_config.serverName = extractServerName(SERVERNAME, server_block);
-    std::cout << "server name: " << server_config.serverName << std::endl;
    // server_config.port = extractListen(PORT, server_block); //convert the data from string to int
     server_config.errorDir = extractErrorPage(ERRORDIR, server_block);
     //std::cout << "error page: " << server_config.errorDir << std::endl;
@@ -86,30 +85,74 @@ void config_pars::Location_block(t_server_config &server_config, const std::stri
 	{
 		t_location_config location_config;
 		parseLocationBlock(location_config, location_blocks[i]); //TODO: create this function
-		if (server_config.locationMap.count(location_config.cgi_path) != 0)
+		if (server_config.locationMap.count(location_config.path) != 0) //explanation from here
 			std::cout << "Duplicate location block" << std::endl;    //throw DuplicateLocationBlockException();
 		else
-			server_config.locationMap[location_config.cgi_path] = location_config;
+			server_config.locationMap[location_config.path] = location_config;
 	}
 	if (server_config.locationMap.count("/") == 0)
 		std::cout << "No root location block" << std::endl;    //throw NoRootLocationBlockException();
 }
 
 
-
 void config_pars::parseLocationBlock(t_location_config &location_config, const std::string &location_block)
 {
-    location_config
-    //location_config.root = extractRoot(location_block); //TODO: create this function
-    //location_config.index = extractIndex(location_block); //TODO: create this function
-    //location_config.cgi_path = extractCgiPath(location_block); //TODO: create this function
-    //location_config.cgi_ex = extractCgiEx(location_block); //TODO: create this function
-    //location_config.redirect = extractRedirect(location_block); //TODO: create this function
-    //location_config.allowedMethods = extractAllowedMethods(location_block); //TODO: create this function
-    //location_config.autoIndex = extractAutoIndex(location_block); //TODO: create this function
+    location_config.path = extractPath(location_block);
+	//std::cout << "path: " << location_config.path << std::endl;
+	location_config.cgi_ex = extractVariables("cgi-ext",location_block);
+	location_config.redirect = extractVariables("redirect_url",location_block);
+    location_config.root = extractVariables("root", location_block); //TODO: create this function
+    location_config.index = extractVariables("index", location_block); //TODO: create this function
+    location_config.allowedMethods = extractVariables("allow_methods",location_block); //TODO: create this function
+    location_config.autoIndex = extractAutoIndex(location_block); //TODO: create this function
 }
 
-std::
+bool config_pars::extractAutoIndex(const std::string &location_block)
+{
+	if (location_block.find("autoIndex") == std::string::npos)
+		std::cout << "No autoIndex" << std::endl;    //throw NoAutoIndexException();
+	size_t start = location_block.find("autoIndex") + 10;
+	size_t end = location_block.find(";", start);
+	std::string value = location_block.substr(start, end - start);
+	removeLeadingWhitespaces(value);
+	if (value.empty())
+		std::cout << "No autoIndex" << std::endl;    //throw NoAutoIndexException();
+	std::cout << "autoIndex: " << value << std::endl;
+	if (value == "on")
+		return true;
+	else if (value == "off")
+		return false;
+	return false;
+}
+
+std::string config_pars::extractVariables(const std::string &variable, const std::string &location_block)
+{
+	if (location_block.find(variable) == std::string::npos)
+		std::cout << ".....empty.... " << variable << std::endl;    //throw NoVariableException();
+	size_t start = location_block.find(variable) + variable.size();
+	size_t end = location_block.find(";", start);
+	std::string value = location_block.substr(start, end - start);
+	removeLeadingWhitespaces(value);
+	if (location_block.empty())
+		std::cout << ".....Nothing.... " << variable << std::endl;    //throw NoVariableException();
+	else if (!value.empty())
+		std::cout << "value: " << value << std::endl;
+	return (value);
+}
+
+
+std::string config_pars::extractPath(const std::string &location_block)
+{
+    if (location_block.find("location") == std::string::npos)
+        std::cout << "No location" << std::endl;    //throw NoLocationException();
+    size_t start = location_block.find("location") + 9;
+    size_t end = location_block.find("{", start);
+    std::string value = location_block.substr(start, end - start - 1);
+    removeLeadingWhitespaces(value);
+    if (value.empty())
+        std::cout << "No path" << std::endl;    //throw NoPathException();
+    return (value);
+}
 
 void config_pars::splitLocationBlocks(std::vector<std::string> &location_blocks, const std::string &server_block)
 {
@@ -118,7 +161,7 @@ void config_pars::splitLocationBlocks(std::vector<std::string> &location_blocks,
    size_t start = server_block.find("location", end);
    while (start < server_block.length() && end < server_block.length())
    {
-       if (server_block.find('}', start) == std::string::npos || server_block.find('}', start) > server_block.find('location', start + 9))
+       if (server_block.find('}', start) == std::string::npos || server_block.find('}', start) > server_block.find("location", start + 9))
 			std::cout << "Malformed location block" << std::endl;    //throw MalformedLocationBlockException();
 		end = server_block.find('}', start);
 		location_blocks.push_back(server_block.substr(start, end - start + 1));
