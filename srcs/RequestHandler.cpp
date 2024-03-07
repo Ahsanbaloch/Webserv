@@ -33,7 +33,7 @@ void	RequestHandler::handleRequest(int event_lst_item_fd)
 		return ;
 
 	// next steps:
-		// figure out if you need to check whether everything has been received before parsing
+		// figure out if you need to check whether everything has been received before parsing --> also check slack starred message for appending content
 		// figure out how the body needs to be parsed given different header settings (and if a stringstream() binary needs to be used
 		// in order to be able to handle binary files)
 	
