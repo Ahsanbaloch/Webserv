@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/07 20:56:07 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/08 19:45:16 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,6 +23,11 @@ config_pars::config_pars(char *argv)
 }
 config_pars::~config_pars()
 {
+}
+
+std::map<int, std::map<std::string, t_server_config> >&	config_pars::getConfigMap()
+{
+    return _configMap;
 }
 
 void config_pars::readconfig(char *argv, std::string &fileConetnt)
@@ -45,10 +50,7 @@ void config_pars::readconfig(char *argv, std::string &fileConetnt)
 		file.close();
 	}
 	else
-	{
-		std::cerr << "Error: Unable to open file" << std::endl; //throw std::runtime_error("Unable to open file");
-		exit(1);
-	}
+        throw CantOpenConfigException(); //TODO: create this function
 }
 
 void config_pars::parse_server_configs(std::string &server_config)
@@ -59,6 +61,15 @@ void config_pars::parse_server_configs(std::string &server_config)
 	{
 		t_server_config default_server_config;
         parse_server_block(default_server_config, server_block[i]);
+        default_server_config.serverName = "default_server"; //understand this shit
+        if (!_configMap.count(default_server_config.port))
+            _configMap[default_server_config.port][default_server_config.serverName] = default_server_config;
+        t_server_config server_config;
+        parse_server_block(server_config, server_block[i]);
+        if (_configMap[server_config.port].count(server_config.serverName) != 0)
+            std::cout << "Duplicate server block" << std::endl;    //throw DuplicateServerBlockException();
+        else
+            _configMap[server_config.port][server_config.serverName] = server_config;
 	}
 }
 
@@ -67,12 +78,12 @@ void config_pars::parse_server_block(t_server_config &server_config, const std::
     server_config.serverName = extractServerName(SERVERNAME, server_block);
     server_config.port = extractListen(PORT, server_block); //convert the data from string to int
     //std::cout << "port: " << server_config.port << std::endl;
-    server_config.errorDir = extractErrorPage(ERRORDIR, server_block);
+    server_config.errorPage = extractErrorPage(ERRORDIR, server_block);
     /* issue in body size... check it again*/
     server_config.bodySize = extractBodySize(server_block);
-    std::cout << "bodySize: " << server_config.bodySize << std::endl;
+    //std::cout << "bodySize: " << server_config.bodySize << std::endl;
     if (server_config.port < 0 || server_config.port > 65535)
-        std::cout << "Invalid port" << std::endl;    //throw InvalidPortException();
+        throw InvalidPortException();
     Location_block(server_config, server_block);
 }
 
@@ -88,15 +99,15 @@ int config_pars::extractBodySize(const std::string &server_block)
         std::string value = server_block.substr(start, end - start);
         removeLeadingWhitespaces(value);
         if (value.empty())
-            std::cout << "No body size" << std::endl;    //throw NoBodySizeException();
+            throw ValueMissingException();
         std::istringstream ss(value);
         if (ss >> bodySize)
             return bodySize;
         else
-            std::cerr << "Invalid port" << std::endl; // throw exception
+            throw InvalidbodySizeException();
     }
     else
-        std::cout << "No body size" << std::endl;    //throw NoBodySizeException();
+        throw ValueMissingException();
     return bodySize;
 }
 
@@ -107,18 +118,18 @@ void config_pars::Location_block(t_server_config &server_config, const std::stri
 
     splitLocationBlocks(location_blocks, server_block);
 	if (location_blocks.empty())
-		std::cout << "No location block" << std::endl;    //throw NoLocationBlockException();
+		throw InvalidLocationException();
 	for (size_t i = 0; i < location_blocks.size(); i++)
 	{
 		t_location_config location_config;
 		parseLocationBlock(location_config, location_blocks[i]); //TODO: create this function
 		if (server_config.locationMap.count(location_config.path) != 0) //explanation from here
-			std::cout << "Duplicate location block" << std::endl;    //throw DuplicateLocationBlockException();
+            throw InvalidPathException();
 		else
 			server_config.locationMap[location_config.path] = location_config;
 	}
 	if (server_config.locationMap.count("/") == 0)
-		std::cout << "No root location block" << std::endl;    //throw NoRootLocationBlockException();
+		throw NoRootLocationException();
 }
 
 
@@ -137,14 +148,13 @@ void config_pars::parseLocationBlock(t_location_config &location_config, const s
 bool config_pars::extractAutoIndex(const std::string &location_block)
 {
 	if (location_block.find("autoIndex") == std::string::npos)
-		std::cout << "No autoIndex" << std::endl;    //throw NoAutoIndexException();
+		throw ValueMissingException();
 	size_t start = location_block.find("autoIndex") + 10;
 	size_t end = location_block.find(";", start);
 	std::string value = location_block.substr(start, end - start);
 	removeLeadingWhitespaces(value);
-	/* if (value.empty())
-		std::cout << "No autoIndex" << std::endl;  */   //throw NoAutoIndexException();
-	//std::cout << "autoIndex: " << value << std::endl;
+	if (value.empty())
+		throw ValueMissingException();
 	if (value == "on")
 		return true;
 	else if (value == "off")
@@ -155,13 +165,13 @@ bool config_pars::extractAutoIndex(const std::string &location_block)
 std::string config_pars::extractVariables(const std::string &variable, const std::string &location_block)
 {
 	if (location_block.find(variable) == std::string::npos)
-		std::cout << ".....empty.... " << variable << std::endl;    //throw NoVariableException();
+		throw ValueMissingException();
 	size_t start = location_block.find(variable) + variable.size();
 	size_t end = location_block.find(";", start);
 	std::string value = location_block.substr(start, end - start);
 	removeLeadingWhitespaces(value);
 	if (location_block.empty())
-		std::cout << ".....Nothing.... " << variable << std::endl;    //throw NoVariableException();
+		throw ValueMissingException();
 /* 	else if (!value.empty())
 		std::cout << "value: " << value << std::endl; */
 	return (value);
@@ -170,13 +180,13 @@ std::string config_pars::extractVariables(const std::string &variable, const std
 std::string config_pars::extractPath(const std::string &location_block)
 {
     if (location_block.find("location") == std::string::npos)
-        std::cout << "No location" << std::endl;    //throw NoLocationException();
+        throw InvalidPathException();
     size_t start = location_block.find("location") + 9;
     size_t end = location_block.find("{", start);
     std::string value = location_block.substr(start, end - start - 1);
     removeLeadingWhitespaces(value);
     if (value.empty())
-        std::cout << "No path" << std::endl;    //throw NoPathException();
+        throw InvalidPathException();
     return (value);
 }
 
@@ -188,12 +198,12 @@ void config_pars::splitLocationBlocks(std::vector<std::string> &location_blocks,
    while (start < server_block.length() && end < server_block.length())
    {
        if (server_block.find('}', start) == std::string::npos || server_block.find('}', start) > server_block.find("location", start + 9))
-			std::cout << "Malformed location block" << std::endl;    //throw MalformedLocationBlockException();
+			throw InvalidLocationException();
 		end = server_block.find('}', start);
 		location_blocks.push_back(server_block.substr(start, end - start + 1));
 		start = server_block.find("location", end);
 		if (locationNum >= 10)
-			std::cout << "Max capacity" << std::endl;    //throw NoLocationBlockException();
+			throw InvalidLocationException();
 		locationNum++;
    }
 }
@@ -210,7 +220,7 @@ std::string config_pars::extractErrorPage(int num, const std::string &server_blo
         error_page = server_block.substr(start, end - start);
     }
     else
-        std::cout << "No error dir" << std::endl;    //throw NoErrorDirException();
+       throw ValueMissingException();
     return error_page;
 }
 
@@ -230,7 +240,7 @@ int config_pars::extractListen(int num, const std::string &server_block)
         port = checkHostPort(listen);
     }
     else
-        std::cout << "No port" << std::endl;    //throw NoPortException();
+       throw ValueMissingException();
     return (port);
 }
 
@@ -246,8 +256,8 @@ std::string config_pars::extractServerName(int num, const std::string &server_bl
         end = server_block.find(";", start);
         serverName = server_block.substr(start, end - start);
     }
-  /*   else
-        std::cout << "No server name" << std::endl;  */   //give default name to server
+    else
+        throw ValueMissingException();    //give default name to server
     return serverName;
 }
 
@@ -273,23 +283,24 @@ void config_pars::extractServer(std::vector<std::string> &serverblocks, const st
         int braceCount = 1; // Count the number of open braces
         end = findServerBlockEnd(raw_data, temp, braceCount);
         if (braceCount > 0)
-        {
+            throw MissingClosingBracketException();
+        /* {
             std::cout << "Malformed server block1" << std::endl;
             start = end; // Move to the end of the malformed block
             continue;
-        }
+        } */
         // Extract the server block
         std::string serverBlock = raw_data.substr(start, end - start);
         if (serverBlock.empty())
-            std::cout << "empty server block" << std::endl;    //throw ServerBlockSeparatorException();
+            throw EmptyServerBlockException();
         serverblocks.push_back(serverBlock);
         serverNum++;
         if (serverNum >= 10)
-            std::cout << "Max capacity" << std::endl;    //throw NoServerBlockException();
+            throw ExceededMaxServerNumberException();
 
         // Update start to be end for the next iteration
         start = end;
     }
     if (serverblocks.empty())
-        std::cout << "No server block" << std::endl;    //throw NoServerBlockException();
+        throw EmptyConfigFileException();
 }

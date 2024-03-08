@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 14:22:42 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/07 20:02:00 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/08 19:35:51 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,7 @@
 #include <sstream>
 #include <cstdlib>
 #include "config_pars_utils.hpp"
+#include "exception_parsing.hpp"
 
 class config_pars
 {
@@ -33,6 +34,7 @@ class config_pars
 	config_pars(char *argv);
 	//config_pars(const config_pars &other);
 	~config_pars();
+	//std::map<int, std::map<std::string, t_server_config> >&	getConfigMap();
 
 	std::map<int, std::map<std::string, t_server_config> >&	getConfigMap(); //getters
 	void readconfig(char *argv, std::string &fileContent);	//read config file
