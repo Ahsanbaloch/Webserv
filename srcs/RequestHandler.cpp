@@ -12,6 +12,8 @@ RequestHandler::RequestHandler(/* args */)
 	content_length_exists = 0;
 	chunk_length = 0;
 	testing = 0;
+	consumed = 0;
+	raw_buf.setf(std::ios::app | std::ios::binary);
 	method = ""; // does this reset the string?
 	path = ""; // does this reset the string?
 	query = ""; // does this reset the string?
@@ -40,6 +42,9 @@ void	RequestHandler::handleRequest(int event_lst_item_fd)
 	// You need to read the HTTP headers until you reach the terminating \r\n\r\n, 
 	// THEN parse the headers to know the transmission format of the body, THEN read the body accordingly. 
 
+	// prioritize TE over CL or return error to prevent smuggling
+	// also check for multiple CL and TE in the header
+
 	// is there a way to check that everything has been received? so that the full parsing can be done safely (tested with small buffer size)
 	// video: 2h mark --> set stringstream flags
 
@@ -54,8 +59,8 @@ void	RequestHandler::handleRequest(int event_lst_item_fd)
 
 	buf[bytes_read] = '\0'; // correct or bytes_read +1?
 
-	parseRequestLine();
-	parseHeaders();
+	parseRequestLine(); // check whether this is below the buffer size / aka max header size -> could use 2048; or otherwise just use the 8192 for the full header
+	parseHeaders(); // check whether this is below the buffer size / aka max header size
 
 	printf("\nheaders\n");
 	for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
@@ -64,12 +69,29 @@ void	RequestHandler::handleRequest(int event_lst_item_fd)
 		std::cout << "value: " << it->second << std::endl;
 	}
 
+	consumed += bytes_read;
+	raw_buf << buf; // when appending there won't be  
+
+	// here also append the chunks / body chunks to a stringstream --> are the headers then send several times?
+
+	std::cout << "consumed: " << consumed << std::endl;
+	std::cout << "raw_buf: " << raw_buf.str() << std::endl;
+	if (consumed < content_length) // is this correct, though? b/c the content-length only takes into account the body not the header and starting line
+		return ;
+
+	// probably want to save an offset so that the headers are not parsed over an over again? --> Chunked encoding allows the sender to send additional header fields after the message body.
+
+	// what if there are multiple transfer-encoding headers?
+
 	// check if header includes Expect: 100-continue
 	// if (testing)
 	// {
 	// 	std::string response = "HTTP/1.1 100 Continue\r\n\r\n";
 	// 	send(event_lst_item_fd, response.c_str(), response.size(), 0);
 	// }
+
+	// parse the body based on whether the request is a GET, POST or DELETE request? --> create specific objects for those requests?
+	// changing headers?
 
 	// if (transfer_encoding_exists && !content_length_exists) // creates issue with postman
 	// 	parseEncodedBody();
@@ -108,7 +130,7 @@ void	RequestHandler::handleRequest(int event_lst_item_fd)
 void	RequestHandler::parseContentBody()
 {
 	// should be checked as a sequence of octets instead
-	body.write(&(buf[buf_pos + 1]), body_length);
+	body.write(&(buf[buf_pos + 1]), content_length);
 }
 
 void	RequestHandler::parseEncodedBody()
@@ -374,7 +396,7 @@ void	RequestHandler::checkBodyLength(std::string value)
 			throw CustomException("Bad request"); // other error code?
 		}
 	}
-	body_length = std::atoi(value.c_str());
+	content_length = std::atoi(value.c_str());
 }
 
 void	RequestHandler::parseHeaders()

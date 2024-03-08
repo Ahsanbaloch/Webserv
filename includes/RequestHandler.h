@@ -9,7 +9,7 @@
 #include <sstream>
 #include <cstdio> // remove later
 
-#define BUFFER_SIZE 8192
+#define BUFFER_SIZE 8192 // this basically presents the max header size (incl. the request line)
 #define LF 10
 #define CR 13
 #define SP 32
@@ -38,9 +38,11 @@ public:
 	int									body_parsing_done;
 	int									transfer_encoding_exists;
 	int									content_length_exists;
-	int									body_length;
+	int									content_length;
 	int									chunk_length;
 	int									testing;
+	int									consumed;
+
 
 	void	handleRequest(int);
 	void	parseRequestLine();
