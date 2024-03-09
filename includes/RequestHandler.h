@@ -29,7 +29,7 @@ public:
 	std::map<std::string, std::string>	headers; // probably needs to be reset after being used
 	std::stringstream					body;
 	int									error; // probably needs to be reset after being used
-	char								buf[BUFFER_SIZE]; // use std::vector<char> buf(BUFFER_SIZE); instead?
+	unsigned char						buf[BUFFER_SIZE]; // use std::vector<unsigned char> buf(BUFFER_SIZE) or uint8_t instead?
 	std::stringstream					raw_buf;
 	int									buf_pos;
 	int									bytes_read;
@@ -38,17 +38,18 @@ public:
 	int									body_parsing_done;
 	int									transfer_encoding_exists;
 	int									content_length_exists;
-	int									content_length;
+	int									expect_exists;
+	int									body_length;
 	int									chunk_length;
-	int									testing;
-	int									consumed;
+	int									header_complete;
+	int									request_length;
+	int									body_beginning; // // this is the last ch of the empty line at the end of the headers. Next ch is the first of the body
 
 
 	void	handleRequest(int);
 	void	parseRequestLine();
 	void	parseHeaders();
 	void	parseEncodedBody();
-	void	parseContentBody();
 	void	parseBody();
 	void	checkMethod();
 	void	checkHttpVersion();

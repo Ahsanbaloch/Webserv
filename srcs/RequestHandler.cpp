@@ -10,9 +10,11 @@ RequestHandler::RequestHandler(/* args */)
 	body_parsing_done = 0;
 	transfer_encoding_exists = 0;
 	content_length_exists = 0;
+	expect_exists = 0;
 	chunk_length = 0;
-	testing = 0;
-	consumed = 0;
+	body_length = 0;
+	body_beginning = 0;
+	header_complete = 0;
 	raw_buf.setf(std::ios::app | std::ios::binary);
 	method = ""; // does this reset the string?
 	path = ""; // does this reset the string?
@@ -28,40 +30,58 @@ RequestHandler::~RequestHandler()
 // read request handler
 void	RequestHandler::handleRequest(int event_lst_item_fd)
 {
-	bytes_read = recv(event_lst_item_fd, buf, sizeof(buf), 0); // what if buffer is not large enough?
+	bytes_read = recv(event_lst_item_fd, buf, sizeof(buf), 0);
 	if (bytes_read == -1)
 		throw CustomException("Failed when processing read request\n");
 	if (bytes_read == 0)
-		return ;
-
-	// next steps:
-		// figure out if you need to check whether everything has been received before parsing --> also check slack starred message for appending content
-		// figure out how the body needs to be parsed given different header settings (and if a stringstream() binary needs to be used
-		// in order to be able to handle binary files)
+		return ; // also throw exception. Need to check the exception exactly // also close connection?
 	
-	// You need to read the HTTP headers until you reach the terminating \r\n\r\n, 
-	// THEN parse the headers to know the transmission format of the body, THEN read the body accordingly. 
-
-	// prioritize TE over CL or return error to prevent smuggling
-	// also check for multiple CL and TE in the header
-
-	// is there a way to check that everything has been received? so that the full parsing can be done safely (tested with small buffer size)
-	// video: 2h mark --> set stringstream flags
-
-	// char * buffer;     //buffer to store file contents
-	// long size;     //file size
-	// ifstream file (filename, ios::in|ios::binary|ios::ate);     //open file in binary mode, get pointer at the end of the file (ios::ate)
-	// size = file.tellg();     //retrieve get pointer position
-	// file.seekg (0, ios::beg);     //position get pointer at the begining of the file
-	// buffer = new char [size];     //initialize the buffer
-	// file.read (buffer, size);     //read file to buffer
-	// file.close();     //close file
-
 	buf[bytes_read] = '\0'; // correct or bytes_read +1?
+	request_length += bytes_read;
 
-	parseRequestLine(); // check whether this is below the buffer size / aka max header size -> could use 2048; or otherwise just use the 8192 for the full header
-	parseHeaders(); // check whether this is below the buffer size / aka max header size
+	// check if headers have already been parsed
+		// terminate connection & don't listen to file descriptor anymore if error is encountered
 
+	if (!header_complete)
+	{
+		try
+		{
+			parseRequestLine();
+			parseHeaders();
+		}
+		catch(const std::exception& e)
+		{
+			// terminate connection and remove file descriptor from the event queue
+			std::cerr << e.what() << '\n';
+		}
+	}
+
+
+	// interpret parsed input to decide what to do next
+		// --> split in GET / POST / DELETE ??
+		// --> also check if there is an expected immediate response, e.g. 100-continue
+		// if there are any encoded chars, decode them here? --> relevant for url/query
+		// construct the full URI here?
+	
+		// check if header includes Expect: 100-continue
+		// determine position where the header ends
+	
+	
+	// if we expect a body (only if POST?) // parse the body based on whether the request is a GET, POST or DELETE request? --> create specific objects for those requests?
+		// does the transmission format play a role here?
+		// if we read max number of bytes we continue receiving bytes and always append the incoming data to a stringfile
+		// for that we need to know an offset (where the header ends)
+		// receive chunks?
+
+
+	// notes
+		// video: 2h mark --> set stringstream flags
+		// use uint8_t or unsigned char for storing the incoming data
+		// if there are any endoded characters in the header, they need to be decoded
+			// Some characters are utilized by URLs for special use in defining their syntax. When these characters are not used in their special role inside a URL, they must be encoded.
+			// characters such as {} are getting encoded by the client(?) and being transmitted e.g. with %7B%7D
+
+	
 	printf("\nheaders\n");
 	for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
 	{
@@ -69,69 +89,32 @@ void	RequestHandler::handleRequest(int event_lst_item_fd)
 		std::cout << "value: " << it->second << std::endl;
 	}
 
-	consumed += bytes_read;
-	raw_buf << buf; // when appending there won't be  
-
-	// here also append the chunks / body chunks to a stringstream --> are the headers then send several times?
-
-	std::cout << "consumed: " << consumed << std::endl;
-	std::cout << "raw_buf: " << raw_buf.str() << std::endl;
-	if (consumed < content_length) // is this correct, though? b/c the content-length only takes into account the body not the header and starting line
-		return ;
-
-	// probably want to save an offset so that the headers are not parsed over an over again? --> Chunked encoding allows the sender to send additional header fields after the message body.
-
-	// what if there are multiple transfer-encoding headers?
-
-	// check if header includes Expect: 100-continue
-	// if (testing)
-	// {
-	// 	std::string response = "HTTP/1.1 100 Continue\r\n\r\n";
-	// 	send(event_lst_item_fd, response.c_str(), response.size(), 0);
-	// }
-
-	// parse the body based on whether the request is a GET, POST or DELETE request? --> create specific objects for those requests?
-	// changing headers?
-
+	
 	// if (transfer_encoding_exists && !content_length_exists) // creates issue with postman
 	// 	parseEncodedBody();
-	if (transfer_encoding_exists)
-		parseEncodedBody();
-	else if (content_length_exists && !transfer_encoding_exists)
-		parseContentBody();
-	else
-	{
-		error = 400;
-		throw CustomException("Bad request");
-		// A server MAY reject a request that contains a message body but not a Content-Length by responding with 411 (Length Required).
-	}
+	// if (transfer_encoding_exists)
+	// 	parseEncodedBody();
+	// else if (content_length_exists && !transfer_encoding_exists)
+	// 	parseContentBody();
+	// else
+	// {
+	// 	error = 400;
+	// 	throw CustomException("Bad request");
+	// 	// A server MAY reject a request that contains a message body but not a Content-Length by responding with 411 (Length Required).
+	// }
 	
 	std::cout << "identified method: " << method << '\n';
 	std::cout << "identified path: " << path << '\n';
 	std::cout << "identified query: " << query << '\n';
 	std::cout << "identified version: " << version << '\n';
 
-	// //check what has been written into body
-	// std::cout << "full body: \n";
-	// std::string line;
-	// while (std::getline(body, line))
-	// {
-	// 	std::cout << line << std::endl;
-	// }
 
-	std::cout << "identified body: " << body.str() << '\n';
 
 	printf("read %i bytes\n", bytes_read);
 
 	// close fd in case bytes_read == 0 ???
 }
 
-
-void	RequestHandler::parseContentBody()
-{
-	// should be checked as a sequence of octets instead
-	body.write(&(buf[buf_pos + 1]), content_length);
-}
 
 void	RequestHandler::parseEncodedBody()
 {
@@ -320,6 +303,8 @@ void	RequestHandler::parseEncodedBody()
 
 	}
 
+	buf_pos++;
+
 		// check chunk-size (first part of body) and translate from hex to integer; followed by CRLF if chunk extension is not provided
 			// if chunk-size is 0 and followd by CRLF, the end of the transmission has been reached
 
@@ -346,7 +331,6 @@ void	RequestHandler::parseEncodedBody()
 	// The chunked coding does not define any parameters. Their presence SHOULD be treated as an error. --> what is meant by that?
 
 
-
 	// A server that receives a request message with a transfer coding it does not understand SHOULD respond with 501 (Not Implemented)
 	// This is why Transfer-Encoding is defined as overriding Content-Length, as opposed to them being mutually incompatible.
 	// A server MAY reject a request that contains both Content-Length and Transfer-Encoding or process such a request in accordance with the 
@@ -366,12 +350,12 @@ void	RequestHandler::parseEncodedBody()
                    //last-chunk
                    //trailer-section
                    //CRLF
-
-	buf_pos++;
 }
 
 void	RequestHandler::checkBodyLength(std::string value)
 {
+	// elaborate check --> see RFC for what is an accepted format for providing the length of the body
+
 	std::cout << "Value: " << value << std::endl;
 	for(std::string::iterator it = value.begin(); it != value.end(); it++)
 	{
@@ -396,14 +380,14 @@ void	RequestHandler::checkBodyLength(std::string value)
 			throw CustomException("Bad request"); // other error code?
 		}
 	}
-	content_length = std::atoi(value.c_str());
+	body_length = std::atoi(value.c_str());
 }
 
 void	RequestHandler::parseHeaders()
 {
-	u_char		ch;
-	std::string	header_name = "";
-	std::string	header_value = "";
+	unsigned char	ch;
+	std::string		header_name = "";
+	std::string		header_value = "";
 
 	headers_state = he_start;
 
@@ -431,9 +415,9 @@ void	RequestHandler::parseHeaders()
 				if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch == '-' || ch == '_')
 				{
 					if (ch >= 'A' && ch <= 'Z')
-						header_name.append(1, std::tolower(ch));
+						header_name.append(1, std::tolower(ch)); // because not case sensitive, we make all characters lowercase to make string comparsions easier later on
 					else
-						header_name.append(1, ch);
+						header_name.append(1, static_cast<char>(ch));
 				}
 				else if (ch == ':')
 					headers_state = he_ws_before_value;
@@ -498,7 +482,7 @@ void	RequestHandler::parseHeaders()
 				{
 					headers_state = he_value;
 					header_value.append(1, SP);
-					header_value.append(1, ch);
+					header_value.append(1, static_cast<char>(ch));
 					break;
 				}
 
@@ -513,17 +497,31 @@ void	RequestHandler::parseHeaders()
 			
 			case he_done:
 				std::cout << "header line fully parsed\n";
-				headers.insert(std::pair<std::string, std::string>(header_name, header_value));
 				// check if there is a body in the message
 				if (header_name == "content-length")
 				{
+					if (content_length_exists || transfer_encoding_exists) // for security: when content_length is specified, TE shouldn't be
+					{
+						// to reduce attack vectors for request smuggling, we don't allow multiple content_length headers
+						error = 400; // correct error value
+						throw CustomException("Bad request");
+					}
 					content_length_exists = 1;
 					checkBodyLength(header_value);
 				}
 				if (header_name == "transfer-encoding")
+				{
+					if (transfer_encoding_exists || content_length_exists) // // for security: when content_length is specified, TE shouldn't be
+					{
+						// to reduce attack vectors for request smuggling, we don't allow multiple TE headers
+						error = 400; // correct error value
+						throw CustomException("Bad request");
+					}
 					transfer_encoding_exists = 1;
-				if (header_name == "expect") // refactor
-					testing = 1;
+				}
+				if (header_name == "expect")
+					expect_exists = 1; // in this case a response is expected before the (rest of) body is sent
+				headers.insert(std::pair<std::string, std::string>(header_name, header_value));
 				header_name.clear();
 				header_value.clear();
 				headers_state = he_start;
@@ -541,6 +539,13 @@ void	RequestHandler::parseHeaders()
 		}
 	}
 
+	if (!headers_parsing_done)
+	{
+		error = 413; // correct error code when header is too large for buffer
+		throw CustomException("413 Payload Too Large");  // correct error code when header is too large for buffer
+	}
+	header_complete = 1;
+	body_beginning = buf_pos; // this is the last ch of the empty line at the end of the headers. Next ch is the first of the body
 
 	// A sender MUST NOT send whitespace between the start-line and the first header field.
 	// A recipient that receives whitespace between the start-line and the first header field MUST either reject the message as invalid 
@@ -558,8 +563,6 @@ void	RequestHandler::parseHeaders()
 
 void	RequestHandler::checkMethod()
 {
-	//How to make buf[buf_pos] unsigned char?
-
 	switch (buf[buf_pos])
 	{
 		case 'G':
@@ -567,7 +570,10 @@ void	RequestHandler::checkMethod()
 			if (buf[++buf_pos] == 'E' && buf[++buf_pos] == 'T')
 				method = "GET";
 			else
+			{
 				error = 400;
+				throw CustomException("Bad request");
+			}
 			break;
 		
 		case 'P':
@@ -575,7 +581,10 @@ void	RequestHandler::checkMethod()
 			if (buf[++buf_pos] == 'O' && buf[++buf_pos] == 'S' && buf[++buf_pos] == 'T')
 				method = "POST";
 			else
+			{
 				error = 400;
+				throw CustomException("Bad request");
+			}
 			break;
 
 		case 'D':
@@ -583,19 +592,21 @@ void	RequestHandler::checkMethod()
 			if (buf[++buf_pos] == 'E' && buf[++buf_pos] == 'L' && buf[++buf_pos] == 'E' && buf[++buf_pos] == 'T' && buf[++buf_pos] == 'E')
 				method = "DELETE";
 			else
+			{
 				error = 400;
+				throw CustomException("Bad request");
+			}
 			break;
 		default:
 			// error
 			error = 400; // What is the correct error code?
+			throw CustomException("Bad request"); // or not implemented 501?
 			break;
 		}
 }
 
 void	RequestHandler::checkHttpVersion()
 {
-	//How to make buf[buf_pos] unsigned char?
-
 	if (buf[buf_pos] == 'H' && buf[++buf_pos] == 'T' && buf[++buf_pos] == 'T' && buf[++buf_pos] == 'P' && buf[++buf_pos] == '/' && buf[++buf_pos] == '1'
 		&& buf[++buf_pos] == '.' && buf[++buf_pos] == '1')
 	{
@@ -603,22 +614,20 @@ void	RequestHandler::checkHttpVersion()
 		buf_pos++;
 	}
 	else
-		error = 400;
+	{
+		error = 400; // what is the correct error code here?
+		throw CustomException("Bad request"); // or not implemented 501?
+	}
 }
-
-
-
 
 void	RequestHandler::parseRequestLine()
 {
-	u_char	ch;
-	int		loops = 0;
+	unsigned char	ch;
+	int				loops = 0;
 
 	// implement max request line rule? (414 and 501 errors)
 	// do we need to check for scheme and authority?
 
-	// Some characters are utilized by URLs for special use in defining their syntax. When these characters are not used in their special role inside a URL, they must be encoded.
-	// characters such as {} are getting encoded by the client(?) and being transmitted e.g. with %7B%7D
 	// reserved chars in URI: ! * ' ( ) ; : @ & = + $ , / ? % # [ ]
 	// special meanings: + SP / ? % #   & (query)  = (query)  @ (authority)  : (authority)
 	// unreseved:  - _ . ~
@@ -772,13 +781,9 @@ void	RequestHandler::parseRequestLine()
 			case rl_done:
 				std::cout << "request line fully parsed\n";
 				rl_parsing_done = 1;
-				buf_pos--;
+				buf_pos--; // Why does this needs to be done?
 				break;
 		}
-
-
-		// enforce single-space grammar rule? --> check how nginx implements it
-
 		// check for URI (path) --> request target (origin-form)
 			// doesn't allow any whitespace
 			// if invalid request-line
@@ -789,4 +794,11 @@ void	RequestHandler::parseRequestLine()
 			// check HTTP version
 			// specific error code if not a valid http version (400?)
 	}
+
+	if (!rl_parsing_done)
+	{
+		error = 414;
+		throw CustomException("414 Request-URI Too Long");
+	}
+
 }
