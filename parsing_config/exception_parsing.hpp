@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/08 18:11:04 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/08 19:37:26 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/09 15:27:15 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,15 @@
 #define RESET "\033[0m"
 
 #include "config_pars.hpp"
+
+class MissingValueException : public std::exception {
+	public:
+		virtual const char *what() const throw();
+		MissingValueException(const std::string &missingValue);
+		virtual ~MissingValueException() throw() {}
+	private:
+		std::string	_Value;
+};
 
 class InvalidArgNumException : public std::exception {
 public:
@@ -53,7 +62,7 @@ public:
 	const char* what() const throw();
 };
 
-class MissingClosingBracketException : public std::exception {
+class MissingBracketException : public std::exception {
 public:
 	const char* what() const throw();
 };

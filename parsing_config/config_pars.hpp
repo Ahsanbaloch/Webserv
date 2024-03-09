@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 14:22:42 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/08 19:35:51 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/09 15:23:50 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,9 +43,9 @@ class config_pars
 	void extractServer(std::vector<std::string> &server_block,const std::string &server_config);  //separating every server block
 	//void findAndCheckServerBlocks(const std::string &raw_data, size_t &start, size_t &end); //find and check server blocks
 	void parse_server_block(t_server_config &server_config, const std::string &server_block); //parse inside server block
-	std::string extractServerName(int num, const std::string &server_block); //extract server name
-	int extractListen(int num, const std::string &server_block); //extract listen
-	std::string extractErrorPage(int num, const std::string &server_block); //extract error page
+	std::string extractServerName(const std::string &server_block); //extract server name
+	int extractListen(const std::string &server_block); //extract listen
+	std::string extractErrorPage(const std::string &server_block); //extract error page
 	/* Location block.... */
 	void Location_block(t_server_config &server_config, const std::string &server_block); //parse location block
 	void splitLocationBlocks(std::vector<std::string> &location_blocks, const std::string &server_block); //split location blocks
@@ -54,7 +54,6 @@ class config_pars
 	std::string extractVariables(const std::string &variable, const std::string &location_block); //extract variables
 	bool extractAutoIndex(const std::string &location_block); //extract autoindex
 	int	extractBodySize(const std::string &server_block); //extract body size
-	
 };
 
 #endif

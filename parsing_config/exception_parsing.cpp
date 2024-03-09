@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/08 19:37:33 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/08 19:43:59 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/09 15:29:04 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,6 +37,15 @@ const char *ValueMissingException::what() const throw()
 	return (RED "Value missing" RESET);
 }
 
+MissingValueException::MissingValueException(const std::string &missingValue) : _Value(missingValue) {}
+
+const char *MissingValueException::what() const throw()
+{
+	std::string	retString = RED "Missing value: " + _Value + RESET;
+	const char	*retStringC = retString.c_str();
+	return (retStringC);
+}
+
 const char *InvalidbodySizeException::what() const throw()
 {
 	return (RED "Invalid body size" RESET);
@@ -49,9 +58,9 @@ const char *MissingSemicolonException::what() const throw()
 }
 
 
-const char *MissingClosingBracketException::what() const throw()
+const char *MissingBracketException::what() const throw()
 {
-	return (RED "Missing closing bracket" RESET);
+	return (RED "Missing bracket" RESET);
 }
 
 

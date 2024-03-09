@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 16:53:25 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/08 18:48:12 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/09 15:33:20 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,7 @@ void checkConsecutiveSameBraces(const std::string &raw_data)
                    (raw_data[pos] == ' ' || raw_data[pos] == '\t' || raw_data[pos] == '\n')) 
                 pos++;
             if (pos < raw_data.length() && raw_data[pos] == brace)
-                throw std::runtime_error("Consecutive same braces");
+                throw std::runtime_error(RED "Consecutive same braces" RESET);
        }
         pos++;
     }
@@ -43,7 +43,7 @@ size_t skipWhitespace(const std::string &raw_data, size_t start)
 size_t findServerBlockEnd(const std::string &raw_data, size_t start, int &braceCount)
 {
     size_t end = start + 1;
-    while (end < raw_data.length() && braceCount > 0)
+    while (end < raw_data.length())
     {
         if (raw_data[end] == '{')
             braceCount++;

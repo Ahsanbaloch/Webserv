@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/08 19:45:16 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/09 17:39:59 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,7 +50,7 @@ void config_pars::readconfig(char *argv, std::string &fileConetnt)
 		file.close();
 	}
 	else
-        throw CantOpenConfigException(); //TODO: create this function
+        throw CantOpenConfigException();
 }
 
 void config_pars::parse_server_configs(std::string &server_config)
@@ -67,7 +67,7 @@ void config_pars::parse_server_configs(std::string &server_config)
         t_server_config server_config;
         parse_server_block(server_config, server_block[i]);
         if (_configMap[server_config.port].count(server_config.serverName) != 0)
-            std::cout << "Duplicate server block" << std::endl;    //throw DuplicateServerBlockException();
+            throw DuplicateServerNameException();
         else
             _configMap[server_config.port][server_config.serverName] = server_config;
 	}
@@ -75,13 +75,10 @@ void config_pars::parse_server_configs(std::string &server_config)
 
 void config_pars::parse_server_block(t_server_config &server_config, const std::string &server_block)
 {
-    server_config.serverName = extractServerName(SERVERNAME, server_block);
-    server_config.port = extractListen(PORT, server_block); //convert the data from string to int
-    //std::cout << "port: " << server_config.port << std::endl;
-    server_config.errorPage = extractErrorPage(ERRORDIR, server_block);
-    /* issue in body size... check it again*/
+    server_config.serverName = extractServerName(server_block);
+    server_config.port = extractListen(server_block);
+    server_config.errorPage = extractErrorPage(server_block);
     server_config.bodySize = extractBodySize(server_block);
-    //std::cout << "bodySize: " << server_config.bodySize << std::endl;
     if (server_config.port < 0 || server_config.port > 65535)
         throw InvalidPortException();
     Location_block(server_config, server_block);
@@ -99,7 +96,7 @@ int config_pars::extractBodySize(const std::string &server_block)
         std::string value = server_block.substr(start, end - start);
         removeLeadingWhitespaces(value);
         if (value.empty())
-            throw ValueMissingException();
+            throw MissingValueException("File_Size");
         std::istringstream ss(value);
         if (ss >> bodySize)
             return bodySize;
@@ -107,7 +104,7 @@ int config_pars::extractBodySize(const std::string &server_block)
             throw InvalidbodySizeException();
     }
     else
-        throw ValueMissingException();
+        throw MissingValueException("File_Size");
     return bodySize;
 }
 
@@ -122,9 +119,9 @@ void config_pars::Location_block(t_server_config &server_config, const std::stri
 	for (size_t i = 0; i < location_blocks.size(); i++)
 	{
 		t_location_config location_config;
-		parseLocationBlock(location_config, location_blocks[i]); //TODO: create this function
-		if (server_config.locationMap.count(location_config.path) != 0) //explanation from here
-            throw InvalidPathException();
+		parseLocationBlock(location_config, location_blocks[i]);
+		 if (server_config.locationMap.count(location_config.path) != 0)
+            throw InvalidPathException(); 
 		else
 			server_config.locationMap[location_config.path] = location_config;
 	}
@@ -136,44 +133,44 @@ void config_pars::Location_block(t_server_config &server_config, const std::stri
 void config_pars::parseLocationBlock(t_location_config &location_config, const std::string &location_block)
 {
     location_config.path = extractPath(location_block);
-	//std::cout << "path: " << location_config.path << std::endl;
+    //std::cout << "path: " << location_config.path << std::endl;
 	location_config.cgi_ex = extractVariables("cgi-ext",location_block);
 	location_config.redirect = extractVariables("redirect_url",location_block);
-    location_config.root = extractVariables("root", location_block); //TODO: create this function
-    location_config.index = extractVariables("index", location_block); //TODO: create this function
-    location_config.allowedMethods = extractVariables("allow_methods",location_block); //TODO: create this function
-    location_config.autoIndex = extractAutoIndex(location_block); //TODO: create this function
+    location_config.root = extractVariables("root", location_block);
+    location_config.index = extractVariables("index", location_block);
+    location_config.allowedMethods = extractVariables("allow_methods",location_block);
+    location_config.autoIndex = extractAutoIndex(location_block);
 }
 
 bool config_pars::extractAutoIndex(const std::string &location_block)
 {
 	if (location_block.find("autoIndex") == std::string::npos)
-		throw ValueMissingException();
+		throw MissingValueException("autoIndex");
 	size_t start = location_block.find("autoIndex") + 10;
 	size_t end = location_block.find(";", start);
 	std::string value = location_block.substr(start, end - start);
 	removeLeadingWhitespaces(value);
-	if (value.empty())
-		throw ValueMissingException();
-	if (value == "on")
+    if (value.empty())
+        value = "off";
+	else if (value == "on")
 		return true;
 	else if (value == "off")
 		return false;
-	return false;
+	else
+		throw MissingValueException("autoIndex");
+    return false;
 }
 
 std::string config_pars::extractVariables(const std::string &variable, const std::string &location_block)
 {
 	if (location_block.find(variable) == std::string::npos)
-		throw ValueMissingException();
+		throw MissingValueException("location");
 	size_t start = location_block.find(variable) + variable.size();
 	size_t end = location_block.find(";", start);
 	std::string value = location_block.substr(start, end - start);
 	removeLeadingWhitespaces(value);
 	if (location_block.empty())
-		throw ValueMissingException();
-/* 	else if (!value.empty())
-		std::cout << "value: " << value << std::endl; */
+		throw MissingValueException("location");
 	return (value);
 }
 
@@ -208,10 +205,10 @@ void config_pars::splitLocationBlocks(std::vector<std::string> &location_blocks,
    }
 }
 
-std::string config_pars::extractErrorPage(int num, const std::string &server_block)
+std::string config_pars::extractErrorPage(const std::string &server_block)
 {
     size_t start = 0;
-    size_t end = num; //change back to 0 instead of num
+    size_t end = 0;
     std::string error_page;
     if ((start = server_block.find("error_page", start)) != std::string::npos)
     {
@@ -220,15 +217,14 @@ std::string config_pars::extractErrorPage(int num, const std::string &server_blo
         error_page = server_block.substr(start, end - start);
     }
     else
-       throw ValueMissingException();
+       throw MissingValueException("error_page");
     return error_page;
 }
 
-int config_pars::extractListen(int num, const std::string &server_block)
+int config_pars::extractListen(const std::string &server_block)
 {
     size_t start = 0;
-    num = 0;
-    size_t end = num; //change back to 0 instead of num
+    size_t end = 0;
     int port = -1;
     std::string listen;
     if ((start = server_block.find("listen", start)) != std::string::npos)
@@ -236,19 +232,18 @@ int config_pars::extractListen(int num, const std::string &server_block)
         start = skipWhitespace(server_block, start + 6);
         end = server_block.find(";", start);
         listen = server_block.substr(start, end - start);
-        //std::cout << listen << std::endl;
         port = checkHostPort(listen);
     }
     else
-       throw ValueMissingException();
+       throw MissingValueException("listen");
     return (port);
 }
 
 
-std::string config_pars::extractServerName(int num, const std::string &server_block)
+std::string config_pars::extractServerName(const std::string &server_block)
 {
     size_t start = 0;
-    size_t end = num; //change back to 0 instead of num
+    size_t end = 0;
     std::string serverName;
     if ((start = server_block.find("server_name", start)) != std::string::npos)
     {
@@ -257,7 +252,7 @@ std::string config_pars::extractServerName(int num, const std::string &server_bl
         serverName = server_block.substr(start, end - start);
     }
     else
-        throw ValueMissingException();    //give default name to server
+        throw MissingValueException("Server Name");    //give default name to server
     return serverName;
 }
 
@@ -270,20 +265,16 @@ void config_pars::extractServer(std::vector<std::string> &serverblocks, const st
     checkConsecutiveSameBraces(raw_data);
     while ((start = raw_data.find("server", start)) != std::string::npos)
     {
-        // Do not move past "server"
         // Skip whitespace
-        size_t temp = skipWhitespace(raw_data, start + 6); // Temporary variable to skip "server"
-        // Ensure the next character is "{"
+        size_t temp = skipWhitespace(raw_data, start + 6);
+        // Ensure the next character is an open brace
         if (raw_data[temp] != '{')
-        {
-            start++;
-            continue; // Not a server block, continue to next "server"
-        }
+            throw MissingBracketException();
         // Find the end of the server block
         int braceCount = 1; // Count the number of open braces
         end = findServerBlockEnd(raw_data, temp, braceCount);
         if (braceCount > 0)
-            throw MissingClosingBracketException();
+            throw MissingBracketException();
         /* {
             std::cout << "Malformed server block1" << std::endl;
             start = end; // Move to the end of the malformed block
