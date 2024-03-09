@@ -1,4 +1,3 @@
-
 #ifndef REQUESTHANDLER_H
 # define REQUESTHANDLER_H
 
