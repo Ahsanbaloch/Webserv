@@ -46,8 +46,9 @@ void	RequestHandler::handleRequest(int event_lst_item_fd)
 	{
 		try
 		{
+			// what about folding
 			parseRequestLine();
-			parseHeaders();
+			parseHeaders(); // check if it still works if no header is sent
 		}
 		catch(const std::exception& e)
 		{
@@ -59,6 +60,7 @@ void	RequestHandler::handleRequest(int event_lst_item_fd)
 
 	// interpret parsed input to decide what to do next
 		// --> split in GET / POST / DELETE ??
+		// GET requests can have a body but that has no semantic meaning --> so no need to check --> still need to recv the whole body before responding?
 		// --> also check if there is an expected immediate response, e.g. 100-continue
 		// if there are any encoded chars, decode them here? --> relevant for url/query
 		// construct the full URI here?
@@ -72,6 +74,7 @@ void	RequestHandler::handleRequest(int event_lst_item_fd)
 		// if we read max number of bytes we continue receiving bytes and always append the incoming data to a stringfile
 		// for that we need to know an offset (where the header ends)
 		// receive chunks?
+		// for each iteration: each call of this event, you will add an oneshot event for the TIMEOUT event (EVFILT_TIMER), --> see slack bookmark
 
 
 	// notes
