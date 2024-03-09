@@ -28,7 +28,7 @@ public:
 	std::map<std::string, std::string>	headers; // probably needs to be reset after being used
 	std::stringstream					body;
 	int									error; // probably needs to be reset after being used
-	unsigned char						buf[BUFFER_SIZE]; // use std::vector<unsigned char> buf(BUFFER_SIZE) or uint8_t instead?
+	unsigned char						buf[BUFFER_SIZE]; // use std::vector<unsigned char> buf(BUFFER_SIZE) or uint8_t instead? // don't use the string type for your buffer because for upload and binary file you can have some \0 in the middle of the content). + CRLF interpretation --> request smuggling
 	std::stringstream					raw_buf;
 	int									buf_pos;
 	int									bytes_read;
