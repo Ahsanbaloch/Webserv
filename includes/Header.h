@@ -23,7 +23,7 @@ public:
 	std::string							path; // probably needs to be reset after being used
 	std::string							query; // probably needs to be reset after being used
 	std::string							version; // probably needs to be reset after being used
-	std::map<std::string, std::string>	headers; // rename to header_fields // probably needs to be reset after being used
+	std::map<std::string, std::string>	header_fields; // rename to header_fields // probably needs to be reset after being used
 
 	int									rl_parsing_done; // probably needs to be reset after being used
 	int									headers_parsing_done; // probably needs to be reset after being used

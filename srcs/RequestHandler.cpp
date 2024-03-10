@@ -78,7 +78,6 @@ void	RequestHandler::handleRequest()
 		// process request (based on the object type that has been created --> through base pointer?)
 
 
-
 	// The presence of a message body in a request is signaled by a Content-Length or Transfer-Encoding header field. Request message framing is independent of method semantics.
 
 	// interpret parsed input to decide what to do next
@@ -110,7 +109,7 @@ void	RequestHandler::handleRequest()
 
 	
 	printf("\nheaders\n");
-	for (std::map<std::string, std::string>::iterator it = header.headers.begin(); it != header.headers.end(); it++)
+	for (std::map<std::string, std::string>::iterator it = header.header_fields.begin(); it != header.header_fields.end(); it++)
 	{
 		std::cout << "key: " << it->first << " ";
 		std::cout << "value: " << it->second << std::endl;

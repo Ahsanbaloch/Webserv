@@ -204,7 +204,7 @@ void	Header::parseHeaderFields(unsigned char* buf, int* buf_pos, int bytes_read)
 				}
 				if (header_name == "expect")
 					expect_exists = 1; // in this case a response is expected before the (rest of) body is sent
-				headers.insert(std::pair<std::string, std::string>(header_name, header_value));
+				header_fields.insert(std::pair<std::string, std::string>(header_name, header_value));
 				header_name.clear();
 				header_value.clear();
 				headers_state = he_start;
