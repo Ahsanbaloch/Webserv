@@ -5,6 +5,9 @@
 #include <sys/event.h>
 #include <iostream>
 #include <vector>
+#include <string>
+#include <utility>
+#include <map>
 #include "CustomException.h"
 #include "KQueue.h"
 #include "RequestHandler.h"
@@ -16,18 +19,19 @@ class DarwinWorker
 private:
 	/* data */
 public:
-	KQueue				Q;
-	RequestHandler		Handler;
-	std::vector<int>	pending_fds;
-	struct sockaddr		client_addr;
-	socklen_t			addr_size;
-	struct kevent		event_lst[MAX_EVENTS];
+	KQueue							Q;
+	std::map<int, RequestHandler*>	ConnectedClients;
+	std::vector<int>				pending_fds;
+	struct sockaddr					client_addr;
+	socklen_t						addr_size;
+	struct kevent					event_lst[MAX_EVENTS];
 
 	explicit	DarwinWorker(const KQueue&);
 	DarwinWorker();
 	~DarwinWorker();
 
 	void	runEventLoop();
+	void	addToConnectedClients();
 };
 
 

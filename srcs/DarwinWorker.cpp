@@ -29,6 +29,8 @@ void	DarwinWorker::runEventLoop()
 			if (event_lst[i].flags & EV_EOF)
 			{
 				std::cout << "client disconnected\n";
+				delete ConnectedClients[event_lst[i].ident];
+				ConnectedClients.erase(event_lst[i].ident);
 				close(event_lst[i].ident); // event_lst[i].ident is the file descriptor of the socket that triggered
 			}
 			// event came from listening socket --> we have to create a connection
@@ -43,6 +45,7 @@ void	DarwinWorker::runEventLoop()
 						if (errno == EAGAIN || errno == EWOULDBLOCK)
 						{
 							Q.attachConnectionSockets(pending_fds);
+							addToConnectedClients();
 							pending_fds.clear();
 							break;
 						}
@@ -56,9 +59,23 @@ void	DarwinWorker::runEventLoop()
 			else if (*reinterpret_cast<int*>(event_lst[i].udata) == Q.connection_sock_ident)
 			{
 				if (event_lst[i].filter == EVFILT_READ)
-					Handler.handleRequest(event_lst[i].ident); // probably make connection_fd the input so that it is independent from kevent/epoll; also keep track of connection_fd in case not everything can be built at once
+				{
+					ConnectedClients[event_lst[i].ident]->handleRequest(event_lst[i].ident); // rm ident in handleRequest and use fd stored in object
+				}
+					
 			}
 		}
 	}
 }
+
+void	DarwinWorker::addToConnectedClients()
+{
+	int size = pending_fds.size();
+	for (int i = 0; i < size; i++)
+	{
+		RequestHandler* Handler = new RequestHandler; // need to free that memory somewhere --> when disconnecting the client
+		ConnectedClients.insert(std::pair<int, RequestHandler*>(pending_fds[i], Handler));
+	}
+}
+
 
