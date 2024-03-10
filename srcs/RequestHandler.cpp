@@ -57,7 +57,7 @@ void	RequestHandler::handleRequest()
 			// check if requested resource exists?
 			// decode URL/Query if necessary
 			// construct full URI?
-			// create object for POST/DELETE/GET (copy all relevant data?)
+			// create object for POST/DELETE/GET (copy all relevant data?) --> accessible outside scope? --> ARequest *request = NULL at the beginning?
 		}
 		catch(const std::exception& e)
 		{
