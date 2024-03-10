@@ -60,7 +60,7 @@ void	DarwinWorker::runEventLoop()
 			{
 				if (event_lst[i].filter == EVFILT_READ)
 				{
-					ConnectedClients[event_lst[i].ident]->handleRequest(event_lst[i].ident); // rm ident in handleRequest and use fd stored in object
+					ConnectedClients[event_lst[i].ident]->handleRequest(); // rm ident in handleRequest and use fd stored in object
 				}
 					
 			}
@@ -73,7 +73,7 @@ void	DarwinWorker::addToConnectedClients()
 	int size = pending_fds.size();
 	for (int i = 0; i < size; i++)
 	{
-		RequestHandler* Handler = new RequestHandler; // need to free that memory somewhere --> when disconnecting the client
+		RequestHandler* Handler = new RequestHandler(pending_fds[i]); // need to free that memory somewhere --> when disconnecting the client
 		ConnectedClients.insert(std::pair<int, RequestHandler*>(pending_fds[i], Handler));
 	}
 }

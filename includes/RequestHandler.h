@@ -52,7 +52,7 @@ public:
 	int									buf_pos;
 	int									bytes_read;
 
-	void	handleRequest(int);
+	void	handleRequest();
 	// void	parseRequestLine();
 	// void	parseHeaders();
 	void	parseEncodedBody();

@@ -19,7 +19,7 @@ void	LinuxWorker::addToConnectedClients()
 	int size = pending_fds.size();
 	for (int i = 0; i < size; i++)
 	{
-		RequestHandler* Handler = new RequestHandler; // need to free that memory somewhere --> when disconnecting the client
+		RequestHandler* Handler = new RequestHandler(pending_fds[i]); // need to free that memory somewhere --> when disconnecting the client
 		ConnectedClients.insert(std::pair<int, RequestHandler*>(pending_fds[i], Handler));
 	}
 }

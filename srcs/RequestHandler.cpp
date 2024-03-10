@@ -4,10 +4,6 @@
 RequestHandler::RequestHandler(int fd)
 {
 	connection_fd = fd;
-}
-
-RequestHandler::RequestHandler(/* args */)
-{
 	error = 0;
 	buf_pos = -1;
 	// rl_parsing_done = 0;
@@ -29,14 +25,18 @@ RequestHandler::RequestHandler(/* args */)
 	memset(&buf, 0, sizeof(buf));
 }
 
+RequestHandler::RequestHandler(/* args */)
+{
+}
+
 RequestHandler::~RequestHandler()
 {
 }
 
 // read request handler
-void	RequestHandler::handleRequest(int event_lst_item_fd)
+void	RequestHandler::handleRequest()
 {
-	bytes_read = recv(event_lst_item_fd, buf, sizeof(buf), 0);
+	bytes_read = recv(connection_fd, buf, sizeof(buf), 0);
 	if (bytes_read == -1)
 		throw CustomException("Failed when processing read request\n");
 	if (bytes_read == 0)
