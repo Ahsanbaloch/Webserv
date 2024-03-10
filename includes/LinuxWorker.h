@@ -6,6 +6,7 @@
 #include <cerrno>
 #include <iostream>
 #include <vector>
+#include <map>
 #include <algorithm>
 #include "CustomException.h"
 #include "EPoll.h"
@@ -18,19 +19,20 @@ class LinuxWorker
 private:
 	/* data */
 public:
-	EPoll				Q;
-	RequestHandler		Handler;
-	std::vector<int>	pending_fds;
-	std::vector<int>	listening_socks_fd;
-	struct sockaddr		client_addr;
-	socklen_t			addr_size;
-	struct epoll_event	event_lst[MAX_EVENTS];
+	EPoll							Q;
+	std::map<int, RequestHandler*>	ConnectedClients;
+	std::vector<int>				pending_fds;
+	std::vector<int>				listening_socks_fd;
+	struct sockaddr					client_addr;
+	socklen_t						addr_size;
+	struct epoll_event				event_lst[MAX_EVENTS];
 
 	explicit	LinuxWorker(const EPoll&);
 	LinuxWorker();
 	~LinuxWorker();
 
 	void	runEventLoop();
+	void	addToConnectedClients();
 };
 
 

@@ -14,6 +14,16 @@ LinuxWorker::~LinuxWorker()
 {
 }
 
+void	LinuxWorker::addToConnectedClients()
+{
+	int size = pending_fds.size();
+	for (int i = 0; i < size; i++)
+	{
+		RequestHandler* Handler = new RequestHandler; // need to free that memory somewhere --> when disconnecting the client
+		ConnectedClients.insert(std::pair<int, RequestHandler*>(pending_fds[i], Handler));
+	}
+}
+
 //function to run event loop
 void	LinuxWorker::runEventLoop()
 {
@@ -48,6 +58,7 @@ void	LinuxWorker::runEventLoop()
 						if (errno == EAGAIN || errno == EWOULDBLOCK)
 						{
 							Q.attachConnectionSockets(pending_fds);
+							addToConnectedClients();
 							pending_fds.clear();
 							break;
 						}
@@ -59,7 +70,7 @@ void	LinuxWorker::runEventLoop()
 			}
 			// event came from connection, so that we want to handle the request
 			else
-				Handler.handleRequest(event_lst[i].data.fd); // probably make connection_fd the input so that it is independent from kevent/epoll; also keep track of connection_fd in case not everything can be built at once
+				ConnectedClients[event_lst[i].ident]->handleRequest(event_lst[i].ident); // rm ident in handleRequest and use fd stored in object
 		}
 	}
 }
