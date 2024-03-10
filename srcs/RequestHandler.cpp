@@ -37,7 +37,7 @@ void	RequestHandler::handleRequest(int event_lst_item_fd)
 	if (bytes_read == 0)
 		return ; // also throw exception. Need to check the exception exactly // also close connection?
 	
-	buf[bytes_read] = '\0'; // correct or bytes_read +1? also BUFFER_SIZE + 1?
+	buf[bytes_read] = '\0'; // correct? BUFFER_SIZE + 1?
 	request_length += bytes_read;
 
 	// check if headers have already been parsed

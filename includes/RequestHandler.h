@@ -2,11 +2,12 @@
 # define REQUESTHANDLER_H
 
 #include <sys/socket.h>
-#include "CustomException.h"
 #include <string>
 #include <map>
 #include <sstream>
 #include <cstdio> // remove later
+#include "CustomException.h"
+#include "Header.h"
 
 #define BUFFER_SIZE 8192 // this basically presents the max header size (incl. the request line)
 #define LF 10
@@ -21,6 +22,7 @@ public:
 	RequestHandler(/* args */);
 	~RequestHandler();
 
+	Header								header;
 	std::string							method; // probably needs to be reset after being used
 	std::string							path; // probably needs to be reset after being used
 	std::string							query; // probably needs to be reset after being used
