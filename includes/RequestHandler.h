@@ -37,6 +37,7 @@ public:
 	int									body_parsing_done;
 	int									transfer_encoding_exists;
 	int									content_length_exists;
+	int									host_exists;
 	int									expect_exists;
 	int									body_length;
 	int									chunk_length;

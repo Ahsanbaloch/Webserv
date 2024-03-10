@@ -11,6 +11,7 @@ RequestHandler::RequestHandler(/* args */)
 	transfer_encoding_exists = 0;
 	content_length_exists = 0;
 	expect_exists = 0;
+	host_exists = 0;
 	chunk_length = 0;
 	body_length = 0;
 	body_beginning = 0;
@@ -36,19 +37,22 @@ void	RequestHandler::handleRequest(int event_lst_item_fd)
 	if (bytes_read == 0)
 		return ; // also throw exception. Need to check the exception exactly // also close connection?
 	
-	buf[bytes_read] = '\0'; // correct or bytes_read +1?
+	buf[bytes_read] = '\0'; // correct or bytes_read +1? also BUFFER_SIZE + 1?
 	request_length += bytes_read;
 
 	// check if headers have already been parsed
-		// terminate connection & don't listen to file descriptor anymore if error is encountered
-
 	if (!header_complete)
 	{
 		try
 		{
-			// what about folding
+			// what about folding lines?
 			parseRequestLine();
 			parseHeaders(); // check if it still works if no header is sent
+			// check for body existance
+			// check if requested resource exists?
+			// decode URL/Query if necessary
+			// construct full URI?
+			// create object for POST/DELETE/GET (copy all relevant data?)
 		}
 		catch(const std::exception& e)
 		{
@@ -56,9 +60,24 @@ void	RequestHandler::handleRequest(int event_lst_item_fd)
 			std::cerr << e.what() << '\n';
 		}
 	}
+	// if immediate response is expected to receive body
+		// make reponse
+	// if body is expected
+		// if chunked
+			//store body chunks in file (already store in the appropriate object)
+		// if not chunked
+			// store body in stringstream or vector (already store in the appropriate object)
+		// if end of body has not been reached
+			// return to continue receiving
+	// if no body is expected OR end of body has been reached
+		// process request (based on the object type that has been created --> through base pointer?)
 
+
+
+	// The presence of a message body in a request is signaled by a Content-Length or Transfer-Encoding header field. Request message framing is independent of method semantics.
 
 	// interpret parsed input to decide what to do next
+		// construct targetURI? --> info from config file?
 		// --> split in GET / POST / DELETE ??
 		// GET requests can have a body but that has no semantic meaning --> so no need to check --> still need to recv the whole body before responding?
 		// --> also check if there is an expected immediate response, e.g. 100-continue
@@ -521,6 +540,15 @@ void	RequestHandler::parseHeaders()
 						throw CustomException("Bad request");
 					}
 					transfer_encoding_exists = 1;
+				}
+				if (header_name == "host")
+				{
+					if (host_exists)
+					{
+						error = 400;
+						throw CustomException("Bad request");
+					}
+					host_exists = 1;
 				}
 				if (header_name == "expect")
 					expect_exists = 1; // in this case a response is expected before the (rest of) body is sent
