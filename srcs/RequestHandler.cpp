@@ -1,27 +1,21 @@
 
 #include "RequestHandler.h"
 
+// next:
+// - create Request class (abstract)
+// - create dedicated classes starting with GET
+// - what does the response flow look like? --> where do I need to transfer what?
+// --> create E2E-Flow for GET request without body (afterwards do same for POST but with body)
+
+
 RequestHandler::RequestHandler(int fd)
 {
 	connection_fd = fd;
 	error = 0;
 	buf_pos = -1;
-	// rl_parsing_done = 0;
-	// headers_parsing_done = 0;
 	body_parsing_done = 0;
-	// transfer_encoding_exists = 0;
-	// content_length_exists = 0;
-	// expect_exists = 0;
-	// host_exists = 0;
 	chunk_length = 0;
-	// body_length = 0;
-	// body_beginning = 0;
-	// header_complete = 0;
 	raw_buf.setf(std::ios::app | std::ios::binary);
-	// method = ""; // does this reset the string?
-	// path = ""; // does this reset the string?
-	// query = ""; // does this reset the string?
-	// version = ""; // does this reset the string?
 	memset(&buf, 0, sizeof(buf));
 }
 
