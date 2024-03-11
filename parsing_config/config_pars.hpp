@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 14:22:42 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/11 18:05:30 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/11 19:48:15 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,7 +34,7 @@ However, you can define a custom comparison function and use that to create a st
 class config_pars
 {
 	private:
-	std::map<std::vector<int>, std::map<std::string, t_server_config> > _configMap;
+	std::map<int, std::map<std::string, t_server_config> > _configMap;
 	//config_pars();
 	//void parse_server(std::string &server_config);
 	
@@ -45,7 +45,7 @@ class config_pars
 	~config_pars();
 	//std::map<int, std::map<std::string, t_server_config> >&	getConfigMap();
 
-	std::map<std::vector<int>, std::map<std::string, t_server_config> >&	getConfigMap(); //getters
+	std::map<int, std::map<std::string, t_server_config> >&	getConfigMap(); //getters
 	void readconfig(char *argv, std::string &fileContent);	//read config file
 	void parse_server_configs(std::string &sever_config); //using this fucntion to parse everything
 	//void extractServerBlocks(std::vector<std::string> &serverBlocks, std::string &server_config);
