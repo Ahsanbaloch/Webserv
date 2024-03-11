@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 16:53:25 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/09 15:33:20 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/11 13:38:17 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,8 @@ void checkConsecutiveSameBraces(const std::string &raw_data)
                 pos++;
             if (pos < raw_data.length() && raw_data[pos] == brace)
                 throw std::runtime_error(RED "Consecutive same braces" RESET);
+            else if (pos < raw_data.length() && raw_data[pos] == '}')
+                throw std::runtime_error(RED "Consecutive braces together without data" RESET);
        }
         pos++;
     }

@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 14:22:42 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/09 15:23:50 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/11 18:05:30 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,10 +22,19 @@
 #include "config_pars_utils.hpp"
 #include "exception_parsing.hpp"
 
+
+/* In C++98, you can't use a std::vector<int> as a key in a std::map directly 
+because there's no operator< defined for std::vector<int>. 
+However, you can define a custom comparison function and use that to create a std::map
+ with std::vector<int> as the key. */
+
+/* 
+ */
+
 class config_pars
 {
 	private:
-	std::map<int, std::map<std::string, t_server_config> > _configMap;
+	std::map<std::vector<int>, std::map<std::string, t_server_config> > _configMap;
 	//config_pars();
 	//void parse_server(std::string &server_config);
 	
@@ -36,7 +45,7 @@ class config_pars
 	~config_pars();
 	//std::map<int, std::map<std::string, t_server_config> >&	getConfigMap();
 
-	std::map<int, std::map<std::string, t_server_config> >&	getConfigMap(); //getters
+	std::map<std::vector<int>, std::map<std::string, t_server_config> >&	getConfigMap(); //getters
 	void readconfig(char *argv, std::string &fileContent);	//read config file
 	void parse_server_configs(std::string &sever_config); //using this fucntion to parse everything
 	//void extractServerBlocks(std::vector<std::string> &serverBlocks, std::string &server_config);
@@ -45,6 +54,7 @@ class config_pars
 	void parse_server_block(t_server_config &server_config, const std::string &server_block); //parse inside server block
 	std::string extractServerName(const std::string &server_block); //extract server name
 	int extractListen(const std::string &server_block); //extract listen
+	//std::vector<int> extractListen(const std::string &server_block); //extract listen
 	std::string extractErrorPage(const std::string &server_block); //extract error page
 	/* Location block.... */
 	void Location_block(t_server_config &server_config, const std::string &server_block); //parse location block
