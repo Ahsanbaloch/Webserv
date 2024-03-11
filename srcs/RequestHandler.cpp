@@ -69,7 +69,9 @@ void	RequestHandler::handleRequest()
 		// if end of body has not been reached
 			// return to continue receiving
 	// if no body is expected OR end of body has been reached
+		// create Request object?
 		// process request (based on the object type that has been created --> through base pointer?)
+		// respond to request
 
 
 	// The presence of a message body in a request is signaled by a Content-Length or Transfer-Encoding header field. Request message framing is independent of method semantics.

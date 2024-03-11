@@ -15,13 +15,14 @@ DarwinWorker::~DarwinWorker()
 //function to run event loop
 void	DarwinWorker::runEventLoop()
 {
+	int response_ready = 0;
 	while (1)
 	{
 		// check for new events that are registered in our kqueue (could come from a listening or connection socket)
 		int new_events = kevent(Q.kqueue_fd, NULL, 0, event_lst, MAX_EVENTS, NULL); // it depends on several kernel-internal factors whether kevent returns one or multiple events for several conncetion requests. That's why ideally one makes acception checks in a loop per each event
 		if (new_events == -1)
 			throw CustomException("Failed when checking for new events\n");
-		
+
 		// go through all the events we have been notified of
 		for (int i = 0; new_events > i; i++)
 		{
@@ -61,8 +62,16 @@ void	DarwinWorker::runEventLoop()
 				if (event_lst[i].filter == EVFILT_READ)
 				{
 					ConnectedClients[event_lst[i].ident]->handleRequest(); // rm ident in handleRequest and use fd stored in object
+					response_ready == 1;
 				}
-					
+				else if (event_lst[i].filter == EVFILT_WRITE && response_ready == 1) // how to provide the reponse_ready info? // should this be an "If" OR "Else if"?
+				{
+					std::cout << "send response" << std::endl;
+					char response[] = "HTTP/1.1 200 OK\r\n" "Content-Type: text/plain\r\n" "\r\n" "Hello, World!";
+					send(event_lst[i].ident, response, strlen(response), 0);
+					close(event_lst[i].ident); // close connection
+					response_ready == 0;
+				}
 			}
 		}
 	}
