@@ -3,6 +3,11 @@
 
 # include <string>
 # include <map>
+# include "GETRequest.h"
+# include "Response.h"
+
+class RequestHandler;
+
 
 class ARequest
 {
@@ -12,13 +17,11 @@ public:
 	ARequest(/* args */);
 	virtual ~ARequest();
 
-	std::string							query;
-	std::string							path;
-	std::map<std::string, std::string>	headers;
-
 	// somewhere create a virtual function and set to 0
 
-	static ARequest *newRequest();
+	static ARequest *newRequest(RequestHandler&);
+
+	virtual Response *createResponse() = 0;
 
 	
 };

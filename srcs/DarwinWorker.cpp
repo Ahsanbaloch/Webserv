@@ -64,10 +64,7 @@ void	DarwinWorker::runEventLoop()
 				}
 				else if (ConnectedClients[event_lst[i].ident]->response_ready && event_lst[i].filter == EVFILT_WRITE) // how to provide the reponse_ready info? // should this be an "If" OR "Else if"?
 				{
-					// ConnectedClients[event_lst[i].ident]->sendResponse();
-					std::cout << "send response" << std::endl;
-					char response[] = "HTTP/1.1 200 OK\r\n" "Content-Type: text/plain\r\n" "\r\n" "Hello, World!";
-					send(event_lst[i].ident, response, strlen(response), 0);
+					ConnectedClients[event_lst[i].ident]->sendResponse();
 					delete ConnectedClients[event_lst[i].ident];
 					close(event_lst[i].ident); // close connection; how does it work with 100-continue response?
 					ConnectedClients.erase(event_lst[i].ident);

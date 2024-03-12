@@ -25,6 +25,7 @@ public:
 	~RequestHandler();
 
 	ARequest*			request;
+	Response*			response;
 	Header				header;
 	// might want to create empty shell for generic Request object that then gets filled when creating specific object
 	int					connection_fd;
