@@ -17,6 +17,8 @@ RequestHandler::RequestHandler(int fd)
 	chunk_length = 0;
 	response_ready = 0;
 	body_expected = 0;
+	body_read = 0;
+	request = NULL;
 	raw_buf.setf(std::ios::app | std::ios::binary);
 	memset(&buf, 0, sizeof(buf));
 }
@@ -78,13 +80,14 @@ void	RequestHandler::processRequest()
 			// return to continue receiving
 	}
 	// if no body is expected OR end of body has been reached
-	// if (!body_expected || )
-	// {
-	// 	// create Request object?
-	// 	// process request (based on the object type that has been created --> through base pointer?)
-	// 	// create Response object
-	// 	// set Response to be ready
-	// }
+	if (!body_expected || body_read)
+	{
+		// create Request object? --> What is the object actually going to do?
+		request = ARequest::newRequest();
+		// process request (based on the object type that has been created --> through base pointer?)
+			// create Response object inside the function and return it here --> should then be stored in RequestHandler so that sendResponse can send it  --> What is teh purpose of this object?
+		// set Response to be ready
+	}
 	
 
 

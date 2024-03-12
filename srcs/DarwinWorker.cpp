@@ -68,6 +68,7 @@ void	DarwinWorker::runEventLoop()
 					std::cout << "send response" << std::endl;
 					char response[] = "HTTP/1.1 200 OK\r\n" "Content-Type: text/plain\r\n" "\r\n" "Hello, World!";
 					send(event_lst[i].ident, response, strlen(response), 0);
+					delete ConnectedClients[event_lst[i].ident];
 					close(event_lst[i].ident); // close connection; how does it work with 100-continue response?
 					ConnectedClients.erase(event_lst[i].ident);
 				}

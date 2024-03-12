@@ -8,6 +8,7 @@
 #include <cstdio> // remove later
 #include "CustomException.h"
 #include "Header.h"
+#include "ARequest.h"
 
 #define BUFFER_SIZE 8192 // this basically presents the max header size (incl. the request line)
 // #define LF 10
@@ -23,6 +24,7 @@ public:
 	RequestHandler(/* args */);
 	~RequestHandler();
 
+	ARequest*			request;
 	Header				header;
 	// might want to create empty shell for generic Request object that then gets filled when creating specific object
 	int					connection_fd;
@@ -32,6 +34,7 @@ public:
 	int					error;
 	int					response_ready;
 	int					body_expected;
+	int					body_read;
 
 
 	std::stringstream	raw_buf;

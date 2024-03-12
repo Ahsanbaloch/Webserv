@@ -16,6 +16,9 @@ public:
 	std::string							path;
 	std::map<std::string, std::string>	headers;
 
+	// somewhere create a virtual function and set to 0
+
+	static ARequest *newRequest();
 
 	
 };
