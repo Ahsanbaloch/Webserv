@@ -1,5 +1,6 @@
 
 #include "Header.h"
+#include "RequestHandler.h"
 
 Header::Header(/* args */)
 {
@@ -25,6 +26,8 @@ Header::Header(/* args */)
 Header::~Header()
 {
 }
+
+
 
 void	Header::checkBodyLength(std::string value)
 {
@@ -57,7 +60,7 @@ void	Header::checkBodyLength(std::string value)
 	body_length = std::atoi(value.c_str());
 }
 
-void	Header::parseHeaderFields(unsigned char* buf, int* buf_pos, int bytes_read)
+void	Header::parseHeaderFields(RequestHandler& handler)
 {
 	unsigned char	ch;
 	std::string		header_name = "";
@@ -65,9 +68,9 @@ void	Header::parseHeaderFields(unsigned char* buf, int* buf_pos, int bytes_read)
 
 	headers_state = he_start;
 
-	while (!headers_parsing_done && (*buf_pos)++ < bytes_read)
+	while (!headers_parsing_done && (handler.buf_pos)++ < handler.bytes_read)
 	{
-		ch = buf[*buf_pos];
+		ch = handler.buf[handler.buf_pos];
 	
 		switch (headers_state) 
 		{
@@ -181,6 +184,7 @@ void	Header::parseHeaderFields(unsigned char* buf, int* buf_pos, int bytes_read)
 						throw CustomException("Bad request");
 					}
 					content_length_exists = 1;
+					handler.body_expected = 1;
 					checkBodyLength(header_value);
 				}
 				if (header_name == "transfer-encoding")
@@ -192,6 +196,7 @@ void	Header::parseHeaderFields(unsigned char* buf, int* buf_pos, int bytes_read)
 						throw CustomException("Bad request");
 					}
 					transfer_encoding_exists = 1;
+					handler.body_expected = 1;
 				}
 				if (header_name == "host") // also ensure that value is not empty
 				{
@@ -228,7 +233,7 @@ void	Header::parseHeaderFields(unsigned char* buf, int* buf_pos, int bytes_read)
 		throw CustomException("413 Payload Too Large");  // correct error code when header is too large for buffer
 	}
 	header_complete = 1;
-	body_beginning = *buf_pos; // this is the last ch of the empty line at the end of the headers. Next ch is the first of the body
+	body_beginning = handler.buf_pos; // this is the last ch of the empty line at the end of the headers. Next ch is the first of the body
 
 	// A sender MUST NOT send whitespace between the start-line and the first header field.
 	// A recipient that receives whitespace between the start-line and the first header field MUST either reject the message as invalid 
@@ -244,13 +249,14 @@ void	Header::parseHeaderFields(unsigned char* buf, int* buf_pos, int bytes_read)
 	// end is signified by CRLFCRLF
 }
 
-void	Header::checkMethod(unsigned char* buf, int* buf_pos)
+// void	Header::checkMethod(unsigned char* buf, int* buf_pos)
+void	Header::checkMethod(RequestHandler& handler)
 {
-	switch (buf[*buf_pos])
+	switch (handler.buf[handler.buf_pos])
 	{
 		case 'G':
 			// check if next characters are E and T
-			if (buf[++(*buf_pos)] == 'E' && buf[++(*buf_pos)] == 'T')
+			if (handler.buf[++(handler.buf_pos)] == 'E' && handler.buf[++(handler.buf_pos)] == 'T')
 				method = "GET";
 			else
 			{
@@ -261,7 +267,7 @@ void	Header::checkMethod(unsigned char* buf, int* buf_pos)
 		
 		case 'P':
 			// check if next characters are O S and T
-			if (buf[++(*buf_pos)] == 'O' && buf[++(*buf_pos)] == 'S' && buf[++(*buf_pos)] == 'T')
+			if (handler.buf[++(handler.buf_pos)] == 'O' && handler.buf[++(handler.buf_pos)] == 'S' && handler.buf[++(handler.buf_pos)] == 'T')
 				method = "POST";
 			else
 			{
@@ -272,7 +278,7 @@ void	Header::checkMethod(unsigned char* buf, int* buf_pos)
 
 		case 'D':
 			// check of next characters are E L E T E
-			if (buf[++(*buf_pos)] == 'E' && buf[++(*buf_pos)] == 'L' && buf[++(*buf_pos)] == 'E' && buf[++(*buf_pos)] == 'T' && buf[++(*buf_pos)] == 'E')
+			if (handler.buf[++(handler.buf_pos)] == 'E' && handler.buf[++(handler.buf_pos)] == 'L' && handler.buf[++(handler.buf_pos)] == 'E' && handler.buf[++(handler.buf_pos)] == 'T' && handler.buf[++(handler.buf_pos)] == 'E')
 				method = "DELETE";
 			else
 			{
@@ -288,13 +294,14 @@ void	Header::checkMethod(unsigned char* buf, int* buf_pos)
 		}
 }
 
-void	Header::checkHttpVersion(unsigned char* buf, int* buf_pos)
+// void	Header::checkHttpVersion(unsigned char* buf, int* buf_pos)
+void	Header::checkHttpVersion(RequestHandler& handler)
 {
-	if (buf[*buf_pos] == 'H' && buf[++(*buf_pos)] == 'T' && buf[++(*buf_pos)] == 'T' && buf[++(*buf_pos)] == 'P' && buf[++(*buf_pos)] == '/' && buf[++(*buf_pos)] == '1'
-		&& buf[++(*buf_pos)] == '.' && buf[++(*buf_pos)] == '1')
+	if (handler.buf[handler.buf_pos] == 'H' && handler.buf[++(handler.buf_pos)] == 'T' && handler.buf[++(handler.buf_pos)] == 'T' && handler.buf[++(handler.buf_pos)] == 'P' && handler.buf[++(handler.buf_pos)] == '/' && handler.buf[++(handler.buf_pos)] == '1'
+		&& handler.buf[++(handler.buf_pos)] == '.' && handler.buf[++(handler.buf_pos)] == '1')
 	{
 		version = "HTTP/1.1";
-		buf_pos++;
+		handler.buf_pos++;
 	}
 	else
 	{
@@ -303,7 +310,7 @@ void	Header::checkHttpVersion(unsigned char* buf, int* buf_pos)
 	}
 }
 
-void	Header::parseRequestLine(unsigned char* buf, int* buf_pos, int bytes_read)
+void	Header::parseRequestLine(RequestHandler& handler)
 {
 	unsigned char	ch;
 	int				loops = 0;
@@ -318,23 +325,24 @@ void	Header::parseRequestLine(unsigned char* buf, int* buf_pos, int bytes_read)
 
 	rl_state = rl_start;
 
-	while (!rl_parsing_done && (*buf_pos)++ < bytes_read)
+	while (!rl_parsing_done && (handler.buf_pos)++ < handler.bytes_read)
 	{
-		ch = buf[*buf_pos];
+		ch = handler.buf[handler.buf_pos];
 	
 		switch (rl_state) 
 		{
 			// in the interest of robustness, ignore at least one empty line
 			// double check if a single LF occurance is accepted // is there a space afterwards?
 			case rl_start:
-				if (buf_pos == 0 && ch == CR)
+				if (handler.buf_pos == 0 && ch == CR)
 					break;
 				if (ch == LF)
 					break;
 				rl_state = rl_method;
 
 			case rl_method: // can this also be termined by CRLF?
-				checkMethod(buf, buf_pos);
+				// checkMethod(buf, buf_pos);
+				checkMethod(handler);
 				if (error == 400)
 					throw CustomException("Bad request");
 				rl_state = rl_first_divider;
@@ -444,7 +452,7 @@ void	Header::parseRequestLine(unsigned char* buf, int* buf_pos, int bytes_read)
 					break;
 				}
 				if (ch == 'H')
-					checkHttpVersion(buf, buf_pos);
+					checkHttpVersion(handler);
 				if (error == 400)
 					throw CustomException("Bad request");
 				break;
@@ -464,7 +472,7 @@ void	Header::parseRequestLine(unsigned char* buf, int* buf_pos, int bytes_read)
 			case rl_done:
 				std::cout << "request line fully parsed\n";
 				rl_parsing_done = 1;
-				buf_pos--; // Why does this needs to be done?
+				handler.buf_pos--; // Why does this needs to be done?
 				break;
 		}
 		// check for URI (path) --> request target (origin-form)

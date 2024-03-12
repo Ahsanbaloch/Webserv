@@ -24,11 +24,15 @@ public:
 	~RequestHandler();
 
 	Header				header;
+	// might want to create empty shell for generic Request object that then gets filled when creating specific object
 	int					connection_fd;
 	int					body_parsing_done;
 	int					chunk_length;
 	int					request_length;
 	int					error;
+	int					response_ready;
+	int					body_expected;
+
 
 	std::stringstream	raw_buf;
 	std::stringstream	body;
@@ -36,7 +40,8 @@ public:
 	int					buf_pos;
 	int					bytes_read;
 
-	void	handleRequest();
+	void	processRequest();
+	void	sendResponse();
 	void	parseEncodedBody();
 	void	parseBody();
 

@@ -5,11 +5,14 @@
 # include <map>
 # include <iostream>
 # include "CustomException.h"
+// # include "RequestHandler.h"
 
 // should be defined somewhere else in extra class
 #define LF 10
 #define CR 13
 #define SP 32
+
+class RequestHandler;
 
 class Header
 {
@@ -31,7 +34,7 @@ public:
 	int									content_length_exists;
 	int									host_exists;
 	int									expect_exists;
-	int									body_length;
+	int									body_length; // probably move some like these into a dedicated class
 
 	int									header_complete;
 	int									body_beginning;
@@ -39,10 +42,14 @@ public:
 	int									path_encoded; // probably needs to be reset after being used
 	int									error;
 
-	void	parseRequestLine(unsigned char* buf, int* buf_pos, int bytes_read);
-	void	parseHeaderFields(unsigned char* buf, int* buf_pos, int bytes_read);
-	void	checkMethod(unsigned char* buf, int* buf_pos);
-	void	checkHttpVersion(unsigned char* buf, int* buf_pos);
+	// void	parseRequestLine(unsigned char* buf, int* buf_pos, int bytes_read);
+	void	parseRequestLine(RequestHandler&); // could the reference also be provided when constructing the object?
+	void	parseHeaderFields(RequestHandler&);
+	// void	parseHeaderFields(unsigned char* buf, int* buf_pos, int bytes_read);
+	// void	checkMethod(unsigned char* buf, int* buf_pos);
+	void	checkMethod(RequestHandler&);
+	void	checkHttpVersion(RequestHandler&);
+	// void	checkHttpVersion(unsigned char* buf, int* buf_pos);
 	void	checkBodyLength(std::string);
 
 	enum {

@@ -15,6 +15,8 @@ RequestHandler::RequestHandler(int fd)
 	buf_pos = -1;
 	body_parsing_done = 0;
 	chunk_length = 0;
+	response_ready = 0;
+	body_expected = 0;
 	raw_buf.setf(std::ios::app | std::ios::binary);
 	memset(&buf, 0, sizeof(buf));
 }
@@ -27,8 +29,14 @@ RequestHandler::~RequestHandler()
 {
 }
 
+
+void	RequestHandler::sendResponse()
+{
+
+}
+
 // read request handler
-void	RequestHandler::handleRequest()
+void	RequestHandler::processRequest()
 {
 	bytes_read = recv(connection_fd, buf, sizeof(buf), 0);
 	if (bytes_read == -1)
@@ -45,13 +53,11 @@ void	RequestHandler::handleRequest()
 		try
 		{
 			// what about folding lines?
-			header.parseRequestLine(buf, &buf_pos, bytes_read);
-			header.parseHeaderFields(buf, &buf_pos, bytes_read); // check if it still works if no header is sent
-			// check for body existance
+			header.parseRequestLine(*this);
+			header.parseHeaderFields(*this); // check if it still works if no header is sent
 			// check if requested resource exists?
 			// decode URL/Query if necessary
 			// construct full URI?
-			// create object for POST/DELETE/GET (copy all relevant data?) --> accessible outside scope? --> ARequest *request = NULL at the beginning?
 		}
 		catch(const std::exception& e)
 		{
@@ -62,16 +68,24 @@ void	RequestHandler::handleRequest()
 	// if immediate response is expected to receive body
 		// make reponse
 	// if body is expected
+	if (body_expected)
+	{
 		// if chunked
 			//store body chunks in file (already store in the appropriate object)
 		// if not chunked
 			// store body in stringstream or vector (already store in the appropriate object)
 		// if end of body has not been reached
 			// return to continue receiving
+	}
 	// if no body is expected OR end of body has been reached
-		// create Request object?
-		// process request (based on the object type that has been created --> through base pointer?)
-		// respond to request
+	// if (!body_expected || )
+	// {
+	// 	// create Request object?
+	// 	// process request (based on the object type that has been created --> through base pointer?)
+	// 	// create Response object
+	// 	// set Response to be ready
+	// }
+	
 
 
 	// The presence of a message body in a request is signaled by a Content-Length or Transfer-Encoding header field. Request message framing is independent of method semantics.
@@ -133,7 +147,7 @@ void	RequestHandler::handleRequest()
 
 
 	printf("read %i bytes\n", bytes_read);
-
+	response_ready = 1;
 	// close fd in case bytes_read == 0 ???
 }
 
