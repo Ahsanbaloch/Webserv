@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/02/27 17:10:22 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/12 17:18:34 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/13 19:40:54 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,19 +15,14 @@
 
 int main(int argc, char **argv)
 {
-   /*  if (ac == 1)
-    {
-        std::cerr << "Error: Usage: " << av[0] << " <config_file>" << std::endl;
-        return 1;
-    }
-    else if (ac != 2)
-    {
-        std::cerr << "Error: Usage: " << av[0] << " <config_file>" << std::endl;
-        return 1;
-    } */
     try
     {
         config_pars config(argc, argv);
+        for (std::vector<t_server_config>::iterator it = config.getServerConfigsVector().begin(); it != config.getServerConfigsVector().end(); it++)
+        {
+            //std::cout << "Hello world!" << std::endl;
+            //std::cout << "Server name: " << it->serverName << std::endl;
+        }
     }
     catch(const std::exception& e)
     {

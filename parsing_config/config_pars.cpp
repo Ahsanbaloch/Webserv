@@ -6,11 +6,13 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/13 13:46:48 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/13 21:34:47 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "config_pars.hpp"
+/* #include <set>
+#include <utility> */
 
 
 config_pars::config_pars(int argc, char **argv)
@@ -45,6 +47,11 @@ std::map<int, std::map<std::string, t_server_config> >&	config_pars::getConfigMa
     return _configMap;
 }
 
+std::vector<t_server_config> &config_pars::getServerConfigsVector()
+{
+    return _server_configs_vector;
+}
+
 void config_pars::readconfig(std::string &argv, std::string &fileConetnt)
 {
 	std::ifstream file(argv);
@@ -73,15 +80,27 @@ void config_pars::parse_server_configs(std::string &server_config)
 {
 	std::vector<std::string> server_block;
 	extractServer(server_block, server_config);
+    //std::set<std::pair<int, std::string> > serverSet;
 	for (size_t i = 0; i < server_block.size(); i++)
-	{;
+	{
         /* In many server configurations, each server is identified by a unique combination of IP address (or hostname) and port number. 
         This unique combination is often referred to as a socket. If two servers were allowed to have the same socket, 
         it would be impossible to determine which server should handle a given request. */
+
+        
 		t_server_config default_server_config;
         parse_server_block(default_server_config, server_block[i]);
+        //std::cout << "Hello world\n" << std::endl;
+        _server_configs_vector.push_back(default_server_config);
+       /* check that the server name and port are unique */  
+       /*std::pair<int,std::string> id(default_server_config.port, default_server_config.serverName);
+        if (serverSet.count(id) != 0)
+            throw DuplicateServerNameException();
+        else
+            serverSet.insert(id); */
+        //_server_configs_vector[i] = default_server_config;
     
-        default_server_config.serverName = "default_server";
+       /*  default_server_config.serverName = "default_server";
        if (!_configMap.count(default_server_config.port))
             _configMap[default_server_config.port][default_server_config.serverName] = default_server_config;
         t_server_config server_config;
@@ -89,8 +108,7 @@ void config_pars::parse_server_configs(std::string &server_config)
         if (_configMap[server_config.port].count(server_config.serverName) != 0)
             throw DuplicateServerNameException();
         else
-            _configMap[server_config.port][server_config.serverName] = server_config;
-        
+            _configMap[server_config.port][server_config.serverName] = server_config; */
 	}
 }
 
