@@ -18,6 +18,47 @@ Response	*GETRequest::createResponse()
 {
 	Response *response = new Response; // needs to be delete somewhere
 
+
+	// CREATE status line
+		// get status code from handler
+		// if we want to provide status message; lookup status message corresponding to status code somewhere
+
+	// check if error was identified (or is this handled somewhere else?)
+		// From configData get specific info about which page should be displayed
+		// look up file and read content into response body
+
+	// CREATE BODY if required --> seperate function // don't create body if 1xx (Informational), 204 (No Content), or 304 (Not Modified)
+	// check if path is a file or a directory (identified by last char in path string)
+	// if it is a file
+		// find requested file (start looking in X dir?)
+	// if it is a dir
+		// find directory that should be looked in
+		// check if this directory is in the server config
+		// if directory is in serverconfig
+			// go to directory
+			// search for index file specified in config file
+				// indexfile found
+					// read index file into response body
+				// indexfile not found
+					// check if auto-index is on
+					// if on
+						// display directory listing
+					// if off
+						// provide error reponse
+		// if directory is not in serverconfig
+			// do something
+
+	
+	// CREATE HEADERS
+		// if body is sent, calculate size of body (based on data type) and create Content-Length field
+			// (should only be sent if TE is not set)
+		// How to decide whether to send response in chunks or in one go --> probably based on size of the body
+		// Provide content-type field MIME type --> depends on the format of the content being sent, e.g. an html file (Content-Type: text/html)
+		// user Location header field for redirection?
+		// (set cookie header for cookies)
+		// server header --> should this actually be set?
+		// additional header fields: expires, last-modified, Access Control Origin, Keep Alive etc.
+
 	std::ifstream file("./www/index.html"); // Open the HTML file
     if (!file.is_open()) {
 		perror("Failed: ");

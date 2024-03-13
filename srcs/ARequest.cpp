@@ -14,6 +14,8 @@ ARequest::~ARequest()
 ARequest* ARequest::newRequest(RequestHandler& handler)
 {
 	// what else to check here?
+	// check if the request method is allowed --> can this actually be checked here? because it might depend on the location
+		// (alt: compare path and location path already here?)
 	
 	if (handler.header.method == "GET")
 		return (new GETRequest(handler));

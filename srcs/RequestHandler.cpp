@@ -91,6 +91,7 @@ void	RequestHandler::processRequest()
 	// if body is expected
 	if (body_expected)
 	{
+		//here we need to account for max-body_size specified in config file
 		// if chunked
 			//store body chunks in file (already store in the appropriate object)
 		// if not chunked
