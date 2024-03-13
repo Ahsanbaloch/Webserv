@@ -1,6 +1,10 @@
 #ifndef GETREQUEST_H
 # define GETREQUEST_H
 
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <sstream>
 #include "ARequest.h"
 #include "RequestHandler.h"
 #include "Response.h"

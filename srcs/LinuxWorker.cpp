@@ -5,7 +5,7 @@ LinuxWorker::LinuxWorker(const EPoll& Queue)
 	: Q(Queue)
 {
 	memset(&client_addr, 0, sizeof(client_addr));
-	addr_size = 0;
+	addr_size = 0; // shouldn't this be rather be sizeof(client_addr)?
 	for (std::vector<ListeningSocket>::iterator it = Q.SocketsBlock.listening_sockets.begin(); it != Q.SocketsBlock.listening_sockets.end(); it++)
 		listening_socks_fd.push_back(it->getSocketFd());
 }

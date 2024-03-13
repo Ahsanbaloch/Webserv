@@ -1,6 +1,8 @@
 #ifndef RESPONSE_H
 # define RESPONSE_H
 
+# include <string>
+
 class Response
 {
 private:
@@ -8,6 +10,8 @@ private:
 public:
 	Response(/* args */);
 	~Response();
+
+	std::string	body;
 };
 
 

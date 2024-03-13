@@ -1,4 +1,5 @@
 #include "ARequest.h"
+#include "GETRequest.h"
 #include "RequestHandler.h"
 
 ARequest::ARequest(/* args */)
@@ -21,5 +22,5 @@ ARequest* ARequest::newRequest(RequestHandler& handler)
 	else if (handler.header.method == "POST")
 		;///
 	// check if something else and thus not implemented; but currently alsready done when parsing
-	
+	return (NULL);
 }

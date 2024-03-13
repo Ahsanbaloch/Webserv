@@ -35,15 +35,29 @@ RequestHandler::~RequestHandler()
 
 void	RequestHandler::sendResponse()
 {
+	#include <sstream>
+
+	std::stringstream ss;
+	ss << response->body.size(); // how to determine correct size? (depends on data-type)
+	std::string response_str = "";
+	printf("Hello\n");
 	// this will have to be based on the response object inside the Handler
 	std::cout << "send response" << std::endl;
-	char response[] = "HTTP/1.1 200 OK\r\n" "Content-Type: text/plain\r\n" "\r\n" "Hello, World!";
-	send(connection_fd, response, strlen(response), 0);
+	response_str.append("HTTP/1.1 200 OK\r\n");
+	response_str.append("Content-Type: text/html\r\n"); // how to determine correct MIME type?
+	response_str.append("Content-Length: ");
+	response_str.append(ss.str());
+	response_str.append("\r\n");
+	response_str.append("\r\n");
+	response_str.append(response->body);
+	// char response[] = "HTTP/1.1 200 OK\r\n" "Content-Type: text/plain\r\n" "\r\n" "Hello, World!";
+	send(connection_fd, response_str.c_str(), response_str.length(), 0);
 }
 
 // read request handler
 void	RequestHandler::processRequest()
 {
+	//how to handle cases in which the header is not recv in one go? (do those cases exist?)
 	bytes_read = recv(connection_fd, buf, sizeof(buf), 0);
 	if (bytes_read == -1)
 		throw CustomException("Failed when processing read request\n");
@@ -64,6 +78,7 @@ void	RequestHandler::processRequest()
 			// check if requested resource exists?
 			// decode URL/Query if necessary
 			// construct full URI?
+			// check somewhere if TE contains something else than "chunked" --> in this case respond with 501
 		}
 		catch(const std::exception& e)
 		{

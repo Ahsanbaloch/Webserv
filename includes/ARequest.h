@@ -3,7 +3,6 @@
 
 # include <string>
 # include <map>
-# include "GETRequest.h"
 # include "Response.h"
 
 class RequestHandler;
