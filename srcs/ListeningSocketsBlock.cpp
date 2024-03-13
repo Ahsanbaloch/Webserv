@@ -28,7 +28,7 @@ void	ListeningSocketsBlock::createSockets(std::vector<int> ports_test)
 		if (socket_fd == -1)
 			throw CustomException("Failed when calling socket()\n");
 
-		ListeningSocket serverSocket(socket_fd); // here goes an object from the config vector
+		ListeningSocket serverSocket(socket_fd); // here goes an object from the config vector; that object is then added to the ListeningSocket object
 		serverSocket.setSockOptions();
 		serverSocket.initSockConfig(*it, 0);
 		serverSocket.bindSock();

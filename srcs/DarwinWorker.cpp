@@ -36,6 +36,7 @@ void	DarwinWorker::runEventLoop()
 			// event came from listening socket --> we have to create a connection
 			else if (*reinterpret_cast<int*>(event_lst[i].udata) == Q.listening_sock_ident)
 			{
+				// based on socket id, find related config file/ListeningSocket in SocketblockVector (alt use a newly created map with socket_fd as key)
 				while (1) // to improve efficiency (reducing calls to kevent), we accept all connection requests related to the event in a loop
 				{
 					std::cout << "new connection incoming\n";
@@ -45,7 +46,7 @@ void	DarwinWorker::runEventLoop()
 						if (errno == EAGAIN || errno == EWOULDBLOCK)
 						{
 							Q.attachConnectionSockets(pending_fds);
-							addToConnectedClients();
+							addToConnectedClients(); // provide socket (that includes config data)
 							pending_fds.clear();
 							break;
 						}
@@ -79,6 +80,7 @@ void	DarwinWorker::addToConnectedClients()
 	int size = pending_fds.size();
 	for (int i = 0; i < size; i++)
 	{
+		// construct handler with socket/configData as input (maybe reference?)
 		RequestHandler* Handler = new RequestHandler(pending_fds[i]); // need to free that memory somewhere --> when disconnecting the client
 		ConnectedClients.insert(std::pair<int, RequestHandler*>(pending_fds[i], Handler));
 	}
