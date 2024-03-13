@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 14:22:42 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/11 19:48:15 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/12 18:01:04 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,13 +40,14 @@ class config_pars
 	
 
 	public: 
-	config_pars(char *argv);
+	config_pars(int argc, char **argv);
 	//config_pars(const config_pars &other);
 	~config_pars();
 	//std::map<int, std::map<std::string, t_server_config> >&	getConfigMap();
 
 	std::map<int, std::map<std::string, t_server_config> >&	getConfigMap(); //getters
-	void readconfig(char *argv, std::string &fileContent);	//read config file
+	void argumentCheck(int argc, char **argv, std::string &argument_value);
+	void readconfig(std::string &argv, std::string &fileContent);	//read config file
 	void parse_server_configs(std::string &sever_config); //using this fucntion to parse everything
 	//void extractServerBlocks(std::vector<std::string> &serverBlocks, std::string &server_config);
 	void extractServer(std::vector<std::string> &server_block,const std::string &server_config);  //separating every server block

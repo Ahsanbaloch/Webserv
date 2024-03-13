@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/08 18:11:04 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/09 15:27:15 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/12 17:58:52 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -118,6 +118,11 @@ public:
 };
 
 class NoRootLocationException : public std::exception {
+public:
+	const char* what() const throw();
+};
+
+class InvalidConfigFileException : public std::exception {
 public:
 	const char* what() const throw();
 };

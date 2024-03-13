@@ -6,16 +6,11 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/08 19:37:33 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/09 15:29:04 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/13 12:56:06 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "exception_parsing.hpp"
-
-const char *InvalidArgNumException::what() const throw()
-{
-	return (RED "Invalid number of arguments" RESET);
-}
 
 const char *CantOpenConfigException::what() const throw()
 {
@@ -32,10 +27,6 @@ const char *DuplicateServerNameException::what() const throw()
 	return (RED "Duplicate server name" RESET);
 }
 
-const char *ValueMissingException::what() const throw()
-{
-	return (RED "Value missing" RESET);
-}
 
 MissingValueException::MissingValueException(const std::string &missingValue) : _Value(missingValue) {}
 
@@ -107,4 +98,9 @@ const char *NoRootLocationException::what() const throw()
 const char *EmptyServerBlockException::what() const throw()
 {
 	return (RED "Empty server block" RESET);
+}
+
+const char *InvalidConfigFileException::what() const throw()
+{
+	return (RED "Invalid config file" RESET);
 }

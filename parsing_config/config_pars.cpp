@@ -6,24 +6,38 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/11 20:41:48 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/13 13:46:48 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "config_pars.hpp"
 
 
-config_pars::config_pars(char *argv)
+config_pars::config_pars(int argc, char **argv)
 {
-	std::string config_file;
 	std::string fileContent;
-	readconfig(argv, fileContent);
+    std::string argument_value;
+    argumentCheck(argc, argv, argument_value);
+	readconfig(argument_value, fileContent);
     checkConsecutiveSameBraces(fileContent);
 	parse_server_configs(fileContent);
 	
 }
-config_pars::~config_pars()
+config_pars::~config_pars() {}
+
+
+void config_pars::argumentCheck(int argc, char **argv, std::string &argument_value)
 {
+    if (argc == 1)
+        argument_value = "simple.conf";
+    else if (argc == 2)
+    {
+        argument_value = argv[1];
+        if (argument_value.find(".conf") == std::string::npos)
+            throw InvalidConfigFileException();
+    }
+    else
+        throw InvalidConfigFileException();
 }
 
 std::map<int, std::map<std::string, t_server_config> >&	config_pars::getConfigMap()
@@ -31,11 +45,12 @@ std::map<int, std::map<std::string, t_server_config> >&	config_pars::getConfigMa
     return _configMap;
 }
 
-void config_pars::readconfig(char *argv, std::string &fileConetnt)
+void config_pars::readconfig(std::string &argv, std::string &fileConetnt)
 {
 	std::ifstream file(argv);
 	if (file.is_open())
 	{
+        //std::cout << "Reading config file: " << argv <<  std::endl;
 		std::string line;
 		while (std::getline(file, line))
 		{
@@ -59,11 +74,14 @@ void config_pars::parse_server_configs(std::string &server_config)
 	std::vector<std::string> server_block;
 	extractServer(server_block, server_config);
 	for (size_t i = 0; i < server_block.size(); i++)
-	{
+	{;
+        /* In many server configurations, each server is identified by a unique combination of IP address (or hostname) and port number. 
+        This unique combination is often referred to as a socket. If two servers were allowed to have the same socket, 
+        it would be impossible to determine which server should handle a given request. */
 		t_server_config default_server_config;
         parse_server_block(default_server_config, server_block[i]);
     
-        default_server_config.serverName = "default_server"; //understand this shit
+        default_server_config.serverName = "default_server";
        if (!_configMap.count(default_server_config.port))
             _configMap[default_server_config.port][default_server_config.serverName] = default_server_config;
         t_server_config server_config;
@@ -95,6 +113,8 @@ int config_pars::extractBodySize(const std::string &server_block)
     {
         start = skipWhitespace(server_block, start + 20);
         end = server_block.find(";", start);
+        if (server_block.find('\n', start) < server_block.find(';', start))
+            throw MissingSemicolonException();
         std::string value = server_block.substr(start, end - start);
         removeLeadingWhitespaces(value);
         if (value.empty())
@@ -135,9 +155,11 @@ void config_pars::Location_block(t_server_config &server_config, const std::stri
 void config_pars::parseLocationBlock(t_location_config &location_config, const std::string &location_block)
 {
     location_config.path = extractPath(location_block);
-    //std::cout << "path: " << location_config.path << std::endl;
 	location_config.cgi_ex = extractVariables("cgi-ext",location_block);
-	location_config.redirect = extractVariables("redirect_url",location_block);
+    if (location_config.path == "/redir") //should use this condition to check if the path is redir or not?
+        location_config.redirect = extractVariables("redirect_url",location_block);
+    /* if (!location_config.redirect.empty())
+        std::cout << "Location: " << location_config.redirect << std::endl; */
     location_config.root = extractVariables("root", location_block);
     location_config.index = extractVariables("index", location_block);
     location_config.allowedMethods = extractVariables("allow_methods",location_block);
@@ -150,6 +172,8 @@ bool config_pars::extractAutoIndex(const std::string &location_block)
 		throw MissingValueException("autoIndex");
 	size_t start = location_block.find("autoIndex") + 10;
 	size_t end = location_block.find(";", start);
+    if (location_block.find('\n', start) < location_block.find(';', start))
+            throw MissingSemicolonException();
 	std::string value = location_block.substr(start, end - start);
 	removeLeadingWhitespaces(value);
     if (value.empty())
@@ -166,13 +190,15 @@ bool config_pars::extractAutoIndex(const std::string &location_block)
 std::string config_pars::extractVariables(const std::string &variable, const std::string &location_block)
 {
 	if (location_block.find(variable) == std::string::npos)
-		throw MissingValueException("location");
+		throw MissingValueException(variable);
 	size_t start = location_block.find(variable) + variable.size();
 	size_t end = location_block.find(";", start);
+    if (location_block.find('\n', start) < location_block.find(';', start))
+        throw MissingSemicolonException();
 	std::string value = location_block.substr(start, end - start);
 	removeLeadingWhitespaces(value);
 	if (location_block.empty())
-		throw MissingValueException("location");
+		throw MissingValueException(variable);
 	return (value);
 }
 
@@ -216,6 +242,8 @@ std::string config_pars::extractErrorPage(const std::string &server_block)
     {
         start = skipWhitespace(server_block, start + 11);
         end = server_block.find(";", start);
+        if (server_block.find('\n', start) < server_block.find(';', start))
+            throw MissingSemicolonException();
         error_page = server_block.substr(start, end - start);
     }
     else
@@ -233,6 +261,8 @@ int config_pars::extractListen(const std::string &server_block)
     {
         start = skipWhitespace(server_block, start + 6);
         end = server_block.find(";", start);
+        if (server_block.find('\n', start) < server_block.find(';', start))
+            throw MissingSemicolonException();
         listen = server_block.substr(start, end - start);
         port = checkHostPort(listen);
         if (port < 0 || port > 65535)
@@ -242,26 +272,6 @@ int config_pars::extractListen(const std::string &server_block)
        throw MissingValueException("listen");
     return (port);
 }
-
-/* std::vector<int> config_pars::extractListen(const std::string &server_block)
-{
-    size_t start = 0;
-    size_t end = 0;
-    std::vector<int> ports;
-    while ((start = server_block.find("listen", start)) != std::string::npos)
-    {
-        start = skipWhitespace(server_block, start + 6);
-        end = server_block.find(";", start);
-        std::string listen = server_block.substr(start, end - start);
-        int port = checkHostPort(listen);
-        if (port < 0 || port > 65535)
-            throw InvalidPortException();
-        ports.push_back(port);
-        start = end;
-    }
-    return ports;
-} */
-
 
 
 std::string config_pars::extractServerName(const std::string &server_block)
@@ -273,10 +283,12 @@ std::string config_pars::extractServerName(const std::string &server_block)
     {
         start = skipWhitespace(server_block, start + 11);
         end = server_block.find(";", start);
+        if (server_block.find('\n', start) < server_block.find(';', start))
+            throw MissingSemicolonException();
         serverName = server_block.substr(start, end - start);
     }
     else
-        throw MissingValueException("Server Name");    //give default name to server
+        throw MissingValueException("Server Name");
     return serverName;
 }
 
