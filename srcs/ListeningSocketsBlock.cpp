@@ -4,7 +4,7 @@
 ListeningSocketsBlock::ListeningSocketsBlock(std::vector<int> config_info)
 	: num_listening_sockets(2)
 {
-	createSockets(config_info);
+	createSockets(config_info); // here goes the config vector
 }
 
 ListeningSocketsBlock::ListeningSocketsBlock()
@@ -18,7 +18,7 @@ ListeningSocketsBlock::~ListeningSocketsBlock()
 // function to create server sockets
 void	ListeningSocketsBlock::createSockets(std::vector<int> ports_test)
 {
-	for (std::vector<int>::iterator it = ports_test.begin(); it != ports_test.end(); it++)
+	for (std::vector<int>::iterator it = ports_test.begin(); it != ports_test.end(); it++) // will loop through config vector
 	{
 		#ifdef __APPLE__
 			int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -28,7 +28,7 @@ void	ListeningSocketsBlock::createSockets(std::vector<int> ports_test)
 		if (socket_fd == -1)
 			throw CustomException("Failed when calling socket()\n");
 
-		ListeningSocket serverSocket(socket_fd);
+		ListeningSocket serverSocket(socket_fd); // here goes an object from the config vector
 		serverSocket.setSockOptions();
 		serverSocket.initSockConfig(*it, 0);
 		serverSocket.bindSock();

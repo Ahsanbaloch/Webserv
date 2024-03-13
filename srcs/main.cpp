@@ -23,7 +23,7 @@ int	main(void)
 	try
 	{
 		// Create Server object (create listening sockets, bind, set non-blocking, listen)
-		ListeningSocketsBlock SocketsBlock(ports_test);
+		ListeningSocketsBlock SocketsBlock(ports_test); // here goes the config vector
 
 		// create KQueue object
 		#ifdef __APPLE__
