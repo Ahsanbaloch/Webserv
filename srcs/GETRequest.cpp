@@ -3,7 +3,7 @@
 
 GETRequest::GETRequest(RequestHandler&)
 {
-	
+	is_directory = 0;
 }
 
 GETRequest::GETRequest(/* args */)
@@ -26,6 +26,48 @@ std::string	GETRequest::createStatusLine(RequestHandler& handler)
 	return (status_line);
 }
 
+
+void	GETRequest::checkPathType(RequestHandler& handler)
+{
+	char last_char = handler.header.path[handler.header.path.size() - 1];
+
+	if (last_char == '/')
+		is_directory = 1;
+	
+	std::cout << "is dir: " << is_directory << std::endl;
+}
+
+std::string	GETRequest::constructFilePath(RequestHandler& handler)
+{
+	std::string root = "./www/"; // how does root string end, always with '/' /// from where do I get root when it is location specific?
+	std::string file_path;
+	std::string body;
+
+	file_path.append(root);
+	file_path.append(handler.header.path);
+
+	std::ifstream file(file_path); // Open the HTML file
+	if (!file.is_open()) 
+	{
+		// add proper error message
+		perror("Failed: ");
+		std::cerr << "Error opening file!" << std::endl;
+	}
+	std::stringstream buffer;
+	buffer << file.rdbuf();
+
+	body = buffer.str();
+
+	file.close(); 
+	return (body);
+}
+
+void	GETRequest::findDirectory()
+{
+	
+}
+
+
 std::string GETRequest::createBody(RequestHandler& handler)
 {
 	std::string body;
@@ -35,28 +77,21 @@ std::string GETRequest::createBody(RequestHandler& handler)
 		// look up file and read content into response body
 	else
 	{
-		std::ifstream file("./www/index.html"); // Open the HTML file
-		if (!file.is_open()) {
-			perror("Failed: ");
-			std::cerr << "Error opening file!" << std::endl;
-		}
-
-		std::stringstream buffer;
-		buffer << file.rdbuf();
-
-		body = buffer.str();
-
-		file.close(); 
+		checkPathType(handler);
+		if (is_directory)
+			findDirectory();
+		else
+			body = constructFilePath(handler);
 	}
 	return (body);
 }
 
-std::string	GETRequest::createHeaderFields(RequestHandler& handler)
+std::string	GETRequest::createHeaderFields(RequestHandler& handler, std::string body)
 {
 	(void)handler;
 	std::string	header;
 	std::ostringstream length_conversion;
-	length_conversion << handler.response->body.size();
+	length_conversion << body.size();
 
 	header.append("Content-Type: text/html\r\n"); // how to determine correct MIME type?
 	header.append("Content-Length: ");
@@ -75,7 +110,7 @@ Response	*GETRequest::createResponse(RequestHandler& handler)
 	else
 		response->body = createBody(handler);
 	
-	// response->header_fields = createHeaderFields(handler);
+	response->header_fields = createHeaderFields(handler, response->body);
 
 	// CREATE BODY if required --> seperate function 
 	// check if path is a file or a directory (identified by last char in path string)

@@ -18,10 +18,16 @@ public:
 	explicit GETRequest(RequestHandler&);
 	~GETRequest();
 
+	int			is_directory;
+
 	Response	*createResponse(RequestHandler&);
 	std::string	createStatusLine(RequestHandler&);
 	std::string	createBody(RequestHandler&);
-	std::string createHeaderFields(RequestHandler&);
+	std::string createHeaderFields(RequestHandler&, std::string);
+	void		checkPathType(RequestHandler&);
+
+	std::string	constructFilePath(RequestHandler&);
+	void		findDirectory();
 };
 
 

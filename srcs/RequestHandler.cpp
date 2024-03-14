@@ -35,25 +35,9 @@ RequestHandler::~RequestHandler()
 
 void	RequestHandler::sendResponse()
 {
-	#include <sstream>
-	// std::string resp = response->status_line + response->header_fields + response->body;
-
-	std::stringstream ss;
-	ss << response->body.size(); // how to determine correct size? (depends on data-type)
-	std::string resp = "";
-	printf("Hello\n");
-	// this will have to be based on the response object inside the Handler
-	std::cout << "send response" << std::endl;
-	resp.append(response->status_line);
-	resp.append("Content-Type: text/html\r\n"); // how to determine correct MIME type?
-	resp.append("Content-Length: ");
-	resp.append(ss.str());
-	resp.append("\r\n");
-	resp.append("\r\n");
-	resp.append(response->body);
-	// char response[] = "HTTP/1.1 200 OK\r\n" "Content-Type: text/plain\r\n" "\r\n" "Hello, World!";
-	
-	send(connection_fd, resp.c_str(), resp.length(), 0);
+	std::string resp = response->status_line + response->header_fields + response->body;	
+	send(connection_fd, resp.c_str(), resp.length(), 0); 
+	// check for errors when calling send
 }
 
 // read request handler
@@ -77,7 +61,8 @@ void	RequestHandler::processRequest()
 			// what about folding lines?
 			header.parseRequestLine(*this);
 			header.parseHeaderFields(*this); // check if it still works if no header is sent
-			// check if requested resource exists?
+			// check which conifg struct is the relevant one based on server name (or later in ARequest::newRequest?)
+			// check if requested resource exists???
 			// decode URL/Query if necessary
 			// construct full URI?
 			// check somewhere if TE contains something else than "chunked" --> in this case respond with 501
