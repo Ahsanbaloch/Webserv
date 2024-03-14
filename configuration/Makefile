@@ -6,7 +6,7 @@
 #    By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/12/24 17:37:52 by ahsalam           #+#    #+#              #
-#    Updated: 2024/02/28 16:30:42 by ahsalam          ###   ########.fr        #
+#    Updated: 2024/03/14 13:07:30 by ahsalam          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -14,7 +14,9 @@ Name	=	webserv
 
 CXX		=	c++
 
-CXXFLAGS	=	-Wall -Wextra -Werror -std=c++98
+CXXFLAGS	=	 -std=c++98
+
+#-Wall -Wextra -Werror
 
 SRC = $(wildcard *.cpp)
 
