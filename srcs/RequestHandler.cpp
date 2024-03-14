@@ -62,6 +62,7 @@ void	RequestHandler::processRequest()
 			header.parseRequestLine(*this);
 			header.parseHeaderFields(*this); // check if it still works if no header is sent
 			// check which conifg struct is the relevant one based on server name (or later in ARequest::newRequest?)
+				// --> see DigitalOcean for approach
 			// check if requested resource exists???
 			// decode URL/Query if necessary
 			// construct full URI?
