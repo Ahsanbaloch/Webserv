@@ -12,6 +12,8 @@ public:
 	~Response();
 
 	std::string	body;
+	std::string status_line;
+	std::string header_fields;
 };
 
 

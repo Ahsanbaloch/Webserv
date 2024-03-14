@@ -18,7 +18,7 @@ public:
 
 	static ARequest *newRequest(RequestHandler&);
 
-	virtual Response *createResponse() = 0;
+	virtual Response *createResponse(RequestHandler&) = 0;
 
 	
 };

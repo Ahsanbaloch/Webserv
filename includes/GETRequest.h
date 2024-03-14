@@ -18,7 +18,10 @@ public:
 	explicit GETRequest(RequestHandler&);
 	~GETRequest();
 
-	Response	*createResponse();
+	Response	*createResponse(RequestHandler&);
+	std::string	createStatusLine(RequestHandler&);
+	std::string	createBody(RequestHandler&);
+	std::string createHeaderFields(RequestHandler&);
 };
 
 

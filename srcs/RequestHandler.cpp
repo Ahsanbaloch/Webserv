@@ -11,7 +11,7 @@
 RequestHandler::RequestHandler(int fd)
 {
 	connection_fd = fd;
-	error = 0;
+	status = 200;
 	buf_pos = -1;
 	body_parsing_done = 0;
 	chunk_length = 0;
@@ -36,22 +36,24 @@ RequestHandler::~RequestHandler()
 void	RequestHandler::sendResponse()
 {
 	#include <sstream>
+	// std::string resp = response->status_line + response->header_fields + response->body;
 
 	std::stringstream ss;
 	ss << response->body.size(); // how to determine correct size? (depends on data-type)
-	std::string response_str = "";
+	std::string resp = "";
 	printf("Hello\n");
 	// this will have to be based on the response object inside the Handler
 	std::cout << "send response" << std::endl;
-	response_str.append("HTTP/1.1 200 OK\r\n");
-	response_str.append("Content-Type: text/html\r\n"); // how to determine correct MIME type?
-	response_str.append("Content-Length: ");
-	response_str.append(ss.str());
-	response_str.append("\r\n");
-	response_str.append("\r\n");
-	response_str.append(response->body);
+	resp.append(response->status_line);
+	resp.append("Content-Type: text/html\r\n"); // how to determine correct MIME type?
+	resp.append("Content-Length: ");
+	resp.append(ss.str());
+	resp.append("\r\n");
+	resp.append("\r\n");
+	resp.append(response->body);
 	// char response[] = "HTTP/1.1 200 OK\r\n" "Content-Type: text/plain\r\n" "\r\n" "Hello, World!";
-	send(connection_fd, response_str.c_str(), response_str.length(), 0);
+	
+	send(connection_fd, resp.c_str(), resp.length(), 0);
 }
 
 // read request handler
@@ -106,7 +108,7 @@ void	RequestHandler::processRequest()
 		request = ARequest::newRequest(*this);
 		// process request (based on the object type that has been created --> through base pointer?)
 			// create Response object inside the function and return it here --> should then be stored in RequestHandler so that sendResponse can send it  --> What is teh purpose of this object?
-		response = request->createResponse();
+		response = request->createResponse(*this);
 		// set Response to be ready
 	}
 	
@@ -209,7 +211,7 @@ void	RequestHandler::parseEncodedBody()
 				}
 				else
 				{
-					error = 400; // what is the correct error code?
+					status = 400; // what is the correct error code?
 					throw CustomException("Bad request 1"); // other exception?
 				}
 
@@ -249,7 +251,7 @@ void	RequestHandler::parseEncodedBody()
 					}
 					else
 					{
-						error = 400; // what is the correct error code?
+						status = 400; // what is the correct error code?
 						throw CustomException("Bad request 2"); // other exception?
 					}
 				}
@@ -270,7 +272,7 @@ void	RequestHandler::parseEncodedBody()
 				}
 				else
 				{
-					error = 400; // what is the correct error code?
+					status = 400; // what is the correct error code?
 					throw CustomException("Bad request 3"); // other exception?
 				}
 			
@@ -287,7 +289,7 @@ void	RequestHandler::parseEncodedBody()
 				}
 				else
 				{
-					error = 400; // what is the correct error code?
+					status = 400; // what is the correct error code?
 					throw CustomException("Bad request 4"); // other exception?
 				}
 
@@ -330,7 +332,7 @@ void	RequestHandler::parseEncodedBody()
 				}
 				else
 				{
-					error = 400; // what is the correct error code?
+					status = 400; // what is the correct error code?
 					throw CustomException("Bad request 5"); // other exception?
 				}
 
@@ -343,7 +345,7 @@ void	RequestHandler::parseEncodedBody()
 				}
 				else
 				{
-					error = 400; // what is the correct error code?
+					status = 400; // what is the correct error code?
 					throw CustomException("Bad request 6"); // other exception?
 				}
 			

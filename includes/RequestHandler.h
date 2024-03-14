@@ -27,12 +27,11 @@ public:
 	ARequest*			request;
 	Response*			response;
 	Header				header;
-	// might want to create empty shell for generic Request object that then gets filled when creating specific object
 	int					connection_fd;
 	int					body_parsing_done;
 	int					chunk_length;
 	int					request_length;
-	int					error;
+	int					status;
 	int					response_ready;
 	int					body_expected;
 	int					body_read;

@@ -14,20 +14,70 @@ GETRequest::~GETRequest()
 {
 }
 
-Response	*GETRequest::createResponse()
+std::string	GETRequest::createStatusLine(RequestHandler& handler)
+{
+	std::string status_line;
+	std::ostringstream err_conversion;
+
+	status_line.append("HTTP/1.1 "); // alternative handler.head.version
+	err_conversion << handler.status;
+	status_line.append(err_conversion.str());
+	status_line.append(" \r\n");  //A server MUST send the space that separates the status-code from the reason-phrase even when the reason-phrase is absent (i.e., the status-line would end with the space)
+	return (status_line);
+}
+
+std::string GETRequest::createBody(RequestHandler& handler)
+{
+	std::string body;
+
+	if (handler.status >= 400) // check if error was identified (or is this handled somewhere else?)
+		; // From configData get specific info about which page should be displayed
+		// look up file and read content into response body
+	else
+	{
+		std::ifstream file("./www/index.html"); // Open the HTML file
+		if (!file.is_open()) {
+			perror("Failed: ");
+			std::cerr << "Error opening file!" << std::endl;
+		}
+
+		std::stringstream buffer;
+		buffer << file.rdbuf();
+
+		body = buffer.str();
+
+		file.close(); 
+	}
+	return (body);
+}
+
+std::string	GETRequest::createHeaderFields(RequestHandler& handler)
+{
+	(void)handler;
+	std::string	header;
+	std::ostringstream length_conversion;
+	length_conversion << handler.response->body.size();
+
+	header.append("Content-Type: text/html\r\n"); // how to determine correct MIME type?
+	header.append("Content-Length: ");
+	header.append(length_conversion.str());
+	header.append("\r\n\r\n");
+	return (header);
+}
+
+Response	*GETRequest::createResponse(RequestHandler& handler)
 {
 	Response *response = new Response; // needs to be delete somewhere
 
+	response->status_line = createStatusLine(handler);
+	if ((handler.status >= 100 && handler.status <= 103) || handler.status == 204 || handler.status == 304)
+		response->body = ""; // or just initialize it like that // here no body should be created
+	else
+		response->body = createBody(handler);
+	
+	// response->header_fields = createHeaderFields(handler);
 
-	// CREATE status line
-		// get status code from handler
-		// if we want to provide status message; lookup status message corresponding to status code somewhere
-
-	// check if error was identified (or is this handled somewhere else?)
-		// From configData get specific info about which page should be displayed
-		// look up file and read content into response body
-
-	// CREATE BODY if required --> seperate function // don't create body if 1xx (Informational), 204 (No Content), or 304 (Not Modified)
+	// CREATE BODY if required --> seperate function 
 	// check if path is a file or a directory (identified by last char in path string)
 	// if it is a file
 		// find requested file (start looking in X dir?)
@@ -59,18 +109,7 @@ Response	*GETRequest::createResponse()
 		// server header --> should this actually be set?
 		// additional header fields: expires, last-modified, Access Control Origin, Keep Alive etc.
 
-	std::ifstream file("./www/index.html"); // Open the HTML file
-    if (!file.is_open()) {
-		perror("Failed: ");
-        std::cerr << "Error opening file!" << std::endl;
-    }
-
-    std::stringstream buffer;
-	buffer << file.rdbuf();
-
-	response->body = buffer.str();
-
-    file.close(); // Close the file when done
+	// Close the file when done
 	
 	// check if there has been any error detected
 
