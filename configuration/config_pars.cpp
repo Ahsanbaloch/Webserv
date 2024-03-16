@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/16 11:46:41 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/16 11:49:17 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -86,39 +86,25 @@ void config_pars::parse_server_configs(std::string &server_config)
 	std::vector<std::string> server_block;
 	extractServer(server_block, server_config);
 	t_server_config default_server_config;
-    //std::vector<t_server_config> duplicate_checker;
+    std::vector<t_server_config> duplicate_checker;
     std::string ipPort;
 	for (size_t i = 0; i < server_block.size(); i++)
 	{   
-		ipPort.clear();
         parse_server_block(default_server_config, server_block[i]);
-        std::stringstream port;
-        port << default_server_config.port;
-    	ipPort.append(default_server_config.Ip + ":" +  port.str());
+    	ipPort.append(default_server_config.Ip + ":" + std::to_string(default_server_config.port));
        	if (_server_configs_map.count(ipPort))
 		{
-            bool isDuplicate = false;
-            for (std::vector<t_server_config>::iterator it = _server_configs_map[ipPort].begin(); it != _server_configs_map[ipPort].end(); it++)
-            {
-                if (it->serverName == default_server_config.serverName)
-                {
-                    isDuplicate = true;
-                    break;
-                }
-            }
-            if (!isDuplicate)
-                _server_configs_map[ipPort].push_back(default_server_config);
-            //_server_configs_map[ipPort].push_back(default_server_config);
+            _server_configs_map[ipPort].push_back(default_server_config);
 		}
 		else
 		{
-			std::vector<t_server_config> temp;
+			//std::vector<t_server_config> temp;
 			temp.push_back(default_server_config);
 			_server_configs_map.insert(std::pair<std::string, std::vector<t_server_config> >(ipPort, temp));
 		}
-        //duplicate_checker.push_back(default_server_config);
+        duplicate_checker.push_back(default_server_config);
 	}
-    //checkforDuplicateServer(duplicate_checker);
+    checkforDuplicateServer(duplicate_checker);
 }
 
 
@@ -275,8 +261,10 @@ std::string config_pars::extractVariables(const std::string &variable, const std
 		throw MissingValueException(variable);
 	size_t start = location_block.find(variable) + variable.size();
 	size_t end = location_block.find(";", start);
-    if (location_block.find('\n', start) < location_block.find(';', start))
+    if ((location_block.find('\n', start)) < (location_block.find(';', start)))
+    {
         throw MissingSemicolonException();
+    }
 	std::string value = location_block.substr(start, end - start);
 	removeLeadingWhitespaces(value);
 	if (location_block.empty())
