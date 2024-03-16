@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 16:53:25 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/13 13:28:32 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/16 12:04:10 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -58,11 +58,9 @@ size_t findServerBlockEnd(const std::string &raw_data, size_t start, int &braceC
 
 void	removeLeadingWhitespaces(std::string &string) 
 {
-
 	size_t	start = 0;
-	while (start < string.size() && (string[start] == ' ' || string[start] == '\t')) {
+	while (start < string.size() && (string[start] == ' ' || string[start] == '\t'))
 		start++;
-	}
 	string = string.substr(start, string.size() - start);
 }
 

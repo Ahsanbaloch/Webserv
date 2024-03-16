@@ -6,14 +6,11 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/13 21:34:47 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/16 12:10:55 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "config_pars.hpp"
-/* #include <set>
-#include <utility> */
-
 
 config_pars::config_pars(int argc, char **argv)
 {
@@ -21,12 +18,10 @@ config_pars::config_pars(int argc, char **argv)
     std::string argument_value;
     argumentCheck(argc, argv, argument_value);
 	readconfig(argument_value, fileContent);
-    checkConsecutiveSameBraces(fileContent);
 	parse_server_configs(fileContent);
-	
+
 }
 config_pars::~config_pars() {}
-
 
 void config_pars::argumentCheck(int argc, char **argv, std::string &argument_value)
 {
@@ -42,14 +37,10 @@ void config_pars::argumentCheck(int argc, char **argv, std::string &argument_val
         throw InvalidConfigFileException();
 }
 
-std::map<int, std::map<std::string, t_server_config> >&	config_pars::getConfigMap()
-{
-    return _configMap;
-}
 
-std::vector<t_server_config> &config_pars::getServerConfigsVector()
+std::map<std::string, std::vector<t_server_config> > &config_pars::getServerConfigsMap()
 {
-    return _server_configs_vector;
+	return _server_configs_map;
 }
 
 void config_pars::readconfig(std::string &argv, std::string &fileConetnt)
@@ -57,7 +48,6 @@ void config_pars::readconfig(std::string &argv, std::string &fileConetnt)
 	std::ifstream file(argv);
 	if (file.is_open())
 	{
-        //std::cout << "Reading config file: " << argv <<  std::endl;
 		std::string line;
 		while (std::getline(file, line))
 		{
@@ -80,35 +70,35 @@ void config_pars::parse_server_configs(std::string &server_config)
 {
 	std::vector<std::string> server_block;
 	extractServer(server_block, server_config);
-    //std::set<std::pair<int, std::string> > serverSet;
+	t_server_config default_server_config;
+    std::string ipPort;
 	for (size_t i = 0; i < server_block.size(); i++)
-	{
-        /* In many server configurations, each server is identified by a unique combination of IP address (or hostname) and port number. 
-        This unique combination is often referred to as a socket. If two servers were allowed to have the same socket, 
-        it would be impossible to determine which server should handle a given request. */
-
-        
-		t_server_config default_server_config;
+	{   
+		ipPort.clear();
         parse_server_block(default_server_config, server_block[i]);
-        //std::cout << "Hello world\n" << std::endl;
-        _server_configs_vector.push_back(default_server_config);
-       /* check that the server name and port are unique */  
-       /*std::pair<int,std::string> id(default_server_config.port, default_server_config.serverName);
-        if (serverSet.count(id) != 0)
-            throw DuplicateServerNameException();
-        else
-            serverSet.insert(id); */
-        //_server_configs_vector[i] = default_server_config;
-    
-       /*  default_server_config.serverName = "default_server";
-       if (!_configMap.count(default_server_config.port))
-            _configMap[default_server_config.port][default_server_config.serverName] = default_server_config;
-        t_server_config server_config;
-        parse_server_block(server_config, server_block[i]);
-        if (_configMap[server_config.port].count(server_config.serverName) != 0)
-            throw DuplicateServerNameException();
-        else
-            _configMap[server_config.port][server_config.serverName] = server_config; */
+        std::stringstream port;
+        port << default_server_config.port;
+    	ipPort.append(default_server_config.Ip + ":" +  port.str());
+       	if (_server_configs_map.count(ipPort))
+		{
+            bool isDuplicate = false;
+            for (std::vector<t_server_config>::iterator it = _server_configs_map[ipPort].begin(); it != _server_configs_map[ipPort].end(); it++)
+            {
+                if (it->serverName == default_server_config.serverName)
+                {
+                    isDuplicate = true;
+                    break;
+                }
+            }
+            if (!isDuplicate)
+                _server_configs_map[ipPort].push_back(default_server_config);
+		}
+		else
+		{
+			std::vector<t_server_config> temp;
+			temp.push_back(default_server_config);
+			_server_configs_map.insert(std::pair<std::string, std::vector<t_server_config> >(ipPort, temp));
+		}
 	}
 }
 
@@ -116,10 +106,30 @@ void config_pars::parse_server_block(t_server_config &server_config, const std::
 {
     server_config.serverName = extractServerName(server_block);
     server_config.port = extractListen(server_block);
-    //std::cout << "PORT :" << server_config.port << std::endl;
+    server_config.Ip = extractIp(server_block);
     server_config.errorPage = extractErrorPage(server_block);
     server_config.bodySize = extractBodySize(server_block);
     Location_block(server_config, server_block);
+}
+
+std::string config_pars::extractIp(const std::string &server_block)
+{
+    size_t start = 0;
+    size_t end = 0;
+    std::string ip;
+    if ((start = server_block.find("listen", start)) != std::string::npos)
+    {
+        start = skipWhitespace(server_block, start + 6);
+        end = server_block.find(":", start);
+        if (server_block.find('\n', start) < server_block.find(':', start))
+            throw MissingSemicolonException();
+        ip = server_block.substr(start, end - start);
+        if (ip == "localhost")
+            ip = "127.0.0.1";
+    }
+    else
+        throw MissingValueException("ip");
+    return ip;
 }
 
 int config_pars::extractBodySize(const std::string &server_block)
@@ -149,26 +159,44 @@ int config_pars::extractBodySize(const std::string &server_block)
 }
 
 
-void config_pars::Location_block(t_server_config &server_config, const std::string &server_block)
+void config_pars::Location_block(t_server_config &server_config, const std::string &config_block)
 {
     std::vector<std::string> location_blocks;
+    std::vector<t_server_config> ssss_configs;
 
-    splitLocationBlocks(location_blocks, server_block);
+    splitLocationBlocks(location_blocks, config_block);
+	t_location_config location_config;
 	if (location_blocks.empty())
 		throw InvalidLocationException();
 	for (size_t i = 0; i < location_blocks.size(); i++)
 	{
-		t_location_config location_config;
 		parseLocationBlock(location_config, location_blocks[i]);
-		if (server_config.locationMap.count(location_config.path) != 0)
-			throw InvalidPathException(); 
-		else
-			server_config.locationMap[location_config.path] = location_config;
+        ssss_configs.push_back(server_config); // remove it later
 	}
-	if (server_config.locationMap.count("/") == 0)
-		throw NoRootLocationException();
+    //checkForDuplicatePaths(_server_configs_vector, location_blocks);
 }
 
+/* void config_pars::checkDuplication(std::vector<std::string> &location_blocks)
+{
+   
+} */
+//checkduplication
+/* void config_pars::checkForDuplicatePaths(std::vector<t_server_config> _server, std::vector<std::string> location_blocks)
+{
+
+    for (size_t i = 0; i < _server.size(); i++)
+    {
+        std::cout << "Server: " << _server[i].serverName << std::endl;
+        for (size_t j = 0; j < location_blocks.size(); j++)
+        {
+            for (size_t k = j + 1; k < location_blocks.size(); k++)
+            {
+                if (_server[i].location_config.path == _server[i].location_config.path)
+                    throw DuplicatePathException();
+            }
+        } 
+    }
+} */
 
 void config_pars::parseLocationBlock(t_location_config &location_config, const std::string &location_block)
 {
@@ -211,8 +239,10 @@ std::string config_pars::extractVariables(const std::string &variable, const std
 		throw MissingValueException(variable);
 	size_t start = location_block.find(variable) + variable.size();
 	size_t end = location_block.find(";", start);
-    if (location_block.find('\n', start) < location_block.find(';', start))
+    if ((location_block.find('\n', start)) < (location_block.find(';', start)))
+    {
         throw MissingSemicolonException();
+    }
 	std::string value = location_block.substr(start, end - start);
 	removeLeadingWhitespaces(value);
 	if (location_block.empty())
@@ -283,7 +313,7 @@ int config_pars::extractListen(const std::string &server_block)
             throw MissingSemicolonException();
         listen = server_block.substr(start, end - start);
         port = checkHostPort(listen);
-        if (port < 0 || port > 65535)
+        if (port < 0 || port > 9999)
             throw InvalidPortException();
     }
     else
@@ -316,7 +346,7 @@ void config_pars::extractServer(std::vector<std::string> &serverblocks, const st
     size_t start = 0;
     size_t end = 0;
     size_t serverNum = 0;
-    //checkConsecutiveSameBraces(raw_data);
+    checkConsecutiveSameBraces(raw_data);
     while ((start = raw_data.find("server", start)) != std::string::npos)
     {
         // Skip whitespace

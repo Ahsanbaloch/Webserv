@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/08 19:37:33 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/13 12:56:06 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/14 19:55:00 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,9 +22,9 @@ const char *EmptyConfigFileException::what() const throw()
 	return (RED "Empty config file" RESET);
 }
 
-const char *DuplicateServerNameException::what() const throw()
+const char *DuplicateServerException::what() const throw()
 {
-	return (RED "Duplicate server name" RESET);
+	return (RED "Duplicate server..." RESET);
 }
 
 
