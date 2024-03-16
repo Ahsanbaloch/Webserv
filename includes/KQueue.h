@@ -20,7 +20,7 @@ public:
 	KQueue();
 	~KQueue();
 
-	void	attachListeningSockets(const ListeningSocketsBlock&);
+	void	attachListeningSockets(ListeningSocketsBlock&);
 	void	attachConnectionSockets(std::vector<int>);
 	void	closeQueue();
 };

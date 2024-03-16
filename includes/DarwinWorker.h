@@ -23,7 +23,7 @@ private:
 	/* data */
 public:
 	KQueue							Q;
-	ListeningSocketsBlock			SocketsBlock;
+	std::map<int, ListeningSocket>	listening_sockets;
 	std::map<int, RequestHandler*>	ConnectedClients;
 	std::vector<int>				pending_fds;
 	struct sockaddr					client_addr;
@@ -35,7 +35,7 @@ public:
 	~DarwinWorker();
 
 	void	runEventLoop();
-	void	addToConnectedClients(std::vector<t_server_config>);
+	void	addToConnectedClients(ListeningSocket&);
 };
 
 

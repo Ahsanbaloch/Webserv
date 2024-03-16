@@ -18,13 +18,15 @@ private:
 	struct sockaddr_in	sock_config;
 	ListeningSocket();
 public:
-	explicit ListeningSocket(int fd);
+	ListeningSocket(int, std::vector<t_server_config>);
 	~ListeningSocket();
 
+	std::vector<t_server_config> server_config;
+	
 	int			getSocketFd() const;
 
 	void		setSockOptions();
-	void		initSockConfig(std::vector<t_server_config>&);
+	void		initSockConfig();
 	void		bindSock();
 	void		makeListen();
 	static void	setNonblocking(int);

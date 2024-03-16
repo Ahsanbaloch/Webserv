@@ -44,6 +44,11 @@ void	RequestHandler::sendResponse()
 // read request handler
 void	RequestHandler::processRequest()
 {
+	// for (std::vector<t_server_config>::iterator it = server_config.begin(); it != server_config.end(); it++)
+	// {
+	// 	std::cout << "port and server name: " << it->port << " " << it->serverName << std::endl;
+	// }
+
 	//how to handle cases in which the header is not recv in one go? (do those cases exist?)
 	bytes_read = recv(connection_fd, buf, sizeof(buf), 0);
 	if (bytes_read == -1)

@@ -29,6 +29,12 @@ int	main(int argc, char **argv)
 		config_pars config(argc, argv);
 		std::map<std::string, std::vector<t_server_config> > serverConfigsMap = config.getServerConfigsMap();
 
+		// for (std::map<std::string, std::vector<t_server_config> >::iterator it = serverConfigsMap.begin(); it != serverConfigsMap.end(); it++)
+		// {
+		// 	for (std::vector<t_server_config>::iterator it2 = it->second.begin(); it2 != it->second.end(); it2++)
+		// 		std::cout << "port and server name: " << it2->port << " " << it2->serverName << std::endl;
+		// }
+
 		// Create Server object (create listening sockets, bind, set non-blocking, listen)
 		ListeningSocketsBlock SocketsBlock(serverConfigsMap); // here goes the config vector; objects will be added to correct listeningSocket (alt: create and return map<socket_fd, ConfigData obj>)
 
