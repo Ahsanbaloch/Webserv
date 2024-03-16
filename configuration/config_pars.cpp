@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/16 11:49:17 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/16 11:51:44 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,7 +42,7 @@ void config_pars::argumentCheck(int argc, char **argv, std::string &argument_val
         throw InvalidConfigFileException();
 }
 
-std::map<int, std::map<std::string, t_server_config> >&	config_pars::getConfigMap()
+/* std::map<int, std::map<std::string, t_server_config> >&	config_pars::getConfigMap()
 {
     return _configMap;
 }
@@ -50,7 +50,7 @@ std::map<int, std::map<std::string, t_server_config> >&	config_pars::getConfigMa
 std::vector<t_server_config> &config_pars::getServerConfigsVector()
 {
     return _server_configs_vector;
-}
+} */
 
 std::map<std::string, std::vector<t_server_config> > &config_pars::getServerConfigsMap()
 {
@@ -86,25 +86,39 @@ void config_pars::parse_server_configs(std::string &server_config)
 	std::vector<std::string> server_block;
 	extractServer(server_block, server_config);
 	t_server_config default_server_config;
-    std::vector<t_server_config> duplicate_checker;
+    //std::vector<t_server_config> duplicate_checker;
     std::string ipPort;
 	for (size_t i = 0; i < server_block.size(); i++)
 	{   
+		ipPort.clear();
         parse_server_block(default_server_config, server_block[i]);
-    	ipPort.append(default_server_config.Ip + ":" + std::to_string(default_server_config.port));
+        std::stringstream port;
+        port << default_server_config.port;
+    	ipPort.append(default_server_config.Ip + ":" +  port.str());
        	if (_server_configs_map.count(ipPort))
 		{
-            _server_configs_map[ipPort].push_back(default_server_config);
+            bool isDuplicate = false;
+            for (std::vector<t_server_config>::iterator it = _server_configs_map[ipPort].begin(); it != _server_configs_map[ipPort].end(); it++)
+            {
+                if (it->serverName == default_server_config.serverName)
+                {
+                    isDuplicate = true;
+                    break;
+                }
+            }
+            if (!isDuplicate)
+                _server_configs_map[ipPort].push_back(default_server_config);
+            //_server_configs_map[ipPort].push_back(default_server_config);
 		}
 		else
 		{
-			//std::vector<t_server_config> temp;
+			std::vector<t_server_config> temp;
 			temp.push_back(default_server_config);
 			_server_configs_map.insert(std::pair<std::string, std::vector<t_server_config> >(ipPort, temp));
 		}
-        duplicate_checker.push_back(default_server_config);
+        //duplicate_checker.push_back(default_server_config);
 	}
-    checkforDuplicateServer(duplicate_checker);
+    //checkforDuplicateServer(duplicate_checker);
 }
 
 
