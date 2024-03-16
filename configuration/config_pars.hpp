@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 14:22:42 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/14 18:12:28 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/16 11:44:26 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,7 +60,7 @@ class config_pars
 
 
 		std::string extractIp(const std::string &server_block); //extract ip
-		void checkforDuplicateServer(std::vector<t_server_config> server_configs_vector); //check for duplicate server
+		//void checkforDuplicateServer(std::vector<t_server_config> server_configs_vector); //check for duplicate server
 		void checkForDuplicatePaths(std::vector<t_server_config> _server, std::vector<std::string> location_blocks); //check for duplicate paths
 		void argumentCheck(int argc, char **argv, std::string &argument_value);
 		void readconfig(std::string &argv, std::string &fileContent);	//read config file
