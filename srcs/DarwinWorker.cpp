@@ -21,7 +21,7 @@ void	DarwinWorker::runEventLoop()
 		int new_events = kevent(Q.kqueue_fd, NULL, 0, event_lst, MAX_EVENTS, NULL); // it depends on several kernel-internal factors whether kevent returns one or multiple events for several conncetion requests. That's why ideally one makes acception checks in a loop per each event
 		if (new_events == -1)
 			throw CustomException("Failed when checking for new events\n");
-		
+
 		// go through all the events we have been notified of
 		for (int i = 0; new_events > i; i++)
 		{
@@ -29,11 +29,14 @@ void	DarwinWorker::runEventLoop()
 			if (event_lst[i].flags & EV_EOF)
 			{
 				std::cout << "client disconnected\n";
+				delete ConnectedClients[event_lst[i].ident];
 				close(event_lst[i].ident); // event_lst[i].ident is the file descriptor of the socket that triggered
+				ConnectedClients.erase(event_lst[i].ident);
 			}
 			// event came from listening socket --> we have to create a connection
 			else if (*reinterpret_cast<int*>(event_lst[i].udata) == Q.listening_sock_ident)
 			{
+				// based on socket id, find related config file/ListeningSocket in SocketblockVector (alt use a newly created map with socket_fd as key)
 				while (1) // to improve efficiency (reducing calls to kevent), we accept all connection requests related to the event in a loop
 				{
 					std::cout << "new connection incoming\n";
@@ -43,6 +46,7 @@ void	DarwinWorker::runEventLoop()
 						if (errno == EAGAIN || errno == EWOULDBLOCK)
 						{
 							Q.attachConnectionSockets(pending_fds);
+							addToConnectedClients(); // provide socket (that includes config data)
 							pending_fds.clear();
 							break;
 						}
@@ -56,9 +60,30 @@ void	DarwinWorker::runEventLoop()
 			else if (*reinterpret_cast<int*>(event_lst[i].udata) == Q.connection_sock_ident)
 			{
 				if (event_lst[i].filter == EVFILT_READ)
-					Handler.handleRequest(event_lst[i].ident); // probably make connection_fd the input so that it is independent from kevent/epoll; also keep track of connection_fd in case not everything can be built at once
+				{
+					ConnectedClients[event_lst[i].ident]->processRequest();
+				}
+				else if (ConnectedClients[event_lst[i].ident]->response_ready && event_lst[i].filter == EVFILT_WRITE) // how to provide the reponse_ready info? // should this be an "If" OR "Else if"?
+				{
+					ConnectedClients[event_lst[i].ident]->sendResponse();
+					delete ConnectedClients[event_lst[i].ident];
+					close(event_lst[i].ident); // close connection; how does it work with 100-continue response?
+					ConnectedClients.erase(event_lst[i].ident);
+				}
 			}
 		}
 	}
 }
+
+void	DarwinWorker::addToConnectedClients()
+{
+	int size = pending_fds.size();
+	for (int i = 0; i < size; i++)
+	{
+		// construct handler with socket/configData as input (maybe reference?)
+		RequestHandler* Handler = new RequestHandler(pending_fds[i]); // need to free that memory somewhere --> when disconnecting the client
+		ConnectedClients.insert(std::pair<int, RequestHandler*>(pending_fds[i], Handler));
+	}
+}
+
 

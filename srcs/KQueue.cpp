@@ -40,7 +40,7 @@ void	KQueue::attachConnectionSockets(std::vector<int> pending_fds)
 		EV_SET(&connection_event[j++], pending_fds[i], EVFILT_READ, EV_ADD, 0, 0, &connection_sock_ident);
 		EV_SET(&connection_event[j++], pending_fds[i], EVFILT_WRITE, EV_ADD, 0, 0, &connection_sock_ident);
 	}
-	if (kevent(kqueue_fd, connection_event, size, NULL, 0, NULL) < 0)
+	if (kevent(kqueue_fd, connection_event, size * 2, NULL, 0, NULL) < 0)
 	{
 		delete[] connection_event;
 		throw CustomException("Failed when registering events for conncetion sockets\n");
