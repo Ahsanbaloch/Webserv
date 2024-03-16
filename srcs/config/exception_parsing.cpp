@@ -3,14 +3,14 @@
 /*                                                        :::      ::::::::   */
 /*   exception_parsing.cpp                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
+/*   By: mamesser <mamesser@student.42wolfsburg.    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/08 19:37:33 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/14 19:55:00 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/16 13:46:46 by mamesser         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "exception_parsing.hpp"
+#include "config/exception_parsing.hpp"
 
 const char *CantOpenConfigException::what() const throw()
 {

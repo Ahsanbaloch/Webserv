@@ -8,8 +8,9 @@
 // --> create E2E-Flow for GET request without body (afterwards do same for POST but with body)
 
 
-RequestHandler::RequestHandler(int fd)
+RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_config)
 {
+	this->server_config = server_config;
 	connection_fd = fd;
 	status = 200;
 	buf_pos = -1;

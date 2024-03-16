@@ -7,23 +7,30 @@
 	#include "LinuxWorker.h"
 #endif
 #include "ListeningSocketsBlock.h"
+#include "config/config_pars.hpp"
 
 
 
 // next:
 // 
 
-int	main(void)
+int	main(int argc, char **argv)
 {
 	// for testing multiple ports --> info incl. ip comes from config file
+
 	std::vector<int> ports_test;
 	ports_test.push_back(4141);
 	ports_test.push_back(8181);
 
 	try
 	{
+
+		// Parse configuration file
+		config_pars config(argc, argv);
+		std::map<std::string, std::vector<t_server_config> > serverConfigsMap = config.getServerConfigsMap();
+
 		// Create Server object (create listening sockets, bind, set non-blocking, listen)
-		ListeningSocketsBlock SocketsBlock(ports_test); // here goes the config vector; objects will be added to correct listeningSocket (alt: create and return map<socket_fd, ConfigData obj>)
+		ListeningSocketsBlock SocketsBlock(serverConfigsMap); // here goes the config vector; objects will be added to correct listeningSocket (alt: create and return map<socket_fd, ConfigData obj>)
 
 		// create KQueue object
 		#ifdef __APPLE__
@@ -31,7 +38,7 @@ int	main(void)
 			// attach sockets to kqueue
 			Queue.attachListeningSockets(SocketsBlock);
 			// create Worker object
-			DarwinWorker Worker(Queue); // also add the SocketsBlock which contains the configData (alt: map<listening_socketfd, config obj>)
+			DarwinWorker Worker(Queue, SocketsBlock); // also add the SocketsBlock which contains the configData (alt: map<listening_socketfd, config obj>)
 		#else
 			EPoll Queue(SocketsBlock);
 			Queue.attachListeningSockets();

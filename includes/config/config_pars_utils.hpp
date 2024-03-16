@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   config_pars_utils.hpp                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
+/*   By: mamesser <mamesser@student.42wolfsburg.    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 16:51:42 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/13 13:26:07 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/16 13:45:44 by mamesser         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 

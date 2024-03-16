@@ -3,17 +3,14 @@
 /*                                                        :::      ::::::::   */
 /*   config_pars.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
+/*   By: mamesser <mamesser@student.42wolfsburg.    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/16 11:51:44 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/16 13:51:30 by mamesser         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "config_pars.hpp"
-/* #include <set>
-#include <utility> */
-
+#include "config/config_pars.hpp"
 
 config_pars::config_pars(int argc, char **argv)
 {
@@ -21,36 +18,25 @@ config_pars::config_pars(int argc, char **argv)
     std::string argument_value;
     argumentCheck(argc, argv, argument_value);
 	readconfig(argument_value, fileContent);
-    checkConsecutiveSameBraces(fileContent);
 	parse_server_configs(fileContent);
 
 }
 config_pars::~config_pars() {}
 
-
 void config_pars::argumentCheck(int argc, char **argv, std::string &argument_value)
 {
     if (argc == 1)
-        argument_value = "simple.conf";
+        argument_value = "./config_files/simple.conf";
     else if (argc == 2)
     {
         argument_value = argv[1];
         if (argument_value.find(".conf") == std::string::npos)
-            throw InvalidConfigFileException();
+			throw InvalidConfigFileException();
     }
     else
         throw InvalidConfigFileException();
 }
 
-/* std::map<int, std::map<std::string, t_server_config> >&	config_pars::getConfigMap()
-{
-    return _configMap;
-}
-
-std::vector<t_server_config> &config_pars::getServerConfigsVector()
-{
-    return _server_configs_vector;
-} */
 
 std::map<std::string, std::vector<t_server_config> > &config_pars::getServerConfigsMap()
 {
@@ -62,7 +48,6 @@ void config_pars::readconfig(std::string &argv, std::string &fileConetnt)
 	std::ifstream file(argv);
 	if (file.is_open())
 	{
-        //std::cout << "Reading config file: " << argv <<  std::endl;
 		std::string line;
 		while (std::getline(file, line))
 		{
@@ -86,7 +71,6 @@ void config_pars::parse_server_configs(std::string &server_config)
 	std::vector<std::string> server_block;
 	extractServer(server_block, server_config);
 	t_server_config default_server_config;
-    //std::vector<t_server_config> duplicate_checker;
     std::string ipPort;
 	for (size_t i = 0; i < server_block.size(); i++)
 	{   
@@ -108,7 +92,6 @@ void config_pars::parse_server_configs(std::string &server_config)
             }
             if (!isDuplicate)
                 _server_configs_map[ipPort].push_back(default_server_config);
-            //_server_configs_map[ipPort].push_back(default_server_config);
 		}
 		else
 		{
@@ -116,28 +99,8 @@ void config_pars::parse_server_configs(std::string &server_config)
 			temp.push_back(default_server_config);
 			_server_configs_map.insert(std::pair<std::string, std::vector<t_server_config> >(ipPort, temp));
 		}
-        //duplicate_checker.push_back(default_server_config);
 	}
-    //checkforDuplicateServer(duplicate_checker);
 }
-
-
-/* 
-            No need for that to throw error if the server is duplicate
-void config_pars::checkforDuplicateServer(std::vector<t_server_config> server_configs_vector) 
-{
-    for (size_t i = 0; i < server_configs_vector.size(); i++)
-    {
-        int port = server_configs_vector[i].port;
-        std::string serverName = server_configs_vector[i].serverName;
-        for (size_t j = i + 1; j < server_configs_vector.size(); j++)
-        {
-            if (port == server_configs_vector[j].port && 
-                serverName == server_configs_vector[j].serverName)
-                    throw DuplicateServerException();
-        }
-    }
-} */
 
 void config_pars::parse_server_block(t_server_config &server_config, const std::string &server_block)
 {
@@ -161,6 +124,8 @@ std::string config_pars::extractIp(const std::string &server_block)
         if (server_block.find('\n', start) < server_block.find(':', start))
             throw MissingSemicolonException();
         ip = server_block.substr(start, end - start);
+        if (ip == "localhost")
+            ip = "127.0.0.1";
     }
     else
         throw MissingValueException("ip");
@@ -206,7 +171,6 @@ void config_pars::Location_block(t_server_config &server_config, const std::stri
 	for (size_t i = 0; i < location_blocks.size(); i++)
 	{
 		parseLocationBlock(location_config, location_blocks[i]);
-        //std::cout << "Location: " << location_config.path << std::endl;
         ssss_configs.push_back(server_config); // remove it later
 	}
     //checkForDuplicatePaths(_server_configs_vector, location_blocks);
@@ -382,7 +346,7 @@ void config_pars::extractServer(std::vector<std::string> &serverblocks, const st
     size_t start = 0;
     size_t end = 0;
     size_t serverNum = 0;
-    //checkConsecutiveSameBraces(raw_data);
+    checkConsecutiveSameBraces(raw_data);
     while ((start = raw_data.find("server", start)) != std::string::npos)
     {
         // Skip whitespace

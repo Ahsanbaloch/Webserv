@@ -1,8 +1,8 @@
 
 #include "DarwinWorker.h"
 
-DarwinWorker::DarwinWorker(const KQueue& Queue)
-	: Q(Queue)
+DarwinWorker::DarwinWorker(const KQueue& Queue, ListeningSocketsBlock& Block)
+	: Q(Queue), SocketsBlock(Block)
 {
 	memset(&client_addr, 0, sizeof(client_addr));
 	addr_size = sizeof(client_addr);
@@ -46,7 +46,7 @@ void	DarwinWorker::runEventLoop()
 						if (errno == EAGAIN || errno == EWOULDBLOCK)
 						{
 							Q.attachConnectionSockets(pending_fds);
-							addToConnectedClients(); // provide socket (that includes config data)
+							addToConnectedClients(SocketsBlock.server_configs[event_lst[i].ident]); // provide socket (that includes config data)
 							pending_fds.clear();
 							break;
 						}
@@ -75,13 +75,13 @@ void	DarwinWorker::runEventLoop()
 	}
 }
 
-void	DarwinWorker::addToConnectedClients()
+void	DarwinWorker::addToConnectedClients(std::vector<t_server_config> server_config)
 {
 	int size = pending_fds.size();
 	for (int i = 0; i < size; i++)
 	{
 		// construct handler with socket/configData as input (maybe reference?)
-		RequestHandler* Handler = new RequestHandler(pending_fds[i]); // need to free that memory somewhere --> when disconnecting the client
+		RequestHandler* Handler = new RequestHandler(pending_fds[i], server_config); // need to free that memory somewhere --> when disconnecting the client
 		ConnectedClients.insert(std::pair<int, RequestHandler*>(pending_fds[i], Handler));
 	}
 }

@@ -11,6 +11,9 @@
 #include "CustomException.h"
 #include "KQueue.h"
 #include "RequestHandler.h"
+#include "ListeningSocketsBlock.h"
+#include "config/config_pars.hpp"
+
 
 #define MAX_EVENTS 128 // how to determine what to set here? --> maybe partly related to SOMAXCONN, but apparently not entirely
 
@@ -20,18 +23,19 @@ private:
 	/* data */
 public:
 	KQueue							Q;
+	ListeningSocketsBlock			SocketsBlock;
 	std::map<int, RequestHandler*>	ConnectedClients;
 	std::vector<int>				pending_fds;
 	struct sockaddr					client_addr;
 	socklen_t						addr_size;
 	struct kevent					event_lst[MAX_EVENTS];
 
-	explicit	DarwinWorker(const KQueue&);
+	explicit	DarwinWorker(const KQueue&, ListeningSocketsBlock&);
 	DarwinWorker();
 	~DarwinWorker();
 
 	void	runEventLoop();
-	void	addToConnectedClients();
+	void	addToConnectedClients(std::vector<t_server_config>);
 };
 
 

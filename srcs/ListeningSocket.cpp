@@ -24,11 +24,10 @@ void	ListeningSocket::setSockOptions()
 		throw CustomException("Failed when calling setsocketopt()\n");
 }
 
-void	ListeningSocket::initSockConfig(int port, u_int32_t ip)
+void	ListeningSocket::initSockConfig(std::vector<t_server_config>& config_info)
 {
-	(void)ip;
 	sock_config.sin_family = AF_INET;
-	sock_config.sin_port = htons(port);
+	sock_config.sin_port = htons(config_info[0].port);
 	sock_config.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 }
 

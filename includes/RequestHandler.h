@@ -4,11 +4,13 @@
 #include <sys/socket.h>
 #include <string>
 #include <map>
+#include <vector>
 #include <sstream>
 #include <cstdio> // remove later
 #include "CustomException.h"
 #include "Header.h"
 #include "ARequest.h"
+#include "config/config_pars.hpp"
 
 #define BUFFER_SIZE 8192 // this basically presents the max header size (incl. the request line)
 // #define LF 10
@@ -20,13 +22,14 @@ class RequestHandler
 private:
 	/* data */
 public:
-	explicit RequestHandler(int);
+	RequestHandler(int, std::vector<t_server_config>);
 	RequestHandler(/* args */);
 	~RequestHandler();
 
 	ARequest*			request;
 	Response*			response;
 	Header				header;
+	std::vector<t_server_config> server_config;
 	int					connection_fd;
 	int					body_parsing_done;
 	int					chunk_length;
