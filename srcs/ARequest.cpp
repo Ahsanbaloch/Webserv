@@ -10,7 +10,7 @@ ARequest::~ARequest()
 {
 }
 
-void	ARequest::findLocationBlock(RequestHandler& handler)
+void	ARequest::findServerBlock(RequestHandler& handler)
 {
 	std::vector<t_server_config>::iterator it = handler.server_config.begin();
 	for (std::vector<t_server_config>::iterator it2 = handler.server_config.begin(); it2 != handler.server_config.end(); it2++)
@@ -30,9 +30,9 @@ void	ARequest::findLocationBlock(RequestHandler& handler)
 
 ARequest* ARequest::newRequest(RequestHandler& handler)
 {
-	// find location blocks if there are multiple that match
+	// find server block if there are multiple that match
 	if (handler.server_config.size() > 1)
-		findLocationBlock(handler);
+		findServerBlock(handler);
 
 	// what else to check here?
 	// check if the request method is allowed --> can this actually be checked here? because it might depend on the location

@@ -18,7 +18,7 @@ public:
 
 	static ARequest *newRequest(RequestHandler&);
 
-	static void	findLocationBlock(RequestHandler&);
+	static void	findServerBlock(RequestHandler&);
 
 	virtual Response *createResponse(RequestHandler&) = 0;
 
