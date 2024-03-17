@@ -16,8 +16,7 @@ private:
 	
 public:
 	int								num_listening_sockets; // getting this info from config file
-	std::vector<ListeningSocket>	listening_sockets;
-	std::map<int, std::vector<t_server_config> > server_configs;
+	std::map<int, ListeningSocket>	listening_sockets;
 
 	explicit ListeningSocketsBlock(std::map<std::string, std::vector<t_server_config> >&);
 	ListeningSocketsBlock();

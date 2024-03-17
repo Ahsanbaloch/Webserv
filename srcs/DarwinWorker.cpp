@@ -2,8 +2,10 @@
 #include "DarwinWorker.h"
 
 DarwinWorker::DarwinWorker(const KQueue& Queue, ListeningSocketsBlock& Block)
-	: Q(Queue), SocketsBlock(Block)
+	: Q(Queue)
 {
+	// SocketsBlock = Block;
+	listening_sockets = Block.listening_sockets;
 	memset(&client_addr, 0, sizeof(client_addr));
 	addr_size = sizeof(client_addr);
 }
@@ -36,7 +38,6 @@ void	DarwinWorker::runEventLoop()
 			// event came from listening socket --> we have to create a connection
 			else if (*reinterpret_cast<int*>(event_lst[i].udata) == Q.listening_sock_ident)
 			{
-				// based on socket id, find related config file/ListeningSocket in SocketblockVector (alt use a newly created map with socket_fd as key)
 				while (1) // to improve efficiency (reducing calls to kevent), we accept all connection requests related to the event in a loop
 				{
 					std::cout << "new connection incoming\n";
@@ -46,7 +47,11 @@ void	DarwinWorker::runEventLoop()
 						if (errno == EAGAIN || errno == EWOULDBLOCK)
 						{
 							Q.attachConnectionSockets(pending_fds);
-							addToConnectedClients(SocketsBlock.server_configs[event_lst[i].ident]); // provide socket (that includes config data)
+							std::map<int, ListeningSocket>::iterator it = listening_sockets.find(event_lst[i].ident);
+							if (it != listening_sockets.end())
+								addToConnectedClients(it->second);
+							else
+								throw CustomException("Failed when connecting clients\n");
 							pending_fds.clear();
 							break;
 						}
@@ -75,13 +80,13 @@ void	DarwinWorker::runEventLoop()
 	}
 }
 
-void	DarwinWorker::addToConnectedClients(std::vector<t_server_config> server_config)
+void	DarwinWorker::addToConnectedClients(ListeningSocket& socket)
 {
 	int size = pending_fds.size();
 	for (int i = 0; i < size; i++)
 	{
 		// construct handler with socket/configData as input (maybe reference?)
-		RequestHandler* Handler = new RequestHandler(pending_fds[i], server_config); // need to free that memory somewhere --> when disconnecting the client
+		RequestHandler* Handler = new RequestHandler(pending_fds[i], socket.server_config); // need to free that memory somewhere --> when disconnecting the client
 		ConnectedClients.insert(std::pair<int, RequestHandler*>(pending_fds[i], Handler));
 	}
 }

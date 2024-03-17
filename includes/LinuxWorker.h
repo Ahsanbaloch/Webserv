@@ -32,7 +32,7 @@ public:
 	~LinuxWorker();
 
 	void	runEventLoop();
-	void	addToConnectedClients();
+	void	addToConnectedClients(ListeningSocket&);
 };
 
 

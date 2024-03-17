@@ -2,9 +2,10 @@
 #include "ListeningSocket.h"
 #include <unistd.h>
 
-ListeningSocket::ListeningSocket(int fd)
+ListeningSocket::ListeningSocket(int fd, std::vector<t_server_config> config_info)
 {
 	socket_fd = fd;
+	server_config = config_info;
 	memset(&sock_config, 0, sizeof(sock_config)); // allowed in subject? // also do for other structures?
 }
 
@@ -24,10 +25,10 @@ void	ListeningSocket::setSockOptions()
 		throw CustomException("Failed when calling setsocketopt()\n");
 }
 
-void	ListeningSocket::initSockConfig(std::vector<t_server_config>& config_info)
+void	ListeningSocket::initSockConfig()
 {
 	sock_config.sin_family = AF_INET;
-	sock_config.sin_port = htons(config_info[0].port);
+	sock_config.sin_port = htons(server_config[0].port);
 	sock_config.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 }
 
