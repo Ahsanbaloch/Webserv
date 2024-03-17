@@ -50,6 +50,8 @@ void	DarwinWorker::runEventLoop()
 							std::map<int, ListeningSocket>::iterator it = listening_sockets.find(event_lst[i].ident);
 							if (it != listening_sockets.end())
 								addToConnectedClients(it->second);
+							else
+								throw CustomException("Failed when connecting clients\n");
 							pending_fds.clear();
 							break;
 						}

@@ -6,20 +6,20 @@ LinuxWorker::LinuxWorker(const EPoll& Queue)
 {
 	memset(&client_addr, 0, sizeof(client_addr));
 	addr_size = 0; // shouldn't this be rather be sizeof(client_addr)?
-	for (std::vector<ListeningSocket>::iterator it = Q.SocketsBlock.listening_sockets.begin(); it != Q.SocketsBlock.listening_sockets.end(); it++)
-		listening_socks_fd.push_back(it->getSocketFd());
+	for (std::map<int, ListeningSocket>::iterator it = Q.SocketsBlock.listening_sockets.begin(); it != Q.SocketsBlock.listening_sockets.end(); it++)
+		listening_socks_fd.push_back(it->first);
 }
 
 LinuxWorker::~LinuxWorker()
 {
 }
 
-void	LinuxWorker::addToConnectedClients()
+void	LinuxWorker::addToConnectedClients(ListeningSocket& socket)
 {
 	int size = pending_fds.size();
 	for (int i = 0; i < size; i++)
 	{
-		RequestHandler* Handler = new RequestHandler(pending_fds[i]); // need to free that memory somewhere --> when disconnecting the client
+		RequestHandler* Handler = new RequestHandler(pending_fds[i], socket.server_config); // need to free that memory somewhere --> when disconnecting the client
 		ConnectedClients.insert(std::pair<int, RequestHandler*>(pending_fds[i], Handler));
 	}
 }
@@ -58,7 +58,11 @@ void	LinuxWorker::runEventLoop()
 						if (errno == EAGAIN || errno == EWOULDBLOCK)
 						{
 							Q.attachConnectionSockets(pending_fds);
-							addToConnectedClients();
+							std::map<int, ListeningSocket>::iterator it = Q.SocketsBlock.listening_sockets.find(event_lst[i].data.fd);
+							if (it != Q.SocketsBlock.listening_sockets.end())
+								addToConnectedClients(it->second);
+							else
+								throw CustomException("Failed when connecting clients\n");
 							pending_fds.clear();
 							break;
 						}
