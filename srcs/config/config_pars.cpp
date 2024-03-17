@@ -3,14 +3,15 @@
 /*                                                        :::      ::::::::   */
 /*   config_pars.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mamesser <mamesser@student.42wolfsburg.    +#+  +:+       +#+        */
+/*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/17 13:51:51 by mamesser         ###   ########.fr       */
+/*   Updated: 2024/03/17 15:12:31 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "config/config_pars.hpp"
+#include <set>
 
 config_pars::config_pars(int argc, char **argv)
 {
@@ -100,6 +101,7 @@ void config_pars::parse_server_configs(std::string &server_config)
 			temp.push_back(default_server_config);
 			_server_configs_map.insert(std::pair<std::string, std::vector<t_server_config> >(ipPort, temp));
 		}
+        checkDuplicatePath(_server_configs_map);
 	}
 }
 
@@ -125,11 +127,11 @@ std::string config_pars::extractIp(const std::string &server_block)
         if (server_block.find('\n', start) < server_block.find(':', start))
             throw MissingSemicolonException();
         ip = server_block.substr(start, end - start);
-        if (ip == "localhost")
+        if (ip == "localhost" || ip == "0.0.0.0")
             ip = "127.0.0.1";
     }
     else
-        throw MissingValueException("ip");
+        ip = "127.0.0.1";
     return ip;
 }
 
@@ -163,7 +165,6 @@ int config_pars::extractBodySize(const std::string &server_block)
 void config_pars::Location_block(t_server_config &server_config, const std::string &config_block)
 {
     std::vector<std::string> location_blocks;
-    // std::vector<t_server_config> ssss_configs;
 
     splitLocationBlocks(location_blocks, config_block);
 	t_location_config location_config;
@@ -173,32 +174,25 @@ void config_pars::Location_block(t_server_config &server_config, const std::stri
 	{
 		parseLocationBlock(location_config, location_blocks[i]);
 		server_config.locations.push_back(location_config);
-        // ssss_configs.push_back(server_config); // remove it later
 	}
-    //checkForDuplicatePaths(_server_configs_vector, location_blocks);
 }
 
-/* void config_pars::checkDuplication(std::vector<std::string> &location_blocks)
+void config_pars::checkDuplicatePath(std::map<std::string, std::vector<t_server_config> > _server_configs_map)
 {
-   
-} */
-//checkduplication
-/* void config_pars::checkForDuplicatePaths(std::vector<t_server_config> _server, std::vector<std::string> location_blocks)
+   for (std::map<std::string, std::vector<t_server_config> >::iterator it = _server_configs_map.begin(); it != _server_configs_map.end(); ++it)
 {
-
-    for (size_t i = 0; i < _server.size(); i++)
+    for (std::vector<t_server_config>::iterator vecIt = it->second.begin(); vecIt != it->second.end(); ++vecIt)
     {
-        std::cout << "Server: " << _server[i].serverName << std::endl;
-        for (size_t j = 0; j < location_blocks.size(); j++)
+        std::set<std::string> paths;
+        for (std::vector<t_location_config>::iterator locIt = vecIt->locations.begin(); locIt != vecIt->locations.end(); ++locIt)
         {
-            for (size_t k = j + 1; k < location_blocks.size(); k++)
-            {
-                if (_server[i].location_config.path == _server[i].location_config.path)
-                    throw DuplicatePathException();
-            }
-        } 
+            if (paths.count(locIt->path) > 0)
+                throw DuplicateLocationNameException();
+            paths.insert(locIt->path);
+        }
     }
-} */
+}
+}
 
 void config_pars::parseLocationBlock(t_location_config &location_config, const std::string &location_block)
 {
@@ -319,7 +313,7 @@ int config_pars::extractListen(const std::string &server_block)
             throw InvalidPortException();
     }
     else
-       throw MissingValueException("listen");
+       return (22);
     return (port);
 }
 

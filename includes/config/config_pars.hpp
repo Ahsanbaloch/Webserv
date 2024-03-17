@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   config_pars.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mamesser <mamesser@student.42wolfsburg.    +#+  +:+       +#+        */
+/*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 14:22:42 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/16 13:45:49 by mamesser         ###   ########.fr       */
+/*   Updated: 2024/03/17 14:44:06 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,8 +47,8 @@ class config_pars
 		//std::map<int, std::map<std::string, t_server_config> >&	getConfigMap();
 
 		std::vector<t_server_config> &getServerConfigsVector();
-
-
+		void checkDuplicatePath(std::map<std::string, std::vector<t_server_config> > _server_configs_map);
+		
 		//.........check this thing..........
 		std::map<std::string, std::vector<t_server_config> > &getServerConfigsMap(); //better way to do it
 

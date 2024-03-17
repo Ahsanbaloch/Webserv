@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   config_pars_utils.cpp                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mamesser <mamesser@student.42wolfsburg.    +#+  +:+       +#+        */
+/*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 16:53:25 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/16 13:40:11 by mamesser         ###   ########.fr       */
+/*   Updated: 2024/03/17 15:10:01 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -84,6 +84,8 @@ int checkHostPort(const std::string &host_port)
         if (host == "127.0.0.1" || host == "localhost" || host == "0.0.0.0")
         {
             port_str = host_port.substr(host_port.find(':', start) + 1, end);
+            if (port_str.empty())
+                return (2222);
             std::istringstream ss(port_str);
             if (ss >> port)
                 return port;
