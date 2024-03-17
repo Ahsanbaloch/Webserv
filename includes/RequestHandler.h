@@ -38,6 +38,7 @@ public:
 	int					response_ready;
 	int					body_expected;
 	int					body_read;
+	int					location_pos; // should probably be in server_config struct
 
 
 	std::stringstream	raw_buf;
