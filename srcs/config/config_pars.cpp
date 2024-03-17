@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/17 15:12:31 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/17 17:43:53 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -108,32 +108,33 @@ void config_pars::parse_server_configs(std::string &server_config)
 void config_pars::parse_server_block(t_server_config &server_config, const std::string &server_block)
 {
     server_config.serverName = extractServerName(server_block);
-    server_config.port = extractListen(server_block);
-    server_config.Ip = extractIp(server_block);
+    extractIpPort(server_block, server_config.Ip, server_config.port);
     server_config.errorPage = extractErrorPage(server_block);
     server_config.bodySize = extractBodySize(server_block);
     Location_block(server_config, server_block);
 }
 
-std::string config_pars::extractIp(const std::string &server_block)
+void config_pars::extractIpPort(const std::string &server_block, std::string &ip, int &port)
 {
     size_t start = 0;
     size_t end = 0;
-    std::string ip;
-    if ((start = server_block.find("listen", start)) != std::string::npos)
-    {
-        start = skipWhitespace(server_block, start + 6);
-        end = server_block.find(":", start);
-        if (server_block.find('\n', start) < server_block.find(':', start))
-            throw MissingSemicolonException();
-        ip = server_block.substr(start, end - start);
-        if (ip == "localhost" || ip == "0.0.0.0")
-            ip = "127.0.0.1";
-    }
-    else
-        ip = "127.0.0.1";
-    return ip;
+	port = 9999;
+	ip = "127.0.0.1";
+	if ((start = server_block.find("listen", start)) != std::string::npos)
+	{
+		start = skipWhitespace(server_block, start + 6);
+		end = server_block.find(";", start);
+		if (server_block.find('\n', start) < server_block.find(';', start))
+			throw MissingSemicolonException();
+		const std::string ipPort = server_block.substr(start, end - start);
+		if (ipPort.find(':') == std::string::npos)
+			onlyIpPort(ipPort, port);
+		checkIpPort(ipPort, ip, port);
+	}
+	else
+		return ;
 }
+
 
 int config_pars::extractBodySize(const std::string &server_block)
 {
@@ -294,29 +295,6 @@ std::string config_pars::extractErrorPage(const std::string &server_block)
        throw MissingValueException("error_page");
     return error_page;
 }
-
-int config_pars::extractListen(const std::string &server_block)
-{
-    size_t start = 0;
-    size_t end = 0;
-    int port = -1;
-    std::string listen;
-    if ((start = server_block.find("listen", start)) != std::string::npos)
-    {
-        start = skipWhitespace(server_block, start + 6);
-        end = server_block.find(";", start);
-        if (server_block.find('\n', start) < server_block.find(';', start))
-            throw MissingSemicolonException();
-        listen = server_block.substr(start, end - start);
-        port = checkHostPort(listen);
-        if (port < 0 || port > 9999)
-            throw InvalidPortException();
-    }
-    else
-       return (22);
-    return (port);
-}
-
 
 std::string config_pars::extractServerName(const std::string &server_block)
 {

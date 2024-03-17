@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 14:22:42 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/17 14:44:06 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/17 17:43:32 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,9 +57,9 @@ class config_pars
 
 		std::map<int, std::map<std::string, t_server_config> >&	getConfigMap(); //getters
 
+		void extractIpPort(const std::string &server_block, std::string &ip, int &port); //extract ip and port
+		//void checkIpPort(const std::string &ipPort, std::string &ip, int &port); //check ip and port
 
-
-		std::string extractIp(const std::string &server_block); //extract ip
 		//void checkforDuplicateServer(std::vector<t_server_config> server_configs_vector); //check for duplicate server
 		void checkForDuplicatePaths(std::vector<t_server_config> _server, std::vector<std::string> location_blocks); //check for duplicate paths
 		void argumentCheck(int argc, char **argv, std::string &argument_value);
@@ -70,7 +70,7 @@ class config_pars
 		//void findAndCheckServerBlocks(const std::string &raw_data, size_t &start, size_t &end); //find and check server blocks
 		void parse_server_block(t_server_config &server_config, const std::string &server_block); //parse inside server block
 		std::string extractServerName(const std::string &server_block); //extract server name
-		int extractListen(const std::string &server_block); //extract listen
+		//int extractListen(const std::string &server_block); //extract listen
 		//std::vector<int> extractListen(const std::string &server_block); //extract listen
 		std::string extractErrorPage(const std::string &server_block); //extract error page
 		/* Location block.... */

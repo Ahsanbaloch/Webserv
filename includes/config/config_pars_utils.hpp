@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   config_pars_utils.hpp                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mamesser <mamesser@student.42wolfsburg.    +#+  +:+       +#+        */
+/*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 16:51:42 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/16 13:45:44 by mamesser         ###   ########.fr       */
+/*   Updated: 2024/03/17 17:26:24 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,4 +23,8 @@ void    removeLeadingWhitespaces(std::string &string); //remove leading whitespa
 int checkHostPort(const std::string &host_port); //check host port
 int stringToInt(const std::string &string); //string to int
 void SemiColonCheck(size_t end, std::string raw_data); //check semicolon
+
+void onlyIpPort(const std::string &ipPort, int &port); //only ip port
+void checkIpPort(const std::string &ipPort, std::string &ip, int &port);
+void checkport(const std::string &port_str, int &port);
 #endif
