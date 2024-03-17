@@ -6,7 +6,7 @@
 /*   By: mamesser <mamesser@student.42wolfsburg.    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 14:14:51 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/16 13:45:55 by mamesser         ###   ########.fr       */
+/*   Updated: 2024/03/17 13:35:47 by mamesser         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,7 +48,8 @@ typedef struct s_server_config {
 	std::string									serverName;
 	std::string									errorPage;
 	int 										bodySize;
-	//std::map<std::string, t_location_config>	locationMap;
+	// std::map<std::string, t_location_config>	locationMap;
+	std::vector<t_location_config>				locations;
 	t_location_config							location;
 }	t_server_config;
 

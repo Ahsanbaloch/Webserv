@@ -47,6 +47,8 @@ void	RequestHandler::processRequest()
 	// for (std::vector<t_server_config>::iterator it = server_config.begin(); it != server_config.end(); it++)
 	// {
 	// 	std::cout << "port and server name: " << it->port << " " << it->serverName << std::endl;
+	// 	std::cout << "location: " << it->location.path << std::endl;
+	// 	std::cout << "index: " << it->location.index << std::endl;
 	// }
 
 	//how to handle cases in which the header is not recv in one go? (do those cases exist?)
@@ -67,6 +69,7 @@ void	RequestHandler::processRequest()
 			// what about folding lines?
 			header.parseRequestLine(*this);
 			header.parseHeaderFields(*this); // check if it still works if no header is sent
+			
 			// check which conifg struct is the relevant one based on server name (or later in ARequest::newRequest?)
 				// --> see DigitalOcean for approach
 			// check if requested resource exists???
@@ -100,6 +103,14 @@ void	RequestHandler::processRequest()
 		request = ARequest::newRequest(*this);
 		// process request (based on the object type that has been created --> through base pointer?)
 			// create Response object inside the function and return it here --> should then be stored in RequestHandler so that sendResponse can send it  --> What is teh purpose of this object?
+		
+		// for (std::vector<t_server_config>::iterator it = server_config.begin(); it != server_config.end(); it++)
+		// {
+		// 	std::cout << "port and server name after check: " << it->port << " " << it->serverName << std::endl;
+		// 	std::cout << "location: " << it->location.path << std::endl;
+		// 	std::cout << "index: " << it->location.index << std::endl;
+		// }
+		
 		response = request->createResponse(*this);
 		// set Response to be ready
 	}
