@@ -93,6 +93,8 @@ ARequest* ARequest::newRequest(RequestHandler& handler)
 	if (handler.server_config[0].locations.size() > 1)
 		findLocationBlock(handler);
 
+	// internal redirect depending on index? (check allowed method before or after?)
+	// check first whether a file or directory is requested?
 
 	// what else to check here?
 	// check if the request method is allowed --> can this actually be checked here? because it might depend on the location
