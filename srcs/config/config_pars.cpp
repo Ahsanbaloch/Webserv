@@ -6,7 +6,7 @@
 /*   By: mamesser <mamesser@student.42wolfsburg.    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/17 13:46:58 by mamesser         ###   ########.fr       */
+/*   Updated: 2024/03/17 13:51:51 by mamesser         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -172,7 +172,6 @@ void config_pars::Location_block(t_server_config &server_config, const std::stri
 	for (size_t i = 0; i < location_blocks.size(); i++)
 	{
 		parseLocationBlock(location_config, location_blocks[i]);
-		std::cout << "test: " << location_config.path << std::endl;
 		server_config.locations.push_back(location_config);
         // ssss_configs.push_back(server_config); // remove it later
 	}

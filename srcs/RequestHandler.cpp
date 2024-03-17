@@ -44,12 +44,14 @@ void	RequestHandler::sendResponse()
 // read request handler
 void	RequestHandler::processRequest()
 {
-	// for (std::vector<t_server_config>::iterator it = server_config.begin(); it != server_config.end(); it++)
-	// {
-	// 	std::cout << "port and server name: " << it->port << " " << it->serverName << std::endl;
-	// 	std::cout << "location: " << it->location.path << std::endl;
-	// 	std::cout << "index: " << it->location.index << std::endl;
-	// }
+	for (std::vector<t_server_config>::iterator it = server_config.begin(); it != server_config.end(); it++)
+	{
+		std::cout << "port and server name: " << it->port << " " << it->serverName << std::endl;
+		for (std::vector<t_location_config>::iterator it2 = it->locations.begin(); it2 != it->locations.end(); it2++)
+		{
+			std::cout << "location: " << it2->path << std::endl;
+		}
+	}
 
 	//how to handle cases in which the header is not recv in one go? (do those cases exist?)
 	bytes_read = recv(connection_fd, buf, sizeof(buf), 0);
@@ -104,12 +106,14 @@ void	RequestHandler::processRequest()
 		// process request (based on the object type that has been created --> through base pointer?)
 			// create Response object inside the function and return it here --> should then be stored in RequestHandler so that sendResponse can send it  --> What is teh purpose of this object?
 		
-		// for (std::vector<t_server_config>::iterator it = server_config.begin(); it != server_config.end(); it++)
-		// {
-		// 	std::cout << "port and server name after check: " << it->port << " " << it->serverName << std::endl;
-		// 	std::cout << "location: " << it->location.path << std::endl;
-		// 	std::cout << "index: " << it->location.index << std::endl;
-		// }
+		for (std::vector<t_server_config>::iterator it = server_config.begin(); it != server_config.end(); it++)
+		{
+			std::cout << "port and server name after check: " << it->port << " " << it->serverName << std::endl;
+			for (std::vector<t_location_config>::iterator it2 = it->locations.begin(); it2 != it->locations.end(); it2++)
+			{
+				std::cout << "location: " << it2->path << std::endl;
+			}
+		}
 		
 		response = request->createResponse(*this);
 		// set Response to be ready
