@@ -19,12 +19,12 @@ void	EPoll::attachListeningSockets()
 {
 	// define what events we are interested in (in case of the listening socket we are only interested in the EVFILT_READ
 	// since it is only used for accepting incoming connections)
-	for (int i = 0; i < SocketsBlock.num_listening_sockets; i++)
+	for (std::map<int, ListeningSocket>::iterator it = SocketsBlock.listening_sockets.begin(); it != SocketsBlock.listening_sockets.end(); it++)
 	{
 		struct epoll_event listening_event;
-		listening_event.data.fd = SocketsBlock.listening_sockets[i].getSocketFd();
+		listening_event.data.fd = it->first; // needed?
 		listening_event.events = EPOLLIN;
-		if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, SocketsBlock.listening_sockets[i].getSocketFd(), &listening_event) == -1)
+		if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, it->first, &listening_event) == -1)
 			throw CustomException("Failed when registering events for listening sockets\n");
 	}
 }
