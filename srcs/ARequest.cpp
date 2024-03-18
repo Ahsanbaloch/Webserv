@@ -62,13 +62,20 @@ int	ARequest::calcMatches(std::vector<std::string>& uri_path_items, std::vector<
 }
 
 
-void	ARequest::findLocationBlock(RequestHandler& handler)
+void	ARequest::findLocationBlock(RequestHandler& handler) // double check if this is entirely correct approach
 {
-	std::vector<std::string> uri_path_items = splitPath(handler.header.path, '/');
+	std::vector<std::string> uri_path_items;
+	if (handler.header.redirected_path.empty())
+		uri_path_items = splitPath(handler.header.path, '/');
+	else
+	{
+		std::string temp = "/" + handler.header.redirected_path;
+		uri_path_items = splitPath(temp, '/');
+	}
 	int	size = handler.server_config[0].locations.size();
 	int	max = 0;
 
-	for (int i = -1; i < size; i++)
+	for (int i = 0; i < size; i++)
 	{
 		std::vector<std::string> location_path_items = splitPath(handler.server_config[0].locations[i].path, '/');
 		int matches = calcMatches(uri_path_items, location_path_items);
@@ -78,10 +85,26 @@ void	ARequest::findLocationBlock(RequestHandler& handler)
 			max = matches;
 		}
 	}
-	// std::cout << "location selected: " << handler.location_pos << std::endl;
 }
 
+// void	ARequest::findLocationBlockInternalRedirect(RequestHandler& handler)
+// {
+// 	std::vector<std::string> uri_path_items = splitPath(handler.header.redirected_path, '/');
+	
+// }
 
+int	ARequest::checkFileExistence(RequestHandler& handler)
+{	
+	if (handler.server_config[0].locations[handler.location_pos].path == "/") // maybe also cases where location ends with /? Is this possible?
+		handler.header.redirected_path = handler.server_config[0].locations[handler.location_pos].root + handler.server_config[0].locations[handler.location_pos].path + handler.server_config[0].locations[handler.location_pos].index;
+	else
+		handler.header.redirected_path = handler.server_config[0].locations[handler.location_pos].root + handler.server_config[0].locations[handler.location_pos].path + "/" + handler.server_config[0].locations[handler.location_pos].index;
+
+	std::cout << "index file path: " << handler.header.redirected_path << std::endl;
+	int result = access(handler.header.redirected_path.c_str(), F_OK); // call to access allowed?
+	std::cout << "file exists: " << result << std::endl;
+	return (result);
+}
 
 ARequest* ARequest::newRequest(RequestHandler& handler)
 {
@@ -93,12 +116,32 @@ ARequest* ARequest::newRequest(RequestHandler& handler)
 	if (handler.server_config[0].locations.size() > 1)
 		findLocationBlock(handler);
 
-	// internal redirect depending on index? (check allowed method before or after?)
-	// check first whether a file or directory is requested?
+	// check for redirect url within location block
+	if (!(handler.server_config[0].locations[handler.location_pos].redirect.empty()))
+		; // location found // set redirect url somewhere(?)
+	else
+	{
+		// if the request is not for a file
+		if (handler.header.path.find('.') == std::string::npos)
+		{
+			// check if file constructed from root, location path and index exists
+			// what if more than one index is specified?
+			if (checkFileExistence(handler) == 0)
+			{
+				// if file does exist, search again for correct location
+				findLocationBlock(handler);
+			}
+			else
+				; // what to do if index file does not exists?
+		}
+	}
 
-	// what else to check here?
-	// check if the request method is allowed --> can this actually be checked here? because it might depend on the location
-		// (alt: compare path and location path already here?)
+	std::cout << "location selected: " << handler.location_pos << std::endl;
+
+	// allowed methods should be checked
+
+	
+	
 	// some more error handling could go here if not already done in Request Handler (or move it here; e.g. check for http version)
 	
 	if (handler.header.method == "GET")

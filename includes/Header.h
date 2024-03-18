@@ -24,6 +24,7 @@ public:
 
 	std::string							method; // probably needs to be reset after being used
 	std::string							path; // probably needs to be reset after being used
+	std::string							redirected_path;
 	std::string							query; // probably needs to be reset after being used
 	std::string							version; // probably needs to be reset after being used
 	std::map<std::string, std::string>	header_fields; // rename to header_fields // probably needs to be reset after being used

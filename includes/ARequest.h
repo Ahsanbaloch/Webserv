@@ -13,7 +13,9 @@ class ARequest
 {
 private:
 	static std::vector<std::string>	splitPath(std::string input, char delim);
-	static int	calcMatches(std::vector<std::string>& uri_path_items, std::vector<std::string>& location_path_items);
+	static int	calcMatches(std::vector<std::string>&, std::vector<std::string>&);
+	static int	checkFileExistence(RequestHandler& handler);
+	// static void	findLocationBlockInternalRedirect(RequestHandler& handler);
 public:
 	ARequest(/* args */);
 	virtual ~ARequest();

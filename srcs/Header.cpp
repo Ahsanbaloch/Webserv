@@ -18,6 +18,7 @@ Header::Header(/* args */)
 	body_beginning = 0;
 
 	method = ""; // does this reset the string?
+	redirected_path = "";
 	path = ""; // does this reset the string?
 	query = ""; // does this reset the string?
 	version = ""; // does this reset the string?
