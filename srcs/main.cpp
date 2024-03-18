@@ -32,7 +32,9 @@ int	main(int argc, char **argv)
 		{
 			for (std::vector<t_server_config>::iterator it2 = it->second.begin(); it2 != it->second.end(); it2++)
 			{
-				std::cout << "IP: " << " " << it2->Ip << " port: " << it2->port << " server name: " << it2->serverName << std::endl;
+				std::cout << "IP: " << " " << it2->Ip << " port: " << it2->port << " server name: " << it2->serverName  << "\n";
+				std::cout << "Error pages: " << it2->errorPage << std::endl;
+				std::cout << "body size: " << it2->bodySize << std::endl;
 				/* for (std::vector<t_location_config>::iterator it3 = it2->locations.begin(); it3 != it2->locations.end(); it3++)
 				{
 					std::cout << "path: " << it3->path << std::endl;

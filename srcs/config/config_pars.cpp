@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/17 17:43:53 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/18 12:05:37 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -158,7 +158,7 @@ int config_pars::extractBodySize(const std::string &server_block)
             throw InvalidbodySizeException();
     }
     else
-        throw MissingValueException("File_Size");
+        bodySize = 10000;
     return bodySize;
 }
 
@@ -290,9 +290,11 @@ std::string config_pars::extractErrorPage(const std::string &server_block)
         if (server_block.find('\n', start) < server_block.find(';', start))
             throw MissingSemicolonException();
         error_page = server_block.substr(start, end - start);
+        if (error_page.empty())
+            error_page = "404 /404.html";
     }
     else
-       throw MissingValueException("error_page");
+       error_page = "404 /404.html";
     return error_page;
 }
 
@@ -308,9 +310,11 @@ std::string config_pars::extractServerName(const std::string &server_block)
         if (server_block.find('\n', start) < server_block.find(';', start))
             throw MissingSemicolonException();
         serverName = server_block.substr(start, end - start);
+        if (serverName.empty())
+            serverName = "default_server.com";
     }
     else
-        throw MissingValueException("Server Name");
+        serverName = "default_server.com";
     return serverName;
 }
 
