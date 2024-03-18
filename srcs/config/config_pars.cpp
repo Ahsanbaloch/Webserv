@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/18 12:05:37 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/18 16:36:55 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -198,16 +198,43 @@ void config_pars::checkDuplicatePath(std::map<std::string, std::vector<t_server_
 void config_pars::parseLocationBlock(t_location_config &location_config, const std::string &location_block)
 {
     location_config.path = extractPath(location_block);
-	location_config.cgi_ex = extractVariables("cgi-ext",location_block);
     if (location_config.path == "/redir") //should use this condition to check if the path is redir or not?
         location_config.redirect = extractVariables("redirect_url",location_block);
-    /* if (!location_config.redirect.empty())
-        std::cout << "Location: " << location_config.redirect << std::endl; */
+    if (location_config.path == "/cgi-bin" )
+	    location_config.cgi_ex = extractVariables("cgi-ext",location_block);
     location_config.root = extractVariables("root", location_block);
     location_config.index = extractVariables("index", location_block);
-    location_config.allowedMethods = extractVariables("allow_methods",location_block);
+    //location_config.allowedMethods = extractVariables("allow_methods",location_block);
+    allowMethods(location_config.GET, location_config.POST, location_config.DELETE, location_block);
     location_config.autoIndex = extractAutoIndex(location_block);
 }
+
+void config_pars::allowMethods(bool &GET, bool &POST, bool &DELETE, const std::string location_block)
+{
+    GET = false;
+    POST = false;
+    DELETE = false;
+	size_t start = 0;
+    size_t end = 0;
+    std::string methods;
+    if ((start = location_block.find("allow_methods", start)) != std::string::npos)
+    {
+        start = skipWhitespace(location_block, start + 13);
+        end = location_block.find(";", start);
+        if (location_block.find('\n', start) < location_block.find(';', start))
+            throw MissingSemicolonException();
+        methods = location_block.substr(start, end - start);
+        if (methods.empty())
+            return ;
+        if (methods.find("GET") != std::string::npos)
+            GET = true;
+        if (methods.find("POST") != std::string::npos)
+            POST = true;
+        if (methods.find("DELETE") != std::string::npos)
+            DELETE = true;
+    }
+}
+
 
 bool config_pars::extractAutoIndex(const std::string &location_block)
 {
@@ -242,7 +269,9 @@ std::string config_pars::extractVariables(const std::string &variable, const std
     }
 	std::string value = location_block.substr(start, end - start);
 	removeLeadingWhitespaces(value);
-	if (location_block.empty())
+    if (variable == "redirect_url" && (value.empty() || location_block.empty()))
+        throw MissingValueException(variable);
+	else if (location_block.empty())
 		throw MissingValueException(variable);
 	return (value);
 }

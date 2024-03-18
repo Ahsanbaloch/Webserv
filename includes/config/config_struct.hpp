@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 14:14:51 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/17 14:49:24 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/18 16:37:00 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,7 +38,10 @@ typedef struct s_location_config {
 	std::string	index;
 	std::string	cgi_ex;
 	std::string	redirect;
-	std::string	allowedMethods;
+	//std::string	allowedMethods;
+	bool										GET;
+	bool										POST;
+	bool										DELETE;
 	bool		autoIndex;
 }	t_location_config;
 
@@ -49,7 +52,7 @@ typedef struct s_server_config {
 	std::string									errorPage;
 	int 										bodySize;
 	std::vector<t_location_config>				locations;
-	t_location_config							location;
+	t_location_config							location; // remove it and test it
 }	t_server_config;
 
 #endif
