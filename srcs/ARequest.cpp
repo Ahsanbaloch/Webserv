@@ -87,12 +87,6 @@ void	ARequest::findLocationBlock(RequestHandler& handler) // double check if thi
 	}
 }
 
-// void	ARequest::findLocationBlockInternalRedirect(RequestHandler& handler)
-// {
-// 	std::vector<std::string> uri_path_items = splitPath(handler.header.redirected_path, '/');
-	
-// }
-
 int	ARequest::checkFileExistence(RequestHandler& handler)
 {	
 	if (handler.server_config[0].locations[handler.location_pos].path == "/") // maybe also cases where location ends with /? Is this possible?
@@ -121,7 +115,7 @@ ARequest* ARequest::newRequest(RequestHandler& handler)
 		; // location found // set redirect url somewhere(?)
 	else
 	{
-		// if the request is not for a file
+		// if the request is not for a file (otherwise the location has already been found)
 		if (handler.header.path.find('.') == std::string::npos)
 		{
 			// check if file constructed from root, location path and index exists
@@ -135,6 +129,8 @@ ARequest* ARequest::newRequest(RequestHandler& handler)
 				; // what to do if index file does not exists?
 		}
 	}
+
+	// probably need to construct full URI here?
 
 	std::cout << "location selected: " << handler.location_pos << std::endl;
 
