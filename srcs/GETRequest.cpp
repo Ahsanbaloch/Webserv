@@ -92,7 +92,7 @@ std::string	GETRequest::createHeaderFields(RequestHandler& handler, std::string 
 void	GETRequest::checkRedirects(RequestHandler& handler)
 {
 	// check for redirect url within location block
-	if (!(handler.server_config[0].locations[handler.location_pos].redirect.empty()))
+	if (!(handler.server_config[0].locations[handler.selected_location].redirect.empty()))
 		; // location found // set redirect url somewhere(?)
 	else
 	{
@@ -117,10 +117,10 @@ void	GETRequest::checkRedirects(RequestHandler& handler)
 		}
 		else
 		{
-			handler.file_path = handler.server_config[0].locations[handler.location_pos].root + "/" + handler.header.path;
+			handler.file_path = handler.server_config[0].locations[handler.selected_location].root + "/" + handler.header.path;
 		}
 	}
-	std::cout << "location selected: " << handler.location_pos << std::endl;
+	std::cout << "location selected: " << handler.selected_location << std::endl;
 }
 
 Response	*GETRequest::createResponse(RequestHandler& handler)

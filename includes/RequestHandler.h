@@ -30,6 +30,9 @@ public:
 	Response*			response;
 	Header				header;
 	std::vector<t_server_config> server_config;
+
+	int					selected_location; // should probably be in server_config struct
+	int					selected_server;
 	int					connection_fd;
 	int					body_parsing_done;
 	int					chunk_length;
@@ -38,7 +41,6 @@ public:
 	int					response_ready;
 	int					body_expected;
 	int					body_read;
-	int					location_pos; // should probably be in server_config struct
 	std::string			file_path;
 	std::string			file_type;
 

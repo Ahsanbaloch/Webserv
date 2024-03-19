@@ -81,7 +81,7 @@ void	ARequest::findLocationBlock(RequestHandler& handler) // double check if thi
 		int matches = calcMatches(uri_path_items, location_path_items);
 		if (matches > max)
 		{
-			handler.location_pos = i;
+			handler.selected_location = i;
 			max = matches;
 		}
 	}
@@ -89,10 +89,10 @@ void	ARequest::findLocationBlock(RequestHandler& handler) // double check if thi
 
 int	ARequest::checkFileExistence(RequestHandler& handler)
 {	
-	if (handler.server_config[0].locations[handler.location_pos].path == "/") // maybe also cases where location ends with /? Is this possible?
-		handler.header.redirected_path = handler.server_config[0].locations[handler.location_pos].root + handler.server_config[0].locations[handler.location_pos].path + handler.server_config[0].locations[handler.location_pos].index;
+	if (handler.server_config[0].locations[handler.selected_location].path == "/") // maybe also cases where location ends with /? Is this possible?
+		handler.header.redirected_path = handler.server_config[0].locations[handler.selected_location].root + handler.server_config[0].locations[handler.selected_location].path + handler.server_config[0].locations[handler.selected_location].index;
 	else
-		handler.header.redirected_path = handler.server_config[0].locations[handler.location_pos].root + handler.server_config[0].locations[handler.location_pos].path + "/" + handler.server_config[0].locations[handler.location_pos].index;
+		handler.header.redirected_path = handler.server_config[0].locations[handler.selected_location].root + handler.server_config[0].locations[handler.selected_location].path + "/" + handler.server_config[0].locations[handler.selected_location].index;
 
 	std::cout << "index file path: " << handler.header.redirected_path << std::endl;
 	int result = access(handler.header.redirected_path.c_str(), F_OK); // call to access allowed?
