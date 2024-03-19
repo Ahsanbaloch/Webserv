@@ -18,8 +18,6 @@ public:
 	explicit GETRequest(RequestHandler&);
 	~GETRequest();
 
-	int			is_directory;
-
 	Response	*createResponse(RequestHandler&);
 	std::string	createStatusLine(RequestHandler&);
 	std::string	createBody(RequestHandler&);

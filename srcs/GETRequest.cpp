@@ -3,7 +3,6 @@
 
 GETRequest::GETRequest(RequestHandler&)
 {
-	is_directory = 0;
 }
 
 GETRequest::GETRequest(/* args */)
@@ -26,16 +25,6 @@ std::string	GETRequest::createStatusLine(RequestHandler& handler)
 	return (status_line);
 }
 
-
-void	GETRequest::checkPathType(RequestHandler& handler)
-{
-	char last_char = handler.header.path[handler.header.path.size() - 1];
-
-	if (last_char == '/')
-		is_directory = 1;
-	
-	std::cout << "is dir: " << is_directory << std::endl;
-}
 
 std::string	GETRequest::constructBodyContent(RequestHandler& handler)
 {
