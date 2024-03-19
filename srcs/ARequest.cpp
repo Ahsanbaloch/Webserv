@@ -13,19 +13,30 @@ ARequest::~ARequest()
 // instead of erasing all server blocks, could also store the index (similar to Location Blocks)
 void	ARequest::findServerBlock(RequestHandler& handler)
 {
-	std::vector<t_server_config>::iterator it = handler.server_config.begin();
-	for (std::vector<t_server_config>::iterator it2 = handler.server_config.begin(); it2 != handler.server_config.end(); it2++)
+	int size = handler.server_config.size();
+
+	for (int i = 0; i < size; i++)
 	{
-		if (it2 == it || it2->serverName == handler.header.header_fields["host"])
-			it = it2;
-		else
+		if (handler.server_config[i].serverName == handler.header.header_fields["host"])
 		{
-			handler.server_config.erase(it2);
-			it2--;
+			handler.selected_server = i;
+			break;
 		}
 	}
-	if (it != handler.server_config.begin())
-		handler.server_config.erase(handler.server_config.begin());
+
+	// std::vector<t_server_config>::iterator it = handler.server_config.begin();
+	// for (std::vector<t_server_config>::iterator it2 = handler.server_config.begin(); it2 != handler.server_config.end(); it2++)
+	// {
+	// 	if (it2 == it || it2->serverName == handler.header.header_fields["host"])
+	// 		it = it2;
+	// 	else
+	// 	{
+	// 		handler.server_config.erase(it2);
+	// 		it2--;
+	// 	}
+	// }
+	// if (it != handler.server_config.begin())
+	// 	handler.server_config.erase(handler.server_config.begin());
 }
 
 std::vector<std::string>	ARequest::splitPath(std::string input, char delim)
@@ -72,12 +83,12 @@ void	ARequest::findLocationBlock(RequestHandler& handler) // double check if thi
 		std::string temp = "/" + handler.header.redirected_path;
 		uri_path_items = splitPath(temp, '/');
 	}
-	int	size = handler.server_config[0].locations.size();
+	int	size = handler.server_config[handler.selected_server].locations.size();
 	int	max = 0;
 
 	for (int i = 0; i < size; i++)
 	{
-		std::vector<std::string> location_path_items = splitPath(handler.server_config[0].locations[i].path, '/');
+		std::vector<std::string> location_path_items = splitPath(handler.server_config[handler.selected_server].locations[i].path, '/');
 		int matches = calcMatches(uri_path_items, location_path_items);
 		if (matches > max)
 		{
@@ -89,10 +100,10 @@ void	ARequest::findLocationBlock(RequestHandler& handler) // double check if thi
 
 int	ARequest::checkFileExistence(RequestHandler& handler)
 {	
-	if (handler.server_config[0].locations[handler.selected_location].path == "/") // maybe also cases where location ends with /? Is this possible?
-		handler.header.redirected_path = handler.server_config[0].locations[handler.selected_location].root + handler.server_config[0].locations[handler.selected_location].path + handler.server_config[0].locations[handler.selected_location].index;
+	if (handler.server_config[handler.selected_server].locations[handler.selected_location].path == "/") // maybe also cases where location ends with /? Is this possible?
+		handler.header.redirected_path = handler.server_config[handler.selected_server].locations[handler.selected_location].root + handler.server_config[handler.selected_server].locations[handler.selected_location].path + handler.server_config[handler.selected_server].locations[handler.selected_location].index;
 	else
-		handler.header.redirected_path = handler.server_config[0].locations[handler.selected_location].root + handler.server_config[0].locations[handler.selected_location].path + "/" + handler.server_config[0].locations[handler.selected_location].index;
+		handler.header.redirected_path = handler.server_config[handler.selected_server].locations[handler.selected_location].root + handler.server_config[handler.selected_server].locations[handler.selected_location].path + "/" + handler.server_config[handler.selected_server].locations[handler.selected_location].index;
 
 	std::cout << "index file path: " << handler.header.redirected_path << std::endl;
 	int result = access(handler.header.redirected_path.c_str(), F_OK); // call to access allowed?
@@ -122,8 +133,10 @@ ARequest* ARequest::newRequest(RequestHandler& handler)
 	if (handler.server_config.size() > 1)
 		findServerBlock(handler);
 
+	std::cout << "selected server: " << handler.server_config[handler.selected_server].serverName << std::endl;
+
 	// find location block within server block if multiple exist (this applies to all request types; for GET requests there might be an internal redirect happening later on)
-	if (handler.server_config[0].locations.size() > 1)
+	if (handler.server_config[handler.selected_server].locations.size() > 1)
 		findLocationBlock(handler);
 
 	
