@@ -103,7 +103,7 @@ int	ARequest::checkFileExistence(RequestHandler& handler)
 
 bool	ARequest::checkFileType(RequestHandler& handler)
 {
-	// what if there are two dots in the path?
+	// what if there are two dots in the path? // is there a better way to identify the file type requested?
 	std::size_t found = handler.header.path.find('.');
 	if (found == std::string::npos)
 	{
@@ -142,6 +142,7 @@ ARequest* ARequest::newRequest(RequestHandler& handler)
 				// if file does exist, search again for correct location
 				findLocationBlock(handler);
 				handler.file_path = handler.header.redirected_path;
+				handler.file_type = handler.file_path.substr(handler.file_path.find('.') + 1); // create a function for that in case it is not a file type
 			}
 			else
 			{

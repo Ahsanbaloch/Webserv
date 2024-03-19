@@ -79,10 +79,13 @@ std::string	GETRequest::createHeaderFields(RequestHandler& handler, std::string 
 {
 	(void)handler;
 	std::string	header;
+	std::string mime_type = identifyMIME(handler);
 	std::ostringstream length_conversion;
 	length_conversion << body.size();
 
-	header.append("Content-Type: text/html\r\n"); // how to determine correct MIME type?
+	if (mime_type.empty())
+		printf("mime type not supported"); // return some error? 
+	header.append("Content-Type: " + mime_type + "\r\n");
 	header.append("Content-Length: ");
 	header.append(length_conversion.str());
 	header.append("\r\n\r\n");
@@ -138,3 +141,12 @@ Response	*GETRequest::createResponse(RequestHandler& handler)
 	return (response);
 }
 
+
+std::string	GETRequest::identifyMIME(RequestHandler& handler)
+{
+	// how to best identifyMIME=
+	if (handler.file_type == "html")
+		return ("text/html");
+	else
+		return ("");
+}

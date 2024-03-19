@@ -25,6 +25,7 @@ public:
 	std::string	createBody(RequestHandler&);
 	std::string createHeaderFields(RequestHandler&, std::string);
 	void		checkPathType(RequestHandler&);
+	std::string	identifyMIME(RequestHandler&);
 
 	std::string	constructBodyContent(RequestHandler&);
 	void		findDirectory();
