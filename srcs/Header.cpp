@@ -67,7 +67,7 @@ void	Header::parseHeaderFields(RequestHandler& handler)
 	std::string		header_name = "";
 	std::string		header_value = "";
 
-	headers_state = he_start;
+	headers_state = he_start; // move to constructor?
 
 	while (!headers_parsing_done && (handler.buf_pos)++ < handler.bytes_read)
 	{
@@ -228,10 +228,10 @@ void	Header::parseHeaderFields(RequestHandler& handler)
 		}
 	}
 
-	if (!headers_parsing_done)
+	if (!headers_parsing_done) // is this the correct location to check?
 	{
-		error = 413; // correct error code when header is too large for buffer
-		throw CustomException("413 Payload Too Large");  // correct error code when header is too large for buffer
+		error = 413; // correct error code when header is too large for buffer OR 431 Request Header Fields Too Large
+		throw CustomException("Payload Too Large");  // correct error code when header is too large for buffer
 	}
 	header_complete = 1;
 	body_beginning = handler.buf_pos; // this is the last ch of the empty line at the end of the headers. Next ch is the first of the body
@@ -261,8 +261,8 @@ void	Header::checkMethod(RequestHandler& handler)
 				method = "GET";
 			else
 			{
-				error = 400;
-				throw CustomException("Bad request");
+				error = 501;
+				throw CustomException("Not implemented");
 			}
 			break;
 		
@@ -272,8 +272,8 @@ void	Header::checkMethod(RequestHandler& handler)
 				method = "POST";
 			else
 			{
-				error = 400;
-				throw CustomException("Bad request");
+				error = 501;
+				throw CustomException("Not implemented");
 			}
 			break;
 
@@ -283,14 +283,13 @@ void	Header::checkMethod(RequestHandler& handler)
 				method = "DELETE";
 			else
 			{
-				error = 400;
-				throw CustomException("Bad request");
+				error = 501;
+				throw CustomException("Not implemented");
 			}
 			break;
 		default:
-			// error
-			error = 400; // What is the correct error code?
-			throw CustomException("Bad request"); // or not implemented 501?
+			error = 501;
+			throw CustomException("Not implemented");
 			break;
 		}
 }
@@ -306,8 +305,8 @@ void	Header::checkHttpVersion(RequestHandler& handler)
 	}
 	else
 	{
-		error = 400; // what is the correct error code here?
-		throw CustomException("Bad request"); // or not implemented 501?
+		error = 505;
+		throw CustomException("HTTP Version Not Supported");
 	}
 }
 
@@ -324,7 +323,7 @@ void	Header::parseRequestLine(RequestHandler& handler)
 	// unreseved:  - _ . ~
 	// alphanumeric
 
-	rl_state = rl_start;
+	rl_state = rl_start; // move to constructor?
 
 	while (!rl_parsing_done && (handler.buf_pos)++ < handler.bytes_read)
 	{
@@ -344,8 +343,6 @@ void	Header::parseRequestLine(RequestHandler& handler)
 			case rl_method: // can this also be termined by CRLF?
 				// checkMethod(buf, buf_pos);
 				checkMethod(handler);
-				if (error == 400)
-					throw CustomException("Bad request");
 				rl_state = rl_first_divider;
 				break;
 
@@ -441,7 +438,7 @@ void	Header::parseRequestLine(RequestHandler& handler)
 					query.append(1, static_cast<char>(ch));
 				break;
 
-			case rl_http: // do we need to check for diffferent versions?
+			case rl_http: 
 				if (ch == CR)
 				{
 					rl_state = rl_cr;
@@ -454,8 +451,6 @@ void	Header::parseRequestLine(RequestHandler& handler)
 				}
 				if (ch == 'H')
 					checkHttpVersion(handler);
-				if (error == 400)
-					throw CustomException("Bad request");
 				break;
 
 			case rl_cr:
@@ -480,17 +475,15 @@ void	Header::parseRequestLine(RequestHandler& handler)
 			// doesn't allow any whitespace
 			// if invalid request-line
 				// respond with 400 (Bad Request) and close connection
-			// shouldn't include the ? + query part (?)
 
 		// enforce single-space grammar rule? --> check how nginx implements it
 			// check HTTP version
-			// specific error code if not a valid http version (400?)
 	}
 
 	if (!rl_parsing_done)
 	{
 		error = 414;
-		throw CustomException("414 Request-URI Too Long");
+		throw CustomException("Request-URI Too Long");
 	}
 
 }

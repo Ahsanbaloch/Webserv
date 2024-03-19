@@ -6,7 +6,7 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	this->server_config = server_config;
 	connection_fd = fd;
 	status = 200;
-	buf_pos = -1; // or 0?
+	buf_pos = -1;
 	body_parsing_done = 0;
 	chunk_length = 0;
 	response_ready = 0;
@@ -70,10 +70,14 @@ void	RequestHandler::processRequest()
 			// decode URL/Query if necessary
 			// check values of Header Fields
 				// check somewhere if TE contains something else than "chunked" --> in this case respond with 501
+				// check that host is not empty
+				// check that content-length is provided if not TE (411)
 		}
 		catch(const std::exception& e)
 		{
-			// terminate connection and remove file descriptor from the event queue
+			// send Response with error message and correct status code // currently the status code is provided by header.error
+			// create response and set response_ready to 1
+			// response_ready = 1;
 			std::cerr << e.what() << '\n';
 		}
 	}
@@ -106,6 +110,7 @@ void	RequestHandler::processRequest()
 	// if no body is expected OR end of body has been reached
 	if (!body_expected || body_read)
 	{
+		// try/catch block?
 		request = ARequest::newRequest(*this);
 		response = request->createResponse(*this);
 		// set Response to be ready

@@ -33,7 +33,9 @@ public:
 
 	int					selected_location; // should probably be in server_config struct
 	int					selected_server;
+	
 	int					connection_fd;
+	
 	int					body_parsing_done;
 	int					chunk_length;
 	int					request_length;
@@ -41,6 +43,7 @@ public:
 	int					response_ready;
 	int					body_expected;
 	int					body_read;
+	
 	std::string			file_path;
 	std::string			file_type;
 

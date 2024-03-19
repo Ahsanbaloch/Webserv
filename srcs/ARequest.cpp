@@ -133,7 +133,7 @@ ARequest* ARequest::newRequest(RequestHandler& handler)
 	if (handler.server_config.size() > 1)
 		findServerBlock(handler);
 
-	std::cout << "selected server: " << handler.server_config[handler.selected_server].serverName << std::endl;
+	// std::cout << "selected server: " << handler.server_config[handler.selected_server].serverName << std::endl;
 
 	// find location block within server block if multiple exist (this applies to all request types; for GET requests there might be an internal redirect happening later on)
 	if (handler.server_config[handler.selected_server].locations.size() > 1)

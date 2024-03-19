@@ -131,6 +131,8 @@ Response	*GETRequest::createResponse(RequestHandler& handler)
 	checkRedirects(handler);
 
 	// check allowed methods for the selected location
+	// if (!handler.server_config[handler.selected_server].locations[handler.selected_location].getAllowed)
+		// throw exception
 
 	response->status_line = createStatusLine(handler);
 	if ((handler.status >= 100 && handler.status <= 103) || handler.status == 204 || handler.status == 304)
