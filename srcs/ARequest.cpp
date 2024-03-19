@@ -58,7 +58,6 @@ int	ARequest::calcMatches(std::vector<std::string>& uri_path_items, std::vector<
 			break;
 		matches++;
 	}
-	std::cout << "Num matches: " << matches << std::endl;
 	return (matches);
 }
 

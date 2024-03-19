@@ -1,19 +1,12 @@
 
 #include "RequestHandler.h"
 
-// next:
-// - create Request class (abstract)
-// - create dedicated classes starting with GET
-// - what does the response flow look like? --> where do I need to transfer what?
-// --> create E2E-Flow for GET request without body (afterwards do same for POST but with body)
-
-
 RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_config)
 {
 	this->server_config = server_config;
 	connection_fd = fd;
 	status = 200;
-	buf_pos = -1;
+	buf_pos = -1; // or 0?
 	body_parsing_done = 0;
 	chunk_length = 0;
 	response_ready = 0;
@@ -45,14 +38,15 @@ void	RequestHandler::sendResponse()
 // read request handler
 void	RequestHandler::processRequest()
 {
-	for (std::vector<t_server_config>::iterator it = server_config.begin(); it != server_config.end(); it++)
-	{
-		std::cout << "port and server name: " << it->port << " " << it->serverName << std::endl;
-		for (std::vector<t_location_config>::iterator it2 = it->locations.begin(); it2 != it->locations.end(); it2++)
-		{
-			std::cout << "location: " << it2->path << std::endl;
-		}
-	}
+	// for testing if correct configuration info reaches RequestHandler
+	// for (std::vector<t_server_config>::iterator it = server_config.begin(); it != server_config.end(); it++)
+	// {
+	// 	std::cout << "port and server name: " << it->port << " " << it->serverName << std::endl;
+	// 	for (std::vector<t_location_config>::iterator it2 = it->locations.begin(); it2 != it->locations.end(); it2++)
+	// 	{
+	// 		std::cout << "location: " << it2->path << std::endl;
+	// 	}
+	// }
 
 	//how to handle cases in which the header is not recv in one go? (do those cases exist?)
 	bytes_read = recv(connection_fd, buf, sizeof(buf), 0);
@@ -72,10 +66,9 @@ void	RequestHandler::processRequest()
 			// what about folding lines?
 			header.parseRequestLine(*this);
 			header.parseHeaderFields(*this); // check if it still works if no header is sent
-			// check if requested resource exists???
 			// decode URL/Query if necessary
-			// construct full URI? --> done later when having identified the location
-			// check somewhere if TE contains something else than "chunked" --> in this case respond with 501
+			// check values of Header Fields
+				// check somewhere if TE contains something else than "chunked" --> in this case respond with 501
 		}
 		catch(const std::exception& e)
 		{
@@ -83,7 +76,20 @@ void	RequestHandler::processRequest()
 			std::cerr << e.what() << '\n';
 		}
 	}
-	// if immediate response is expected to receive body
+
+	//for testing: print received headers
+	// printf("\nheaders\n");
+	// for (std::map<std::string, std::string>::iterator it = header.header_fields.begin(); it != header.header_fields.end(); it++)
+	// {
+	// 	std::cout << "key: " << it->first << " ";
+	// 	std::cout << "value: " << it->second << std::endl;
+	// }
+	// std::cout << "identified method: " << header.method << '\n';
+	// std::cout << "identified path: " << header.path << '\n';
+	// std::cout << "identified query: " << header.query << '\n';
+	// std::cout << "identified version: " << header.version << '\n';
+
+	// if immediate response is expected to receive body (e.g. Expect: 100-continue)
 		// make reponse
 	// if body is expected
 	if (body_expected)
@@ -99,39 +105,19 @@ void	RequestHandler::processRequest()
 	// if no body is expected OR end of body has been reached
 	if (!body_expected || body_read)
 	{
-		// create Request object? --> What is the object actually going to do?
 		request = ARequest::newRequest(*this);
-		// process request (based on the object type that has been created --> through base pointer?)
-			// create Response object inside the function and return it here --> should then be stored in RequestHandler so that sendResponse can send it  --> What is teh purpose of this object?
-		
-		for (std::vector<t_server_config>::iterator it = server_config.begin(); it != server_config.end(); it++)
-		{
-			std::cout << "port and server name after check: " << it->port << " " << it->serverName << std::endl;
-			for (std::vector<t_location_config>::iterator it2 = it->locations.begin(); it2 != it->locations.end(); it2++)
-			{
-				std::cout << "location: " << it2->path << std::endl;
-			}
-		}
-		
 		response = request->createResponse(*this);
 		// set Response to be ready
 	}
+
+	printf("read %i bytes\n", bytes_read);
+	response_ready = 1;
+	// close fd in case bytes_read == 0 ???
 	
 
 
 	// The presence of a message body in a request is signaled by a Content-Length or Transfer-Encoding header field. Request message framing is independent of method semantics.
-
-	// interpret parsed input to decide what to do next
-		// construct targetURI? --> info from config file?
-		// --> split in GET / POST / DELETE ??
-		// GET requests can have a body but that has no semantic meaning --> so no need to check --> still need to recv the whole body before responding?
-		// --> also check if there is an expected immediate response, e.g. 100-continue
-		// if there are any encoded chars, decode them here? --> relevant for url/query
-		// construct the full URI here?
-	
-		// check if header includes Expect: 100-continue
-		// determine position where the header ends
-	
+	// GET requests can have a body but that has no semantic meaning --> so no need to check --> still need to recv the whole body before responding?
 	
 	// if we expect a body (only if POST?) // parse the body based on whether the request is a GET, POST or DELETE request? --> create specific objects for those requests?
 		// does the transmission format play a role here?
@@ -140,46 +126,12 @@ void	RequestHandler::processRequest()
 		// receive chunks?
 		// for each iteration: each call of this event, you will add an oneshot event for the TIMEOUT event (EVFILT_TIMER), --> see slack bookmark
 
-
 	// notes
 		// video: 2h mark --> set stringstream flags
 		// use uint8_t or unsigned char for storing the incoming data
 		// if there are any endoded characters in the header, they need to be decoded
 			// Some characters are utilized by URLs for special use in defining their syntax. When these characters are not used in their special role inside a URL, they must be encoded.
 			// characters such as {} are getting encoded by the client(?) and being transmitted e.g. with %7B%7D
-
-	
-	printf("\nheaders\n");
-	for (std::map<std::string, std::string>::iterator it = header.header_fields.begin(); it != header.header_fields.end(); it++)
-	{
-		std::cout << "key: " << it->first << " ";
-		std::cout << "value: " << it->second << std::endl;
-	}
-
-	
-	// if (transfer_encoding_exists && !content_length_exists) // creates issue with postman
-	// 	parseEncodedBody();
-	// if (transfer_encoding_exists)
-	// 	parseEncodedBody();
-	// else if (content_length_exists && !transfer_encoding_exists)
-	// 	parseContentBody();
-	// else
-	// {
-	// 	error = 400;
-	// 	throw CustomException("Bad request");
-	// 	// A server MAY reject a request that contains a message body but not a Content-Length by responding with 411 (Length Required).
-	// }
-	
-	std::cout << "identified method: " << header.method << '\n';
-	std::cout << "identified path: " << header.path << '\n';
-	std::cout << "identified query: " << header.query << '\n';
-	std::cout << "identified version: " << header.version << '\n';
-
-
-
-	printf("read %i bytes\n", bytes_read);
-	response_ready = 1;
-	// close fd in case bytes_read == 0 ???
 }
 
 
