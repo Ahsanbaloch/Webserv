@@ -26,7 +26,7 @@ public:
 	std::string createHeaderFields(RequestHandler&, std::string);
 	void		checkPathType(RequestHandler&);
 
-	std::string	constructFilePath(RequestHandler&);
+	std::string	constructBodyContent(RequestHandler&);
 	void		findDirectory();
 };
 

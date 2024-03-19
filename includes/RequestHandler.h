@@ -39,7 +39,8 @@ public:
 	int					body_expected;
 	int					body_read;
 	int					location_pos; // should probably be in server_config struct
-
+	std::string			file_path;
+	std::string			file_type;
 
 	std::stringstream	raw_buf;
 	std::stringstream	body;

@@ -15,6 +15,7 @@ private:
 	static std::vector<std::string>	splitPath(std::string input, char delim);
 	static int	calcMatches(std::vector<std::string>&, std::vector<std::string>&);
 	static int	checkFileExistence(RequestHandler& handler);
+	static bool	checkFileType(RequestHandler& handler);
 public:
 	ARequest(/* args */);
 	virtual ~ARequest();

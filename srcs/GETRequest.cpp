@@ -37,16 +37,11 @@ void	GETRequest::checkPathType(RequestHandler& handler)
 	std::cout << "is dir: " << is_directory << std::endl;
 }
 
-std::string	GETRequest::constructFilePath(RequestHandler& handler)
+std::string	GETRequest::constructBodyContent(RequestHandler& handler)
 {
-	std::string root = "./www/"; // how does root string end, always with '/' /// from where do I get root when it is location specific?
-	std::string file_path;
 	std::string body;
 
-	file_path.append(root);
-	file_path.append(handler.header.path);
-
-	std::ifstream file(file_path); // Open the HTML file
+	std::ifstream file(handler.file_path); // Open the HTML file
 	if (!file.is_open()) 
 	{
 		// add proper error message
@@ -76,13 +71,7 @@ std::string GETRequest::createBody(RequestHandler& handler)
 		; // From configData get specific info about which page should be displayed
 		// look up file and read content into response body
 	else
-	{
-		checkPathType(handler);
-		if (is_directory)
-			findDirectory();
-		else
-			body = constructFilePath(handler);
-	}
+		body = constructBodyContent(handler);
 	return (body);
 }
 
@@ -112,26 +101,6 @@ Response	*GETRequest::createResponse(RequestHandler& handler)
 	
 	response->header_fields = createHeaderFields(handler, response->body);
 
-	// CREATE BODY if required --> seperate function 
-	// check if path is a file or a directory (identified by last char in path string)
-	// if it is a file
-		// find requested file (start looking in X dir?)
-	// if it is a dir
-		// find directory that should be looked in
-		// check if this directory is in the server config
-		// if directory is in serverconfig
-			// go to directory
-			// search for index file specified in config file
-				// indexfile found
-					// read index file into response body
-				// indexfile not found
-					// check if auto-index is on
-					// if on
-						// display directory listing
-					// if off
-						// provide error reponse
-		// if directory is not in serverconfig
-			// do something
 
 	
 	// CREATE HEADERS
@@ -144,7 +113,6 @@ Response	*GETRequest::createResponse(RequestHandler& handler)
 		// server header --> should this actually be set?
 		// additional header fields: expires, last-modified, Access Control Origin, Keep Alive etc.
 
-	// Close the file when done
 	
 	// check if there has been any error detected
 
@@ -161,17 +129,12 @@ Response	*GETRequest::createResponse(RequestHandler& handler)
 	// d) body (optional)
 
 
-	// A sender MUST NOT send whitespace between the start-line and the first header field.
 
 	// The presence of a message body in a response depends on both the request method to which it is responding and the response status code. 
 	// e.g. POST 200 is different from GET 200
 
 	// A server MUST NOT send a Transfer-Encoding header field in any response with a status code of 1xx (Informational) or 204 (No Content)
 	// any response with a 1xx (Informational), 204 (No Content), or 304 (Not Modified) status code is always terminated by the first empty line after the header fields --> no body
-
-	// check type --> file vs dir
-	// check index
-	// check auto-index
 	return (response);
 }
 

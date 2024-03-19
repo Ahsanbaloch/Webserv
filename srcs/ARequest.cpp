@@ -10,6 +10,7 @@ ARequest::~ARequest()
 {
 }
 
+// instead of erasing all server blocks, could also store the index (similar to Location Blocks)
 void	ARequest::findServerBlock(RequestHandler& handler)
 {
 	std::vector<t_server_config>::iterator it = handler.server_config.begin();
@@ -100,13 +101,29 @@ int	ARequest::checkFileExistence(RequestHandler& handler)
 	return (result);
 }
 
+bool	ARequest::checkFileType(RequestHandler& handler)
+{
+	// what if there are two dots in the path?
+	std::size_t found = handler.header.path.find('.');
+	if (found == std::string::npos)
+	{
+		handler.file_type = "";
+		return (0);
+	}
+	else
+	{
+		handler.file_type = handler.header.path.substr(found + 1);
+		return (1);
+	}
+}
+
 ARequest* ARequest::newRequest(RequestHandler& handler)
 {
 	// find server block if there are multiple that match
 	if (handler.server_config.size() > 1)
 		findServerBlock(handler);
 
-	// find location block within server block
+	// find location block within server block if multiple exist
 	if (handler.server_config[0].locations.size() > 1)
 		findLocationBlock(handler);
 
@@ -115,8 +132,8 @@ ARequest* ARequest::newRequest(RequestHandler& handler)
 		; // location found // set redirect url somewhere(?)
 	else
 	{
-		// if the request is not for a file (otherwise the location has already been found)
-		if (handler.header.path.find('.') == std::string::npos)
+		// if the request is not for a file (otherwise the location has already been found) // probably create a function for that
+		if (!checkFileType(handler))
 		{
 			// check if file constructed from root, location path and index exists
 			// what if more than one index is specified?
@@ -124,9 +141,18 @@ ARequest* ARequest::newRequest(RequestHandler& handler)
 			{
 				// if file does exist, search again for correct location
 				findLocationBlock(handler);
+				handler.file_path = handler.header.redirected_path;
 			}
 			else
-				; // what to do if index file does not exists?
+			{
+				// check if auto-index is on // only for GET request?
+				// else
+					; // what to do if index file does not exists and auto-index is not on? --> file not found error? for POST, GET and DELETE?
+			}
+		}
+		else
+		{
+			handler.file_path = handler.server_config[0].locations[handler.location_pos].root + "/" + handler.header.path;
 		}
 	}
 
@@ -134,8 +160,7 @@ ARequest* ARequest::newRequest(RequestHandler& handler)
 
 	std::cout << "location selected: " << handler.location_pos << std::endl;
 
-	// allowed methods should be checked
-
+	// check allowed methods for the selected location
 	
 	
 	// some more error handling could go here if not already done in Request Handler (or move it here; e.g. check for http version)
