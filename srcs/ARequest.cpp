@@ -119,50 +119,14 @@ bool	ARequest::checkFileType(RequestHandler& handler)
 
 ARequest* ARequest::newRequest(RequestHandler& handler)
 {
-	// find server block if there are multiple that match
+	// find server block if there are multiple that match (this applies to all request types)
 	if (handler.server_config.size() > 1)
 		findServerBlock(handler);
 
-	// find location block within server block if multiple exist
+	// find location block within server block if multiple exist (this applies to all request types; for GET requests there might be an internal redirect happening later on)
 	if (handler.server_config[0].locations.size() > 1)
 		findLocationBlock(handler);
 
-	// check for redirect url within location block
-	if (!(handler.server_config[0].locations[handler.location_pos].redirect.empty()))
-		; // location found // set redirect url somewhere(?)
-	else
-	{
-		// if the request is not for a file (otherwise the location has already been found) // probably create a function for that
-		if (!checkFileType(handler))
-		{
-			// check if file constructed from root, location path and index exists
-			// what if more than one index is specified?
-			if (checkFileExistence(handler) == 0)
-			{
-				// if file does exist, search again for correct location
-				findLocationBlock(handler);
-				handler.file_path = handler.header.redirected_path;
-				handler.file_type = handler.file_path.substr(handler.file_path.find('.') + 1); // create a function for that in case it is not a file type
-			}
-			else
-			{
-				// check if auto-index is on // only for GET request?
-				// else
-					; // what to do if index file does not exists and auto-index is not on? --> file not found error? for POST, GET and DELETE?
-			}
-		}
-		else
-		{
-			handler.file_path = handler.server_config[0].locations[handler.location_pos].root + "/" + handler.header.path;
-		}
-	}
-
-	// probably need to construct full URI here?
-
-	std::cout << "location selected: " << handler.location_pos << std::endl;
-
-	// check allowed methods for the selected location
-	
 	
 	// some more error handling could go here if not already done in Request Handler (or move it here; e.g. check for http version)
 	

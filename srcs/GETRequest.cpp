@@ -46,12 +46,6 @@ std::string	GETRequest::constructBodyContent(RequestHandler& handler)
 	return (body);
 }
 
-void	GETRequest::findDirectory()
-{
-	
-}
-
-
 std::string GETRequest::createBody(RequestHandler& handler)
 {
 	std::string body;
@@ -95,9 +89,48 @@ std::string	GETRequest::createHeaderFields(RequestHandler& handler, std::string 
 	return (header);
 }
 
+void	GETRequest::checkRedirects(RequestHandler& handler)
+{
+	// check for redirect url within location block
+	if (!(handler.server_config[0].locations[handler.location_pos].redirect.empty()))
+		; // location found // set redirect url somewhere(?)
+	else
+	{
+		// if the request is not for a file (otherwise the location has already been found) // probably create a function for that
+		if (!checkFileType(handler))
+		{
+			// check if file constructed from root, location path and index exists
+			// what if more than one index is specified?
+			if (checkFileExistence(handler) == 0)
+			{
+				// if file does exist, search again for correct location
+				findLocationBlock(handler); //should the root be taken into account when rechecking the location Block?
+				handler.file_path = handler.header.redirected_path;
+				handler.file_type = handler.file_path.substr(handler.file_path.find('.') + 1); // create a function for that in case it is not a file type
+			}
+			else
+			{
+				// check if auto-index is on
+				// else
+					; // what to do if index file does not exists and auto-index is not on? --> file not found error? for POST, GET and DELETE?
+			}
+		}
+		else
+		{
+			handler.file_path = handler.server_config[0].locations[handler.location_pos].root + "/" + handler.header.path;
+		}
+	}
+	std::cout << "location selected: " << handler.location_pos << std::endl;
+}
+
 Response	*GETRequest::createResponse(RequestHandler& handler)
 {
 	Response *response = new Response; // needs to be delete somewhere
+
+	// check for direct redirects and internal redirects
+	checkRedirects(handler);
+
+	// check allowed methods for the selected location
 
 	response->status_line = createStatusLine(handler);
 	if ((handler.status >= 100 && handler.status <= 103) || handler.status == 204 || handler.status == 304)

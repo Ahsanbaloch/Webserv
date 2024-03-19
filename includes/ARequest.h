@@ -14,8 +14,6 @@ class ARequest
 private:
 	static std::vector<std::string>	splitPath(std::string input, char delim);
 	static int	calcMatches(std::vector<std::string>&, std::vector<std::string>&);
-	static int	checkFileExistence(RequestHandler& handler);
-	static bool	checkFileType(RequestHandler&);
 public:
 	ARequest(/* args */);
 	virtual ~ARequest();
@@ -24,6 +22,8 @@ public:
 
 	static void	findServerBlock(RequestHandler&);
 	static void	findLocationBlock(RequestHandler&);
+	static bool	checkFileType(RequestHandler&);
+	static int	checkFileExistence(RequestHandler&);
 
 	virtual Response *createResponse(RequestHandler&) = 0;
 
