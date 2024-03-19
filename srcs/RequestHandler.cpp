@@ -74,7 +74,7 @@ void	RequestHandler::processRequest()
 			header.parseHeaderFields(*this); // check if it still works if no header is sent
 			// check if requested resource exists???
 			// decode URL/Query if necessary
-			// construct full URI?
+			// construct full URI? --> done later when having identified the location
 			// check somewhere if TE contains something else than "chunked" --> in this case respond with 501
 		}
 		catch(const std::exception& e)

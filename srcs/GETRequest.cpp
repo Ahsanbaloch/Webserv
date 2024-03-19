@@ -77,18 +77,32 @@ std::string GETRequest::createBody(RequestHandler& handler)
 
 std::string	GETRequest::createHeaderFields(RequestHandler& handler, std::string body)
 {
-	(void)handler;
 	std::string	header;
 	std::string mime_type = identifyMIME(handler);
 	std::ostringstream length_conversion;
 	length_conversion << body.size();
 
 	if (mime_type.empty())
-		printf("mime type not supported"); // return some error? 
-	header.append("Content-Type: " + mime_type + "\r\n");
-	header.append("Content-Length: ");
-	header.append(length_conversion.str());
-	header.append("\r\n\r\n");
+		printf("mime type not supported"); // return some error?
+	else
+	{
+		header.append("Content-Type: " + mime_type + "\r\n");
+		header.append("Content-Length: "); // alternatively TE: chunked?
+		header.append(length_conversion.str() + "\r\n");
+		// header.append("Location: url"); // redirect client to a different url or new path --> will have a specific status code // I assume then there is no body?
+		// what other headers to include?
+		// send Repsonses in Chunks?
+		// header.append("Transfer-Encoding: chunked");
+		// header.append("Cache-Control: no-cache");
+		// header.append("Set-Cookie: preference=darkmode; Domain=example.com");
+		// header.append("Server: nginx/1.21.0");
+		// header.append("Expires: Sat, 08 May 2023 12:00:00 GMT"); // If a client requests the same resource before the expiration date has passed, the server can return a cached copy of the resource.
+		// header.append("Last-Modified: Tue, 04 May 2023 16:00:00 GMT"); // This header specifies the date and time when the content being sent in the response was last modified. This can be used by clients to determine if the resource has changed since it was last requested.
+		// header.append("ETag: "abc123""); //This header provides a unique identifier for the content being sent in the response. This can be used by clients to determine if the resource has changed since it was last requested, without having to download the entire resource again.
+		// header.append("Keep-Alive: timeout=5, max=100"); // used to enable persistent connections between the client and the server, allowing multiple requests and responses to be sent over a single TCP connection
+		// Access-Control-Allow-Origin; X-Frame-Options; X-XSS-Protection; Referrer-Policy; X-Forwarded-For; X-Powered-By; 
+		header.append("\r\n");
+	}
 	return (header);
 }
 
@@ -104,35 +118,6 @@ Response	*GETRequest::createResponse(RequestHandler& handler)
 	
 	response->header_fields = createHeaderFields(handler, response->body);
 
-
-	
-	// CREATE HEADERS
-		// if body is sent, calculate size of body (based on data type) and create Content-Length field
-			// (should only be sent if TE is not set)
-		// How to decide whether to send response in chunks or in one go --> probably based on size of the body
-		// Provide content-type field MIME type --> depends on the format of the content being sent, e.g. an html file (Content-Type: text/html)
-		// user Location header field for redirection?
-		// (set cookie header for cookies)
-		// server header --> should this actually be set?
-		// additional header fields: expires, last-modified, Access Control Origin, Keep Alive etc.
-
-	
-	// check if there has been any error detected
-
-	// fill the elements the Response is made of
-	// --> What should be the data types? (send takes a const void buf[.len] as argument)
-	// --> but can be string.c_str(); so that the response is actually a string
-	// a) Status Line = HTTP/1.1 SP <Status Code> SP (<Status Message/reason phrase>) CRLF
-		// not necessarily have to send the Status Message as this gets omitted anyway by the client
-		// however, the space after the status code has to be sent
-	// b) Header fields (no whitespace between field name and colon; one SP after colon) CRLF
-		// if body is sent; include content-length or TE
-		// how to determine what needs to be sent?
-	// c) empty line a.k.a CRLF
-	// d) body (optional)
-
-
-
 	// The presence of a message body in a response depends on both the request method to which it is responding and the response status code. 
 	// e.g. POST 200 is different from GET 200
 
@@ -144,9 +129,11 @@ Response	*GETRequest::createResponse(RequestHandler& handler)
 
 std::string	GETRequest::identifyMIME(RequestHandler& handler)
 {
-	// how to best identifyMIME=
+	// how to best identifyMIME?
 	if (handler.file_type == "html")
 		return ("text/html");
+	else if (handler.file_type == "png")
+		return ("image/png");
 	else
-		return ("");
+		return (""); // what should be the default return?
 }
