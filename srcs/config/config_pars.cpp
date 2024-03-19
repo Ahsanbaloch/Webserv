@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/18 16:36:55 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/19 13:45:56 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -107,11 +107,38 @@ void config_pars::parse_server_configs(std::string &server_config)
 
 void config_pars::parse_server_block(t_server_config &server_config, const std::string &server_block)
 {
-    server_config.serverName = extractServerName(server_block);
-    extractIpPort(server_block, server_config.Ip, server_config.port);
-    server_config.errorPage = extractErrorPage(server_block);
-    server_config.bodySize = extractBodySize(server_block);
-    Location_block(server_config, server_block);
+	std::size_t locPos = server_block.find("location");
+	std::string globalPart = server_block.substr(0, locPos);
+	std::string locationPart = locPos != std::string::npos ? server_block.substr(locPos) : "";
+	server_config.server_index = extractServerVariable("index", globalPart);
+	server_config.server_root = extractServerVariable("root", globalPart);
+    extractIpPort(globalPart, server_config.Ip, server_config.port);
+	server_config.serverName = extractServerVariable("Server_name", globalPart);
+    server_config.bodySize = extractBodySize(globalPart);
+	server_config.errorPage = extractServerVariable("error_page", globalPart);
+	if (!locationPart.empty())
+    	Location_block(server_config, locationPart, server_config.server_root, server_config.server_index);
+	else
+		throw InvalidLocationException();
+}
+
+std::string config_pars::extractServerVariable(const std::string variable, const std::string &server_block)
+{
+	std::string value = "";
+	if (server_block.find(variable) != std::string::npos)
+	{
+		size_t start = server_block.find(variable) + variable.size();
+		size_t end = server_block.find(";", start);
+		if (server_block.find('\n', start) < server_block.find(';', start))
+			throw MissingSemicolonException();
+		value = server_block.substr(start, end - start);
+		removeLeadingWhitespaces(value);
+		if (value.empty())
+			throw MissingValueException(variable);
+	}
+	if (server_block.find("Server_name") == std::string::npos)
+		return "default_server";
+	return (value);
 }
 
 void config_pars::extractIpPort(const std::string &server_block, std::string &ip, int &port)
@@ -163,17 +190,16 @@ int config_pars::extractBodySize(const std::string &server_block)
 }
 
 
-void config_pars::Location_block(t_server_config &server_config, const std::string &config_block)
+void config_pars::Location_block(t_server_config &server_config, const std::string &config_block, std::string server_root, std::string server_index)
 {
     std::vector<std::string> location_blocks;
-
     splitLocationBlocks(location_blocks, config_block);
 	t_location_config location_config;
 	if (location_blocks.empty())
 		throw InvalidLocationException();
 	for (size_t i = 0; i < location_blocks.size(); i++)
 	{
-		parseLocationBlock(location_config, location_blocks[i]);
+		parseLocationBlock(location_config, location_blocks[i], server_root, server_index);
 		server_config.locations.push_back(location_config);
 	}
 }
@@ -181,21 +207,21 @@ void config_pars::Location_block(t_server_config &server_config, const std::stri
 void config_pars::checkDuplicatePath(std::map<std::string, std::vector<t_server_config> > _server_configs_map)
 {
    for (std::map<std::string, std::vector<t_server_config> >::iterator it = _server_configs_map.begin(); it != _server_configs_map.end(); ++it)
-{
-    for (std::vector<t_server_config>::iterator vecIt = it->second.begin(); vecIt != it->second.end(); ++vecIt)
-    {
-        std::set<std::string> paths;
-        for (std::vector<t_location_config>::iterator locIt = vecIt->locations.begin(); locIt != vecIt->locations.end(); ++locIt)
-        {
-            if (paths.count(locIt->path) > 0)
-                throw DuplicateLocationNameException();
-            paths.insert(locIt->path);
-        }
-    }
-}
+	{
+		for (std::vector<t_server_config>::iterator vecIt = it->second.begin(); vecIt != it->second.end(); ++vecIt)
+		{
+			std::set<std::string> paths;
+			for (std::vector<t_location_config>::iterator locIt = vecIt->locations.begin(); locIt != vecIt->locations.end(); ++locIt)
+			{
+				if (paths.count(locIt->path) > 0)
+					throw DuplicateLocationNameException();
+				paths.insert(locIt->path);
+			}
+		}
+	}
 }
 
-void config_pars::parseLocationBlock(t_location_config &location_config, const std::string &location_block)
+void config_pars::parseLocationBlock(t_location_config &location_config, const std::string &location_block, std::string server_root, std::string server_index)
 {
     location_config.path = extractPath(location_block);
     if (location_config.path == "/redir") //should use this condition to check if the path is redir or not?
@@ -203,8 +229,15 @@ void config_pars::parseLocationBlock(t_location_config &location_config, const s
     if (location_config.path == "/cgi-bin" )
 	    location_config.cgi_ex = extractVariables("cgi-ext",location_block);
     location_config.root = extractVariables("root", location_block);
+	if (location_config.root.empty() && server_root.empty())
+		throw MissingValueException("root");
+	if (location_config.root.empty())
+		location_config.root = server_root;
     location_config.index = extractVariables("index", location_block);
-    //location_config.allowedMethods = extractVariables("allow_methods",location_block);
+	if (server_index.empty() && location_config.index.empty())
+		throw MissingValueException("index");
+	if (location_config.index.empty())
+		location_config.index = server_index;
     allowMethods(location_config.GET, location_config.POST, location_config.DELETE, location_block);
     location_config.autoIndex = extractAutoIndex(location_block);
 }
@@ -259,20 +292,18 @@ bool config_pars::extractAutoIndex(const std::string &location_block)
 
 std::string config_pars::extractVariables(const std::string &variable, const std::string &location_block)
 {
-	if (location_block.find(variable) == std::string::npos)
-		throw MissingValueException(variable);
-	size_t start = location_block.find(variable) + variable.size();
-	size_t end = location_block.find(";", start);
-    if ((location_block.find('\n', start)) < (location_block.find(';', start)))
-    {
-        throw MissingSemicolonException();
-    }
-	std::string value = location_block.substr(start, end - start);
-	removeLeadingWhitespaces(value);
-    if (variable == "redirect_url" && (value.empty() || location_block.empty()))
-        throw MissingValueException(variable);
-	else if (location_block.empty())
-		throw MissingValueException(variable);
+	std::string value = "";
+	if (location_block.find(variable) != std::string::npos)
+	{
+		size_t start = location_block.find(variable) + variable.size();
+		size_t end = location_block.find(";", start);
+    	if ((location_block.find('\n', start)) < (location_block.find(';', start)))
+    	    throw MissingSemicolonException();
+		value = location_block.substr(start, end - start);
+		removeLeadingWhitespaces(value);
+    	if (variable == "redirect_url" && (value.empty() || location_block.empty()))
+    	    throw MissingValueException(variable);
+	}
 	return (value);
 }
 
@@ -305,46 +336,6 @@ void config_pars::splitLocationBlocks(std::vector<std::string> &location_blocks,
 			throw InvalidLocationException();
 		locationNum++;
    }
-}
-
-std::string config_pars::extractErrorPage(const std::string &server_block)
-{
-    size_t start = 0;
-    size_t end = 0;
-    std::string error_page;
-    if ((start = server_block.find("error_page", start)) != std::string::npos)
-    {
-        start = skipWhitespace(server_block, start + 11);
-        end = server_block.find(";", start);
-        if (server_block.find('\n', start) < server_block.find(';', start))
-            throw MissingSemicolonException();
-        error_page = server_block.substr(start, end - start);
-        if (error_page.empty())
-            error_page = "404 /404.html";
-    }
-    else
-       error_page = "404 /404.html";
-    return error_page;
-}
-
-std::string config_pars::extractServerName(const std::string &server_block)
-{
-    size_t start = 0;
-    size_t end = 0;
-    std::string serverName;
-    if ((start = server_block.find("Server_name", start)) != std::string::npos)
-    {
-        start = skipWhitespace(server_block, start + 11);
-        end = server_block.find(";", start);
-        if (server_block.find('\n', start) < server_block.find(';', start))
-            throw MissingSemicolonException();
-        serverName = server_block.substr(start, end - start);
-        if (serverName.empty())
-            serverName = "default_server.com";
-    }
-    else
-        serverName = "default_server.com";
-    return serverName;
 }
 
 // The main function to extract server blocks

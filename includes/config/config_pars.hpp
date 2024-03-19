@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 14:22:42 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/18 16:37:11 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/19 13:39:35 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,19 +69,19 @@ class config_pars
 		void extractServer(std::vector<std::string> &server_block,const std::string &server_config);  //separating every server block
 		//void findAndCheckServerBlocks(const std::string &raw_data, size_t &start, size_t &end); //find and check server blocks
 		void parse_server_block(t_server_config &server_config, const std::string &server_block); //parse inside server block
-		std::string extractServerName(const std::string &server_block); //extract server name
 		//int extractListen(const std::string &server_block); //extract listen
 		//std::vector<int> extractListen(const std::string &server_block); //extract listen
-		std::string extractErrorPage(const std::string &server_block); //extract error page
+		//std::string extractErrorPage(const std::string &server_block); //extract error page
 		/* Location block.... */
-		void Location_block(t_server_config &server_config, const std::string &server_block); //parse location block
+		void Location_block(t_server_config &server_config, const std::string &server_block,  std::string server_root, std::string server_index); //parse location block
 		void splitLocationBlocks(std::vector<std::string> &location_blocks, const std::string &server_block); //split location blocks
-		void parseLocationBlock(t_location_config &location_config, const std::string &location_block); //parse location block
+		void parseLocationBlock(t_location_config &location_config,const std::string &location_block, std::string server_root, std::string server_index); //parse location block
 		std::string extractPath(const std::string &location_block); //extract path
 		std::string extractVariables(const std::string &variable, const std::string &location_block); //extract variables
 		bool extractAutoIndex(const std::string &location_block); //extract autoindex
 		void allowMethods(bool &GET, bool &POST, bool &DELETE, const std::string location_block); //allow methods
 		int	extractBodySize(const std::string &server_block); //extract body size
+		std::string extractServerVariable(const std::string variable, const std::string &server_block); //extract server variable
 };
 
 #endif
