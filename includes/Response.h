@@ -3,6 +3,8 @@
 
 # include <string>
 
+class RequestHandler;
+
 class Response
 {
 private:
@@ -14,6 +16,9 @@ public:
 	std::string	body;
 	std::string status_line;
 	std::string header_fields;
+
+	void	errorResponse(RequestHandler&);
+
 };
 
 

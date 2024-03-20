@@ -60,9 +60,9 @@ void	RequestHandler::processRequest()
 	request_length += bytes_read;
 
 	// check if headers have already been parsed
-	if (!header.header_complete)
+	try
 	{
-		try
+		if (!header.header_complete)
 		{
 			// what about folding lines?
 			header.parseRequestLine(*this);
@@ -73,54 +73,52 @@ void	RequestHandler::processRequest()
 				// check that host is not empty
 				// check that content-length is provided if not TE (411)
 		}
-		catch(const std::exception& e)
+		//for testing: print received headers
+		// printf("\nheaders\n");
+		// for (std::map<std::string, std::string>::iterator it = header.header_fields.begin(); it != header.header_fields.end(); it++)
+		// {
+		// 	std::cout << "key: " << it->first << " ";
+		// 	std::cout << "value: " << it->second << std::endl;
+		// }
+		// std::cout << "identified method: " << header.method << '\n';
+		// std::cout << "identified path: " << header.path << '\n';
+		// std::cout << "identified query: " << header.query << '\n';
+		// std::cout << "identified version: " << header.version << '\n';
+
+		// if immediate response is expected to receive body (e.g. Expect: 100-continue)
+			// make reponse
+		// if body is expected
+		if (body_expected)
 		{
-			// send Response with error message and correct status code // currently the status code is provided by header.error
-			// create response and set response_ready to 1
-			// response_ready = 1;
-			std::cerr << e.what() << '\n';
+			//here we need to account for max-body_size specified in config file
+			// if chunked
+				//store body chunks in file (already store in the appropriate object)
+			// if not chunked
+				// store body in stringstream or vector (already store in the appropriate object)
+			// if end of body has not been reached
+				// return to continue receiving
 		}
+		// if no body is expected OR end of body has been reached
+		if (!body_expected || body_read)
+		{
+			// try/catch block?
+			request = ARequest::newRequest(*this);
+			response = request->createResponse(*this);
+			// set Response to be ready
+		}
+
+		printf("read %i bytes\n", bytes_read);
+		response_ready = 1;
+		// close fd in case bytes_read == 0 ???
+
 	}
-
-	//for testing: print received headers
-	// printf("\nheaders\n");
-	// for (std::map<std::string, std::string>::iterator it = header.header_fields.begin(); it != header.header_fields.end(); it++)
-	// {
-	// 	std::cout << "key: " << it->first << " ";
-	// 	std::cout << "value: " << it->second << std::endl;
-	// }
-	// std::cout << "identified method: " << header.method << '\n';
-	// std::cout << "identified path: " << header.path << '\n';
-	// std::cout << "identified query: " << header.query << '\n';
-	// std::cout << "identified version: " << header.version << '\n';
-
-	// if immediate response is expected to receive body (e.g. Expect: 100-continue)
-		// make reponse
-	// if body is expected
-	if (body_expected)
+	catch(const std::exception& e)
 	{
-		//here we need to account for max-body_size specified in config file
-		// if chunked
-			//store body chunks in file (already store in the appropriate object)
-		// if not chunked
-			// store body in stringstream or vector (already store in the appropriate object)
-		// if end of body has not been reached
-			// return to continue receiving
+		response = new Response;
+		response->errorResponse(*this);
+		response_ready = 1;
+		std::cerr << e.what() << '\n';
 	}
-	// if no body is expected OR end of body has been reached
-	if (!body_expected || body_read)
-	{
-		// try/catch block?
-		request = ARequest::newRequest(*this);
-		response = request->createResponse(*this);
-		// set Response to be ready
-	}
-
-	printf("read %i bytes\n", bytes_read);
-	response_ready = 1;
-	// close fd in case bytes_read == 0 ???
-	
-
 
 	// The presence of a message body in a request is signaled by a Content-Length or Transfer-Encoding header field. Request message framing is independent of method semantics.
 	// GET requests can have a body but that has no semantic meaning --> so no need to check --> still need to recv the whole body before responding?
