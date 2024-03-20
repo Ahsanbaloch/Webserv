@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/19 16:38:39 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/19 19:37:28 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -223,7 +223,11 @@ void	config_pars::parseLocationBlock(t_location_config &location_config, const s
 	if (location_config.path == "/redir") //should use this condition to check if the path is redir or not?
 		location_config.redirect = extractVariables("redirect_url",location_block);
 	if (location_config.path == "/cgi-bin" )
+	{
 		location_config.cgi_ex = extractVariables("cgi-ext",location_block);
+		if (location_config.cgi_ex.empty())
+			throw MissingValueException("cgi-ext");
+	}
 	location_config.root = extractVariables("root", location_block);
 	if (location_config.root.empty() && server_root.empty())
 		throw MissingValueException("root");
@@ -267,7 +271,7 @@ void	config_pars::allowMethods(bool &GET, bool &POST, bool &DELETE, const std::s
 bool	config_pars::extractAutoIndex(const std::string &location_block)
 {
 	if (location_block.find("autoIndex") == std::string::npos)
-		throw MissingValueException("autoIndex");
+		return false;
 	size_t start = location_block.find("autoIndex") + 10;
 	size_t end = location_block.find(";", start);
     if (location_block.find('\n', start) < location_block.find(';', start))

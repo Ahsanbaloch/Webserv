@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 14:22:42 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/19 16:28:35 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/20 11:17:48 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,7 +49,7 @@ class config_pars
 	public:
 		config_pars(int argc, char **argv);
 		~config_pars();
-		std::map<std::string, std::vector<t_server_config> > &getServerConfigsMap(); //better way to do it
+		std::map<std::string, std::vector<t_server_config> > &getServerConfigsMap();
 };
 
 #endif
