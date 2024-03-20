@@ -30,6 +30,16 @@ Header::~Header()
 {
 }
 
+void	Header::checkFields()
+{
+	// others check such as empty host field value, TE != chunked etc. is done in parsing
+	if (!transfer_encoding_exists && !content_length_exists && method == "POST") // if both exist at the same time is check when parsing
+	{
+		error = 411;
+		throw CustomException("Length Required");
+	}
+}
+
 void	Header::decodeRequestLine(std::string& sequence)
 {
 	for (std::string::iterator it = sequence.begin(); it != sequence.end(); it++)  // allowed values #01 - #FF (although ASCII only goes till #7F/7E)
@@ -259,12 +269,22 @@ void	Header::parseHeaderFields(RequestHandler& handler)
 						error = 400; // correct error value
 						throw CustomException("Bad request");
 					}
+					if (header_value != "chunked")
+					{
+						error = 400;
+						throw CustomException("Bad request");
+					}
 					transfer_encoding_exists = 1;
 					handler.body_expected = 1;
 				}
-				if (header_name == "host") // also ensure that value is not empty
+				if (header_name == "host")
 				{
 					if (host_exists)
+					{
+						error = 400;
+						throw CustomException("Bad request");
+					}
+					if (header_value.empty())
 					{
 						error = 400;
 						throw CustomException("Bad request");
@@ -283,7 +303,7 @@ void	Header::parseHeaderFields(RequestHandler& handler)
 				if (ch == LF)
 				{
 					headers_parsing_done = 1;
-					std::cout << "headers fully parsed\n";
+					// std::cout << "headers fully parsed\n";
 					break;
 				}
 				error = 400;

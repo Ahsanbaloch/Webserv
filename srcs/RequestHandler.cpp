@@ -59,33 +59,30 @@ void	RequestHandler::processRequest()
 	buf[bytes_read] = '\0'; // correct? BUFFER_SIZE + 1?
 	request_length += bytes_read;
 
-	// check if headers have already been parsed
 	try
 	{
+		// check if headers have already been parsed
 		if (!header.header_complete)
 		{
 			// what about folding lines?
 			header.parseRequestLine(*this);
 			header.parseHeaderFields(*this); // check if it still works if no header is sent
-			std::cout << "Path encoded?: " << header.path_encoded << std::endl;
 			header.decode(); // decode URL/Query if necessary
+			header.checkFields();
 			// handle . and .. in path --> https://datatracker.ietf.org/doc/html/rfc3986#section-2.1 remove dot segments
-			// check values of Header Fields
-				// check somewhere if TE contains something else than "chunked" --> in this case respond with 501
-				// check that host is not empty
-				// check that content-length is provided if not TE (411)
+			// How do the header fields in the request affect the response?
 		}
 		//for testing: print received headers
-		// printf("\nheaders\n");
-		// for (std::map<std::string, std::string>::iterator it = header.header_fields.begin(); it != header.header_fields.end(); it++)
-		// {
-		// 	std::cout << "key: " << it->first << " ";
-		// 	std::cout << "value: " << it->second << std::endl;
-		// }
-		// std::cout << "identified method: " << header.method << '\n';
-		// std::cout << "identified path: " << header.path << '\n';
-		// std::cout << "identified query: " << header.query << '\n';
-		// std::cout << "identified version: " << header.version << '\n';
+		printf("\nheaders\n");
+		for (std::map<std::string, std::string>::iterator it = header.header_fields.begin(); it != header.header_fields.end(); it++)
+		{
+			std::cout << "key: " << it->first << " ";
+			std::cout << "value: " << it->second << std::endl;
+		}
+		std::cout << "identified method: " << header.method << '\n';
+		std::cout << "identified path: " << header.path << '\n';
+		std::cout << "identified query: " << header.query << '\n';
+		std::cout << "identified version: " << header.version << '\n';
 
 		// if immediate response is expected to receive body (e.g. Expect: 100-continue)
 			// make reponse

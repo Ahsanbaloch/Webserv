@@ -58,6 +58,7 @@ public:
 	void	checkBodyLength(std::string);
 	void	decode();
 	void	decodeRequestLine(std::string&);
+	void	checkFields();
 	// void	decodeHeaderFields();
 
 	enum {
