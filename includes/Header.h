@@ -3,6 +3,7 @@
 
 # include <string>
 # include <map>
+# include <vector>
 # include <iostream>
 # include "CustomException.h"
 // # include "RequestHandler.h"
@@ -41,6 +42,9 @@ public:
 	int									body_beginning;
 
 	int									path_encoded; // probably needs to be reset after being used
+	int									query_encoded;
+	// int									field_encoded;
+	// std::vector<std::string>			fields_encoded;
 	int									error;
 
 	// void	parseRequestLine(unsigned char* buf, int* buf_pos, int bytes_read);
@@ -52,13 +56,15 @@ public:
 	void	checkHttpVersion(RequestHandler&);
 	// void	checkHttpVersion(unsigned char* buf, int* buf_pos);
 	void	checkBodyLength(std::string);
+	void	decode();
+	void	decodeRequestLine(std::string&);
+	// void	decodeHeaderFields();
 
 	enum {
 		rl_start = 0,
 		rl_method,
 		rl_first_divider,
 		rl_path,
-		rl_percent_encoded,
 		rl_query,
 		rl_http,
 		rl_cr,

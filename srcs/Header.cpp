@@ -11,6 +11,8 @@ Header::Header(/* args */)
 	host_exists = 0;
 	expect_exists = 0;
 	path_encoded = 0;
+	query_encoded = 0;
+	// field_encoded = 0;
 	error = 0;
 	body_length = 0;
 
@@ -28,7 +30,62 @@ Header::~Header()
 {
 }
 
+void	Header::decodeRequestLine(std::string& sequence)
+{
+	for (std::string::iterator it = sequence.begin(); it != sequence.end(); it++)  // allowed values #01 - #FF (although ASCII only goes till #7F/7E)
+	{
+		if (*it == '%')
+		{
+			sequence.erase(it);
+			unsigned int decoded_char;
+			std::stringstream ss;
+			if ((*it >= '0' && *it <= '9') || (*it >= 'a' && *it <= 'z') || (*it >= 'A' && *it <= 'Z'))
+			{
+				ss << std::hex << *it;
+				sequence.erase(it);
+			}
+			else
+			{
+				error = 400;
+				throw CustomException("decoding error");
+			}
+			if ((*it >= '0' && *it <= '9') || (*it >= 'a' && *it <= 'z') || (*it >= 'A' && *it <= 'Z'))
+			{
+				ss << std::hex << *it;
+				ss >> decoded_char;
+				*it = decoded_char;
+			}
+			else
+			{
+				error = 400;
+				throw CustomException("decoding error");
+			}
+		}
+		if (*it == '+')
+			*it = ' ';
+	}
+}
 
+
+void	Header::decode() // A common defense against response splitting is to filter requests for data that looks like encoded CR and LF (e.g., "%0D" and "%0A") --> What to do then?
+{
+	// std::cout << "path before decoding: " << path << std::endl;
+	// std::cout << "query: " << query << std::endl;
+	if (path_encoded)
+		decodeRequestLine(path);
+	if (query_encoded)
+		decodeRequestLine(query);
+	// if (field_encoded)
+	// {
+	// 	for (std::vector<std::string>::iterator it = fields_encoded.begin(); it != fields_encoded.end(); it++)
+	// 	{
+	// 		decodeRequestLine(header_fields[*it]);
+	// 	}
+	// }
+
+	// std::cout << "path after decoding: " << path << std::endl;
+	// std::cout << "query after decoding: " << query << std::endl;
+}
 
 void	Header::checkBodyLength(std::string value)
 {
@@ -134,6 +191,12 @@ void	Header::parseHeaderFields(RequestHandler& handler)
 					headers_state = he_cr;
 				else if (ch == LF)
 					headers_state = he_done;
+				// else if (ch == '%')
+				// {
+				// 	field_encoded = 1;
+				// 	fields_encoded.push_back(header_name);
+				// 	header_value.append(1, ch);
+				// }
 				else if (ch > 32 && ch < 127) // accepted: a-z, A-Z, and 0-9 _ :;.,\/"'?!(){}[]@<>=-+*#$&`|~^%
 					header_value.append(1, ch);
 				else
@@ -313,7 +376,6 @@ void	Header::checkHttpVersion(RequestHandler& handler)
 void	Header::parseRequestLine(RequestHandler& handler)
 {
 	unsigned char	ch;
-	int				loops = 0;
 
 	// implement max request line rule? (414 and 501 errors)
 	// do we need to check for scheme and authority?
@@ -377,7 +439,7 @@ void	Header::parseRequestLine(RequestHandler& handler)
 						break;
 					case '%':
 						path_encoded = 1; // when interpreting request needs to be decoded
-						rl_state = rl_percent_encoded; // need to be followed by numercial code that needs to be interpreted --> otherwise 400 bad request (not the case for query)
+						// rl_state = rl_percent_encoded; // need to be followed by numercial code that needs to be interpreted --> otherwise 400 bad request (not the case for query)
 						break;
 					case '/': // checking with nginx, there can be several slashes after each other
 						break;
@@ -398,21 +460,9 @@ void	Header::parseRequestLine(RequestHandler& handler)
 					// case '#': // in what case is this character even encountered in a http message? probably only in the query part and when interpreting // fragments are not sent in the http request messages. The reason is that the fragment identifier is only used by the browser
 
 				}
-				if (rl_state == rl_path || rl_state == rl_percent_encoded)
+				if (rl_state == rl_path)
 					path.append(1, static_cast<char>(ch));
 				break;
-
-			case rl_percent_encoded: // allowed values #01 - #FF (although ASCII only goes till #7F/7E)
-				if (!(loops == 1 && ch == '0') && ((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F')))
-				{
-					loops++;
-					path.append(1, static_cast<char>(ch));
-					if (loops % 2 == 0)
-						rl_state = rl_path;
-					break;
-				}
-				error = 400;
-				throw CustomException("Bad request");
 
 			case rl_query:
 				switch (ch)
@@ -425,6 +475,12 @@ void	Header::parseRequestLine(RequestHandler& handler)
 						break;
 					case LF:
 						rl_state = rl_done;
+						break;
+					case '%':
+						query_encoded = 1;
+						break;
+					case '+':
+						query_encoded = 1;
 						break;
 					default:
 						if (ch < 32 || ch == 127)

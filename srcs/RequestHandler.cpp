@@ -67,7 +67,9 @@ void	RequestHandler::processRequest()
 			// what about folding lines?
 			header.parseRequestLine(*this);
 			header.parseHeaderFields(*this); // check if it still works if no header is sent
-			// decode URL/Query if necessary
+			std::cout << "Path encoded?: " << header.path_encoded << std::endl;
+			header.decode(); // decode URL/Query if necessary
+			// handle . and .. in path --> https://datatracker.ietf.org/doc/html/rfc3986#section-2.1 remove dot segments
 			// check values of Header Fields
 				// check somewhere if TE contains something else than "chunked" --> in this case respond with 501
 				// check that host is not empty
@@ -114,7 +116,7 @@ void	RequestHandler::processRequest()
 	}
 	catch(const std::exception& e)
 	{
-		response = new Response;
+		response = new Response; // needs to be freed somewhere
 		response->errorResponse(*this);
 		response_ready = 1;
 		std::cerr << e.what() << '\n';
