@@ -32,7 +32,7 @@ int	main(int argc, char **argv)
 		{
 			for (std::vector<t_server_config>::iterator it2 = it->second.begin(); it2 != it->second.end(); it2++)
 			{
-				//std::cout << "IP: " << " " << it2->Ip << " port: " << it2->port << " server name: " << it2->serverName  << "\n";
+				std::cout << "IP: " << " " << it2->Ip << " port: " << it2->port << " server name: " << it2->serverName  << "\n";
 				std::cout << "------------------" << std::endl;
 				std::cout << "SERVER_ROOT: " << it2->server_root << std::endl;
 				std::cout << "SERVER_NDEX: " << it2->server_index << std::endl;
@@ -41,11 +41,6 @@ int	main(int argc, char **argv)
 				{
 					std::cout << "location_root: " << it3->root << std::endl;
 					std::cout << "location_index: " << it3->index << std::endl;
-					/* std::cout << "PATH: " << it3->path << std::endl;
-					std::cout << "GET: " << it3->GET << std::endl;
-					std::cout << "POST: " << it3->POST << std::endl;
-					std::cout << "DELETE: " << it3->DELETE << std::endl; */
-					//std::cout << "--------------------" << std::endl;
 				}
 			}
 		}
