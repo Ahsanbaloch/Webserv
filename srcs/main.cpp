@@ -41,6 +41,7 @@ int	main(int argc, char **argv)
 				{
 					std::cout << "location_root: " << it3->root << std::endl;
 					std::cout << "location_index: " << it3->index << std::endl;
+					std::cout << "redirect: " << it3->redirect << std::endl;
 				}
 			}
 		}

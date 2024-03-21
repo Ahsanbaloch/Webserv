@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/19 19:37:28 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/21 16:41:17 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -220,8 +220,8 @@ void	config_pars::checkDuplicatePath(std::map<std::string, std::vector<t_server_
 void	config_pars::parseLocationBlock(t_location_config &location_config, const std::string &location_block, std::string server_root, std::string server_index)
 {
 	location_config.path = extractPath(location_block);
-	if (location_config.path == "/redir") //should use this condition to check if the path is redir or not?
-		location_config.redirect = extractVariables("redirect_url",location_block);
+	//if (location_config.path == "/redir") //should use this condition to check if the path is redir or not?
+	location_config.redirect = extractVariables("redirect_url",location_block);
 	if (location_config.path == "/cgi-bin" )
 	{
 		location_config.cgi_ex = extractVariables("cgi-ext",location_block);
