@@ -46,6 +46,7 @@ public:
 	
 	std::string			file_path;
 	std::string			file_type;
+	int					url_relocation;
 
 	std::stringstream	raw_buf;
 	std::stringstream	body;

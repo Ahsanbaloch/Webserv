@@ -14,6 +14,7 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	body_read = 0;
 	selected_location = 0;
 	selected_server = 0;
+	url_relocation = 0;
 	request = NULL;
 	response = NULL;
 	raw_buf.setf(std::ios::app | std::ios::binary);
@@ -55,21 +56,22 @@ void	RequestHandler::processRequest()
 		throw CustomException("Failed when processing read request\n");
 	if (bytes_read == 0)
 		return ; // also throw exception. Need to check the exception exactly // also close connection?
+	// close fd in case bytes_read == 0 ???
 	
 	buf[bytes_read] = '\0'; // correct? BUFFER_SIZE + 1?
 	request_length += bytes_read;
+
+	printf("read %i bytes\n", bytes_read);
 
 	try
 	{
 		// check if headers have already been parsed
 		if (!header.header_complete)
 		{
-			// what about folding lines?
 			header.parseRequestLine(*this);
 			header.parseHeaderFields(*this); // check if it still works if no header is sent
 			header.decode(); // decode URL/Query if necessary
 			header.checkFields();
-			// handle . and .. in path --> https://datatracker.ietf.org/doc/html/rfc3986#section-2.1 remove dot segments
 			// How do the header fields in the request affect the response?
 		}
 		//for testing: print received headers
@@ -84,8 +86,13 @@ void	RequestHandler::processRequest()
 		std::cout << "identified query: " << header.query << '\n';
 		std::cout << "identified version: " << header.version << '\n';
 
-		// if immediate response is expected to receive body (e.g. Expect: 100-continue)
+		if (header.expect_exists)
+		{
+			// check value of expect field?
+			// check content-length field before accepting?
+			// create response signalling the client that the body can be send
 			// make reponse
+		}
 		// if body is expected
 		if (body_expected)
 		{
@@ -105,10 +112,7 @@ void	RequestHandler::processRequest()
 			response = request->createResponse(*this);
 			// set Response to be ready
 		}
-
-		printf("read %i bytes\n", bytes_read);
 		response_ready = 1;
-		// close fd in case bytes_read == 0 ???
 
 	}
 	catch(const std::exception& e)

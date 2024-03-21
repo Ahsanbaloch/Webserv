@@ -140,7 +140,15 @@ ARequest* ARequest::newRequest(RequestHandler& handler)
 	if (handler.server_config[handler.selected_server].locations.size() > 1)
 		findLocationBlock(handler);
 
-	
+	std::cout << "redirect in location block: " << handler.server_config[handler.selected_server].locations[handler.selected_location].redirect << std::endl;
+
+	// check for url redirection
+	if (!(handler.server_config[handler.selected_server].locations[handler.selected_location].redirect.empty())) // move this to the ARequest?
+	{
+		handler.status = 307;
+		handler.url_relocation = 1;
+	}
+
 	// some more error handling could go here if not already done in Request Handler (or move it here; e.g. check for http version)
 	
 	if (handler.header.method == "GET")

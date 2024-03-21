@@ -16,7 +16,8 @@ void	Response::errorResponse(RequestHandler& handler)
 	std::ostringstream length_conversion;
 
 	status_line.append("HTTP/1.1 ");
-	status_conversion << handler.header.error;
+	handler.status = handler.header.error;
+	status_conversion << handler.status;
 	status_line.append(status_conversion.str());
 	status_line.append(" \r\n");
 

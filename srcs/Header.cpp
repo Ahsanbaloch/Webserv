@@ -33,6 +33,11 @@ Header::~Header()
 void	Header::checkFields()
 {
 	// others check such as empty host field value, TE != chunked etc. is done in parsing
+	if (header_fields.find("host") == header_fields.end()) // is is even connecting without host field?
+	{
+		error = 410;
+		throw CustomException("Bad request");
+	}
 	if (!transfer_encoding_exists && !content_length_exists && method == "POST") // if both exist at the same time is check when parsing
 	{
 		error = 411;
