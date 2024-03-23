@@ -65,7 +65,7 @@ std::string GETRequest::getBodyFromDir(RequestHandler& handler) // probably crea
 	}
 	else
 	{
-		handler.status = 404;
+		handler.header.error = 404;
 		throw CustomException("Not found");
 	}
 	return (body);
@@ -188,7 +188,7 @@ Response	*GETRequest::createResponse(RequestHandler& handler)
 
 std::string	GETRequest::identifyMIME(RequestHandler& handler)
 {
-	// also check against accept header
+	// also check against accept header? --> return 406 if the requirement cannot be satisfied
 	// how to best identifyMIME?
 	if (handler.autoindex) // probably also rather going to be html
 		return ("text/plain");

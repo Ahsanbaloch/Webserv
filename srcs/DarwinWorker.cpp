@@ -71,8 +71,10 @@ void	DarwinWorker::runEventLoop()
 				else if (ConnectedClients[event_lst[i].ident]->response_ready && event_lst[i].filter == EVFILT_WRITE) // how to provide the reponse_ready info? // should this be an "If" OR "Else if"?
 				{
 					ConnectedClients[event_lst[i].ident]->sendResponse();
+					// what about the connection header with value "keep-alive" and there is no error?
+						// --> probably need to reset all values for the requestHandler class otherwise the while loop exits (response_ready is still true)
 					delete ConnectedClients[event_lst[i].ident];
-					close(event_lst[i].ident); // close connection; how does it work with 100-continue response? // what about the connection header with value "keep-alive"?
+					close(event_lst[i].ident); // close connection; how does it work with 100-continue response? 
 					ConnectedClients.erase(event_lst[i].ident);
 				}
 			}

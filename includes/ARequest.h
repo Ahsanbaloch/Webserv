@@ -8,7 +8,6 @@
 
 class RequestHandler;
 
-
 class ARequest
 {
 private:

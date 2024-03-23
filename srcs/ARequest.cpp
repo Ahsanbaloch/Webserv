@@ -1,5 +1,6 @@
 #include "ARequest.h"
 #include "GETRequest.h"
+#include "DELETERequest.h"
 #include "RequestHandler.h"
 
 ARequest::ARequest(/* args */)
@@ -97,6 +98,7 @@ void	ARequest::findLocationBlock(RequestHandler& handler) // double check if thi
 			max = matches;
 		}
 	}
+	std::cout << "Thats the one: " << handler.server_config[handler.selected_server].locations[handler.selected_location].path << std::endl;
 }
 
 int	ARequest::checkFileExistence(RequestHandler& handler)
@@ -154,7 +156,7 @@ ARequest* ARequest::newRequest(RequestHandler& handler)
 	if (handler.header.method == "GET")
 		return (new GETRequest(handler));
 	else if (handler.header.method == "DELETE")
-		;///
+		return (new DELETERequest(handler));
 	else if (handler.header.method == "POST")
 		;///
 	// check if something else and thus not implemented; but currently alsready done when parsing
