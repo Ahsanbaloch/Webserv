@@ -48,6 +48,8 @@ public:
 	std::string			file_type;
 	int					url_relocation;
 
+	int					autoindex;
+
 	std::stringstream	raw_buf;
 	std::stringstream	body;
 	unsigned char		buf[BUFFER_SIZE]; // use std::vector<unsigned char> buf(BUFFER_SIZE) or uint8_t instead? // don't use the string type for your buffer because for upload and binary file you can have some \0 in the middle of the content). + CRLF interpretation --> request smuggling

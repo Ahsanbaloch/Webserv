@@ -26,16 +26,15 @@ std::string	GETRequest::createStatusLine(RequestHandler& handler)
 }
 
 
-std::string	GETRequest::constructBodyContent(RequestHandler& handler)
+std::string	GETRequest::getBodyFromFile(RequestHandler& handler)
 {
 	std::string body;
 
-	std::ifstream file(handler.file_path); // Open the HTML file
+	std::ifstream file(handler.file_path); // Open the file
 	if (!file.is_open()) 
 	{
-		// add proper error message
-		perror("Failed: ");
-		std::cerr << "Error opening file!" << std::endl;
+		handler.status = 404;
+		throw CustomException("Not found");
 	}
 	std::stringstream buffer;
 	buffer << file.rdbuf();
@@ -46,6 +45,33 @@ std::string	GETRequest::constructBodyContent(RequestHandler& handler)
 	return (body);
 }
 
+std::string GETRequest::getBodyFromDir(RequestHandler& handler) // probably create some html for it
+{
+	std::string body;
+	DIR *directory;
+	struct dirent *entry;
+
+	directory = opendir((handler.server_config[handler.selected_server].locations[handler.selected_location].root + handler.server_config[handler.selected_server].locations[handler.selected_location].path).c_str());
+	if (directory != NULL)
+	{
+		entry = readdir(directory);
+		while (entry)
+		{
+			body.append(entry->d_name);
+			body.append("\n");
+			entry = readdir(directory);
+		}
+		closedir(directory);
+	}
+	else
+	{
+		handler.status = 404;
+		throw CustomException("Not found");
+	}
+	return (body);
+}
+
+
 std::string GETRequest::createBody(RequestHandler& handler)
 {
 	std::string body;
@@ -53,8 +79,10 @@ std::string GETRequest::createBody(RequestHandler& handler)
 	if (handler.status >= 400) // check if error was identified (or is this handled somewhere else?)
 		; // From configData get specific info about which page should be displayed
 		// look up file and read content into response body
+	if (handler.autoindex == 1)
+		body = getBodyFromDir(handler);
 	else
-		body = constructBodyContent(handler);
+		body = getBodyFromFile(handler);
 	return (body);
 }
 
@@ -113,12 +141,7 @@ void	GETRequest::checkRedirects(RequestHandler& handler)
 		else
 		{
 			if (handler.server_config[handler.selected_server].locations[handler.selected_location].autoIndex)
-			{
-				// print the directory from where the file was searched in
-				// use opendir? to write into body // should rather be an html file that takes the info
-				// probably use flag so that the body is not overwritten; or fill body in constructing response
-				// specific status code?
-			}
+				handler.autoindex = 1;
 			else
 			{
 				handler.status = 404;
@@ -165,10 +188,13 @@ Response	*GETRequest::createResponse(RequestHandler& handler)
 
 std::string	GETRequest::identifyMIME(RequestHandler& handler)
 {
+	// also check against accept header
 	// how to best identifyMIME?
-	if (handler.file_type == "html")
+	if (handler.autoindex) // probably also rather going to be html
+		return ("text/plain");
+	else if (handler.file_type == "html")
 		return ("text/html");
-	else if (handler.file_type == "png")
+	else if (handler.file_type == "png" || handler.file_type == "ico")
 		return ("image/png");
 	else
 		return (""); // what should be the default return?

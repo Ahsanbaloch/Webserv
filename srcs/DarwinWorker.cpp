@@ -72,7 +72,7 @@ void	DarwinWorker::runEventLoop()
 				{
 					ConnectedClients[event_lst[i].ident]->sendResponse();
 					delete ConnectedClients[event_lst[i].ident];
-					close(event_lst[i].ident); // close connection; how does it work with 100-continue response?
+					close(event_lst[i].ident); // close connection; how does it work with 100-continue response? // what about the connection header with value "keep-alive"?
 					ConnectedClients.erase(event_lst[i].ident);
 				}
 			}

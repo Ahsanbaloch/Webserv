@@ -1,6 +1,7 @@
 #ifndef GETREQUEST_H
 # define GETREQUEST_H
 
+#include <dirent.h> //allowed?
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -26,7 +27,8 @@ public:
 	std::string	identifyMIME(RequestHandler&);
 	void		checkRedirects(RequestHandler&);
 
-	std::string	constructBodyContent(RequestHandler&);
+	std::string	getBodyFromFile(RequestHandler&);
+	std::string	getBodyFromDir(RequestHandler&);
 };
 
 

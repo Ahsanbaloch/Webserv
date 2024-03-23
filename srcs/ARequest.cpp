@@ -46,9 +46,9 @@ std::vector<std::string>	ARequest::splitPath(std::string input, char delim)
 	std::vector<std::string>	result;
 	
 	while (std::getline(iss, item, delim))
-		result.push_back(item);
-	if (result.size() == 1 && result[0].empty())
-		result[0] = '/';
+		result.push_back("/" + item); // does adding "/" work in all cases?
+	// if (result.size() == 1 && result[0].empty())
+	// 	result[0] = '/';
 	return (result);
 }
 

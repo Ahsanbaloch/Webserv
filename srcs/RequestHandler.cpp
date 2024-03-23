@@ -15,6 +15,7 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	selected_location = 0;
 	selected_server = 0;
 	url_relocation = 0;
+	autoindex = 0;
 	request = NULL;
 	response = NULL;
 	raw_buf.setf(std::ios::app | std::ios::binary);
