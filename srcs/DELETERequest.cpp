@@ -22,7 +22,7 @@ Response	*DELETERequest::createResponse(RequestHandler& handler)
 	// if (!handler.server_config[handler.selected_server].locations[handler.selected_location].getAllowed)
 		// throw exception
 
-	// if the request is for a folder and valid, contents of the folder need to be delete first
+	// if the request is for a folder and valid, contents of the folder need to be deleted first
 
 	// What if there is a deletion request; while a file is in the process of being rendered?
 
