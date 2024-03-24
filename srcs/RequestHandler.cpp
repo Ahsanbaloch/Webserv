@@ -90,7 +90,7 @@ void	RequestHandler::processRequest()
 		std::cout << "identified query: " << header.query << '\n';
 		std::cout << "identified version: " << header.version << '\n';
 
-		if (header.expect_exists)
+		if (header.expect_exists) // this is relevant for POST only, should this be done in another place? (e.g. POST request class)
 		{
 			// check value of expect field?
 			// check content-length field before accepting?
