@@ -12,6 +12,7 @@ Header::Header(/* args */)
 	expect_exists = 0;
 	path_encoded = 0;
 	query_encoded = 0;
+	dot_in_path = 0;
 	// field_encoded = 0;
 	error = 0;
 	body_length = 0;
@@ -101,6 +102,46 @@ void	Header::decode() // A common defense against response splitting is to filte
 	// std::cout << "path after decoding: " << path << std::endl;
 	// std::cout << "query after decoding: " << query << std::endl;
 }
+
+
+std::vector<std::string>	Header::splitPath(std::string input, char delim)
+{
+	std::istringstream			iss(input);
+	std::string					item;
+	std::vector<std::string>	result;
+	
+	while (std::getline(iss, item, delim))
+		result.push_back("/" + item);
+	return (result);
+}
+
+void	Header::removeDots()
+{
+	std::vector<std::string> updated_path;
+	std::vector<std::string> parts = splitPath(path, '/');
+
+	if (parts.size() > 1)
+		parts.erase(parts.begin());
+
+	for (std::vector<std::string>::iterator it = parts.begin(); it != parts.end(); it++)
+	{
+		std::cout << "part: " << *it << std::endl;
+		if (*it == "/.")
+			continue;
+		else if (*it == "/.." && updated_path.size() > 0)
+			updated_path.pop_back();
+		else if (*it != "/..")
+		{
+			updated_path.push_back(*it);
+		}
+	}
+	path.clear();
+	for (std::vector<std::string>::iterator it = updated_path.begin(); it != updated_path.end(); it++)
+		path.append(*it);
+	if (path.empty())
+		path.append("/");
+}
+
 
 void	Header::checkBodyLength(std::string value)
 {
@@ -399,6 +440,15 @@ void	Header::checkHttpVersion(RequestHandler& handler)
 	}
 }
 
+void	Header::handleMultipleSlashes(RequestHandler& handler) // could probably also be a created as a special state
+{
+	while(handler.buf[handler.buf_pos] == '/')
+		handler.buf_pos++;
+	handler.buf_pos--;
+	std::cout << "buf: " << handler.buf[handler.buf_pos] << std::endl;
+	std::cout << "buf + 1: " << handler.buf[handler.buf_pos + 1] << std::endl;
+}
+
 void	Header::parseRequestLine(RequestHandler& handler)
 {
 	unsigned char	ch;
@@ -440,7 +490,7 @@ void	Header::parseRequestLine(RequestHandler& handler)
 				else if (ch == '/')
 				{
 					rl_state = rl_path;
-					path.append(1, static_cast<char>(ch));
+					handler.buf_pos--;
 					break;
 				}
 				error = 400;
@@ -462,12 +512,14 @@ void	Header::parseRequestLine(RequestHandler& handler)
 						rl_state = rl_done;
 						break;
 					case '.': // nginx does not allow two dots at the beginning if nothing comes after; a single dot leads to index (also on some websites with two dots); three dots to file not found
+						dot_in_path = 1;
 						break;
 					case '%':
 						path_encoded = 1; // when interpreting request needs to be decoded
 						// rl_state = rl_percent_encoded; // need to be followed by numercial code that needs to be interpreted --> otherwise 400 bad request (not the case for query)
 						break;
 					case '/': // checking with nginx, there can be several slashes after each other
+						handleMultipleSlashes(handler);
 						break;
 					case '?':
 						rl_state = rl_query;

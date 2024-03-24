@@ -55,15 +55,15 @@ std::vector<std::string>	ARequest::splitPath(std::string input, char delim)
 
 int	ARequest::calcMatches(std::vector<std::string>& uri_path_items, std::vector<std::string>& location_path_items)
 {
-	printf("splitted string\n");
-	for (std::vector<std::string>::iterator it = uri_path_items.begin(); it != uri_path_items.end(); it++)
-	{
-		std::cout << "string uri: " << *it << std::endl;
-	}
-	for (std::vector<std::string>::iterator it = location_path_items.begin(); it != location_path_items.end(); it++)
-	{
-		std::cout << "string location: " << *it << std::endl;
-	}
+	// printf("splitted string\n");
+	// for (std::vector<std::string>::iterator it = uri_path_items.begin(); it != uri_path_items.end(); it++)
+	// {
+	// 	std::cout << "string uri: " << *it << std::endl;
+	// }
+	// for (std::vector<std::string>::iterator it = location_path_items.begin(); it != location_path_items.end(); it++)
+	// {
+	// 	std::cout << "string location: " << *it << std::endl;
+	// }
 	int	matches = 0;
 	int num_path_items = uri_path_items.size();
 	for (std::vector<std::string>::iterator it = location_path_items.begin(); it != location_path_items.end(); it++)

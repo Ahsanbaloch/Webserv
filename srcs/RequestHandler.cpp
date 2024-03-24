@@ -34,9 +34,6 @@ RequestHandler::~RequestHandler()
 void	RequestHandler::sendResponse()
 {
 	std::string resp = response->status_line + response->header_fields + response->body;
-
-	std::cout << "response: " << resp << std::endl;
-
 	send(connection_fd, resp.c_str(), resp.length(), 0); 
 	// check for errors when calling send
 }
@@ -74,6 +71,8 @@ void	RequestHandler::processRequest()
 		{
 			header.parseRequestLine(*this);
 			header.parseHeaderFields(*this); // check if it still works if no header is sent
+			if (header.dot_in_path)
+				header.removeDots();
 			header.decode(); // decode URL/Query if necessary
 			header.checkFields();
 			// How do the header fields in the request affect the response?

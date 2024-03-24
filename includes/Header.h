@@ -4,6 +4,7 @@
 # include <string>
 # include <map>
 # include <vector>
+# include <sstream>
 # include <iostream>
 # include "CustomException.h"
 // # include "RequestHandler.h"
@@ -43,6 +44,7 @@ public:
 
 	int									path_encoded; // probably needs to be reset after being used
 	int									query_encoded;
+	int									dot_in_path;
 	// int									field_encoded;
 	// std::vector<std::string>			fields_encoded;
 	int									error;
@@ -59,7 +61,11 @@ public:
 	void	decode();
 	void	decodeRequestLine(std::string&);
 	void	checkFields();
+	void	handleMultipleSlashes(RequestHandler&);
+	void	removeDots();
 	// void	decodeHeaderFields();
+
+	std::vector<std::string>	splitPath(std::string, char);
 
 	enum {
 		rl_start = 0,
