@@ -445,8 +445,6 @@ void	Header::handleMultipleSlashes(RequestHandler& handler) // could probably al
 	while(handler.buf[handler.buf_pos] == '/')
 		handler.buf_pos++;
 	handler.buf_pos--;
-	std::cout << "buf: " << handler.buf[handler.buf_pos] << std::endl;
-	std::cout << "buf + 1: " << handler.buf[handler.buf_pos + 1] << std::endl;
 }
 
 void	Header::parseRequestLine(RequestHandler& handler)
@@ -512,7 +510,8 @@ void	Header::parseRequestLine(RequestHandler& handler)
 						rl_state = rl_done;
 						break;
 					case '.': // nginx does not allow two dots at the beginning if nothing comes after; a single dot leads to index (also on some websites with two dots); three dots to file not found
-						dot_in_path = 1;
+						if (handler.buf[handler.buf_pos - 1] == '/')
+							dot_in_path = 1;
 						break;
 					case '%':
 						path_encoded = 1; // when interpreting request needs to be decoded
