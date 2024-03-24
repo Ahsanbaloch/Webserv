@@ -263,8 +263,9 @@ void	Header::parseHeaderFields(RequestHandler& handler)
 						throw CustomException("Bad request");
 					}
 					content_length_exists = 1;
-					handler.body_expected = 1;
 					checkBodyLength(header_value);
+					if (body_length > 0)
+						handler.body_expected = 1;
 				}
 				if (header_name == "transfer-encoding")
 				{

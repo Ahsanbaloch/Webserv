@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <cstdio>
 #include "ARequest.h"
 #include "RequestHandler.h"
 #include "Response.h"
@@ -17,6 +18,10 @@ public:
 	~DELETERequest();
 
 	Response	*createResponse(RequestHandler&);
+
+	void		deleteFile(RequestHandler&);
+	void		deleteDir(RequestHandler&);
+	std::string	createStatusLine(RequestHandler&);
 };
 
 

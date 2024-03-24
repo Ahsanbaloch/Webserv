@@ -150,7 +150,6 @@ ARequest* ARequest::newRequest(RequestHandler& handler)
 	}
 
 	// some more error handling could go here if not already done in Request Handler (or move it here; e.g. check for http version)
-	
 	if (handler.header.method == "GET")
 		return (new GETRequest(handler));
 	else if (handler.header.method == "DELETE")

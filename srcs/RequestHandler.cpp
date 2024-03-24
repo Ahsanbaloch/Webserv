@@ -33,7 +33,10 @@ RequestHandler::~RequestHandler()
 
 void	RequestHandler::sendResponse()
 {
-	std::string resp = response->status_line + response->header_fields + response->body;	
+	std::string resp = response->status_line + response->header_fields + response->body;
+
+	std::cout << "response: " << resp << std::endl;
+
 	send(connection_fd, resp.c_str(), resp.length(), 0); 
 	// check for errors when calling send
 }
@@ -82,6 +85,7 @@ void	RequestHandler::processRequest()
 			std::cout << "key: " << it->first << " ";
 			std::cout << "value: " << it->second << std::endl;
 		}
+
 		std::cout << "identified method: " << header.method << '\n';
 		std::cout << "identified path: " << header.path << '\n';
 		std::cout << "identified query: " << header.query << '\n';
