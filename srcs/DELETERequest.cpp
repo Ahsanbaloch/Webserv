@@ -77,7 +77,7 @@ Response	*DELETERequest::createResponse(RequestHandler& handler)
 
 	response->status_line = createStatusLine(handler);
 	response->header_fields = "Content-Type: plain/text\r\nContent-Length: 3\r\n\r\n"; // maybe send a html response here instead
-	response->body = handler.status;
+	response->body = "200"; // should be gotten from handler.status
 
 
 	// What if there is a deletion request; while a file is in the process of being rendered?
