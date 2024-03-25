@@ -20,8 +20,11 @@
 class RequestHandler
 {
 private:
-	/* data */
+	std::vector<t_server_config>	server_config;
 public:
+
+	std::vector<t_server_config>	getServerConfig() const;
+
 	RequestHandler(int, std::vector<t_server_config>);
 	RequestHandler(/* args */);
 	~RequestHandler();
@@ -29,7 +32,7 @@ public:
 	ARequest*			request;
 	Response*			response;
 	Header				header;
-	std::vector<t_server_config> server_config;
+	
 
 	int					selected_location; // should probably be in server_config struct
 	int					selected_server;

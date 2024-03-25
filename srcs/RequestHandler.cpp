@@ -2,6 +2,7 @@
 #include "RequestHandler.h"
 
 RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_config)
+	: header(*this)
 {
 	this->server_config = server_config;
 	connection_fd = fd;
@@ -20,14 +21,21 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	response = NULL;
 	raw_buf.setf(std::ios::app | std::ios::binary);
 	memset(&buf, 0, sizeof(buf));
+	// header = Header(*this);
 }
 
 RequestHandler::RequestHandler(/* args */)
+	: header(*this)
 {
 }
 
 RequestHandler::~RequestHandler()
 {
+}
+
+std::vector<t_server_config>	RequestHandler::getServerConfig() const
+{
+	return (server_config);
 }
 
 

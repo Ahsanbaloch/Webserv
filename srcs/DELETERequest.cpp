@@ -15,7 +15,7 @@ DELETERequest::~DELETERequest()
 
 void	DELETERequest::deleteFile(RequestHandler& handler)
 {
-	std::string file = handler.server_config[handler.selected_server].locations[handler.selected_location].root + handler.header.path;
+	std::string file = handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].root + handler.header.path;
 
 	std::cout << "fileeee: " << file << std::endl;
 
@@ -32,7 +32,7 @@ void	DELETERequest::deleteFile(RequestHandler& handler)
 
 void	DELETERequest::deleteDir(RequestHandler& handler)
 {
-	std::string	dir = handler.server_config[handler.selected_server].locations[handler.selected_location].root + handler.header.path;
+	std::string	dir = handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].root + handler.header.path;
 	
 	std::cout << "dirrrr: " << dir << std::endl;
 
@@ -66,7 +66,7 @@ Response	*DELETERequest::createResponse(RequestHandler& handler)
 	Response *response = new Response; // needs to be delete somewhere
 
 	// check allowed methods for the selected location
-	// if (!handler.server_config[handler.selected_server].locations[handler.selected_location].getAllowed)
+	// if (!handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].getAllowed)
 		// throw exception
 
 	// check if file or directory that is requested to be deleted

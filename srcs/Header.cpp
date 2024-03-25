@@ -2,7 +2,8 @@
 #include "Header.h"
 #include "RequestHandler.h"
 
-Header::Header(/* args */)
+Header::Header(RequestHandler& handler)
+	: handler2(handler)
 {
 	rl_parsing_done = 0;
 	headers_parsing_done = 0;
@@ -26,6 +27,32 @@ Header::Header(/* args */)
 	query = ""; // does this reset the string?
 	version = ""; // does this reset the string?
 }
+
+
+// Header::Header(/* args */)
+// {
+// 	rl_parsing_done = 0;
+// 	headers_parsing_done = 0;
+// 	transfer_encoding_exists = 0;
+// 	content_length_exists = 0;
+// 	host_exists = 0;
+// 	expect_exists = 0;
+// 	path_encoded = 0;
+// 	query_encoded = 0;
+// 	dot_in_path = 0;
+// 	// field_encoded = 0;
+// 	error = 0;
+// 	body_length = 0;
+
+// 	header_complete = 0;
+// 	body_beginning = 0;
+
+// 	method = ""; // does this reset the string?
+// 	redirected_path = "";
+// 	path = ""; // does this reset the string?
+// 	query = ""; // does this reset the string?
+// 	version = ""; // does this reset the string?
+// }
 
 Header::~Header()
 {
@@ -176,15 +203,16 @@ void	Header::checkBodyLength(std::string value)
 
 void	Header::parseHeaderFields(RequestHandler& handler)
 {
+	(void)handler;
 	unsigned char	ch;
 	std::string		header_name = "";
 	std::string		header_value = "";
 
 	headers_state = he_start; // move to constructor?
 
-	while (!headers_parsing_done && (handler.buf_pos)++ < handler.bytes_read)
+	while (!headers_parsing_done && (handler2.buf_pos)++ < handler2.bytes_read)
 	{
-		ch = handler.buf[handler.buf_pos];
+		ch = handler2.buf[handler2.buf_pos];
 	
 		switch (headers_state) 
 		{
@@ -306,7 +334,7 @@ void	Header::parseHeaderFields(RequestHandler& handler)
 					content_length_exists = 1;
 					checkBodyLength(header_value);
 					if (body_length > 0)
-						handler.body_expected = 1;
+						handler2.body_expected = 1;
 				}
 				if (header_name == "transfer-encoding")
 				{
@@ -322,7 +350,7 @@ void	Header::parseHeaderFields(RequestHandler& handler)
 						throw CustomException("Bad request");
 					}
 					transfer_encoding_exists = 1;
-					handler.body_expected = 1;
+					handler2.body_expected = 1;
 				}
 				if (header_name == "host")
 				{
@@ -364,7 +392,7 @@ void	Header::parseHeaderFields(RequestHandler& handler)
 		throw CustomException("Payload Too Large");  // correct error code when header is too large for buffer
 	}
 	header_complete = 1;
-	body_beginning = handler.buf_pos; // this is the last ch of the empty line at the end of the headers. Next ch is the first of the body
+	body_beginning = handler2.buf_pos; // this is the last ch of the empty line at the end of the headers. Next ch is the first of the body
 
 	// A sender MUST NOT send whitespace between the start-line and the first header field.
 	// A recipient that receives whitespace between the start-line and the first header field MUST either reject the message as invalid 
@@ -383,11 +411,12 @@ void	Header::parseHeaderFields(RequestHandler& handler)
 // void	Header::checkMethod(unsigned char* buf, int* buf_pos)
 void	Header::checkMethod(RequestHandler& handler)
 {
-	switch (handler.buf[handler.buf_pos])
+	(void)handler;
+	switch (handler2.buf[handler2.buf_pos])
 	{
 		case 'G':
 			// check if next characters are E and T
-			if (handler.buf[++(handler.buf_pos)] == 'E' && handler.buf[++(handler.buf_pos)] == 'T')
+			if (handler2.buf[++(handler2.buf_pos)] == 'E' && handler2.buf[++(handler2.buf_pos)] == 'T')
 				method = "GET";
 			else
 			{
@@ -398,7 +427,7 @@ void	Header::checkMethod(RequestHandler& handler)
 		
 		case 'P':
 			// check if next characters are O S and T
-			if (handler.buf[++(handler.buf_pos)] == 'O' && handler.buf[++(handler.buf_pos)] == 'S' && handler.buf[++(handler.buf_pos)] == 'T')
+			if (handler2.buf[++(handler2.buf_pos)] == 'O' && handler2.buf[++(handler2.buf_pos)] == 'S' && handler2.buf[++(handler2.buf_pos)] == 'T')
 				method = "POST";
 			else
 			{
@@ -409,7 +438,7 @@ void	Header::checkMethod(RequestHandler& handler)
 
 		case 'D':
 			// check of next characters are E L E T E
-			if (handler.buf[++(handler.buf_pos)] == 'E' && handler.buf[++(handler.buf_pos)] == 'L' && handler.buf[++(handler.buf_pos)] == 'E' && handler.buf[++(handler.buf_pos)] == 'T' && handler.buf[++(handler.buf_pos)] == 'E')
+			if (handler2.buf[++(handler2.buf_pos)] == 'E' && handler2.buf[++(handler2.buf_pos)] == 'L' && handler2.buf[++(handler2.buf_pos)] == 'E' && handler2.buf[++(handler2.buf_pos)] == 'T' && handler2.buf[++(handler2.buf_pos)] == 'E')
 				method = "DELETE";
 			else
 			{
@@ -427,11 +456,12 @@ void	Header::checkMethod(RequestHandler& handler)
 // void	Header::checkHttpVersion(unsigned char* buf, int* buf_pos)
 void	Header::checkHttpVersion(RequestHandler& handler)
 {
-	if (handler.buf[handler.buf_pos] == 'H' && handler.buf[++(handler.buf_pos)] == 'T' && handler.buf[++(handler.buf_pos)] == 'T' && handler.buf[++(handler.buf_pos)] == 'P' && handler.buf[++(handler.buf_pos)] == '/' && handler.buf[++(handler.buf_pos)] == '1'
-		&& handler.buf[++(handler.buf_pos)] == '.' && handler.buf[++(handler.buf_pos)] == '1')
+	(void)handler;
+	if (handler2.buf[handler2.buf_pos] == 'H' && handler2.buf[++(handler2.buf_pos)] == 'T' && handler2.buf[++(handler2.buf_pos)] == 'T' && handler2.buf[++(handler2.buf_pos)] == 'P' && handler2.buf[++(handler2.buf_pos)] == '/' && handler2.buf[++(handler2.buf_pos)] == '1'
+		&& handler2.buf[++(handler2.buf_pos)] == '.' && handler2.buf[++(handler2.buf_pos)] == '1')
 	{
 		version = "HTTP/1.1";
-		handler.buf_pos++;
+		handler2.buf_pos++;
 	}
 	else
 	{
@@ -442,13 +472,15 @@ void	Header::checkHttpVersion(RequestHandler& handler)
 
 void	Header::handleMultipleSlashes(RequestHandler& handler) // could probably also be a created as a special state
 {
-	while(handler.buf[handler.buf_pos] == '/')
-		handler.buf_pos++;
-	handler.buf_pos--;
+	(void)handler;
+	while(handler2.buf[handler2.buf_pos] == '/')
+		handler2.buf_pos++;
+	handler2.buf_pos--;
 }
 
 void	Header::parseRequestLine(RequestHandler& handler)
 {
+	(void)handler;
 	unsigned char	ch;
 
 	// implement max request line rule? (414 and 501 errors)
@@ -461,16 +493,16 @@ void	Header::parseRequestLine(RequestHandler& handler)
 
 	rl_state = rl_start; // move to constructor?
 
-	while (!rl_parsing_done && (handler.buf_pos)++ < handler.bytes_read)
+	while (!rl_parsing_done && (handler2.buf_pos)++ < handler2.bytes_read)
 	{
-		ch = handler.buf[handler.buf_pos];
+		ch = handler2.buf[handler2.buf_pos];
 	
 		switch (rl_state) 
 		{
 			// in the interest of robustness, ignore at least one empty line
 			// double check if a single LF occurance is accepted // is there a space afterwards?
 			case rl_start:
-				if (handler.buf_pos == 0 && ch == CR)
+				if (handler2.buf_pos == 0 && ch == CR)
 					break;
 				if (ch == LF)
 					break;
@@ -478,7 +510,7 @@ void	Header::parseRequestLine(RequestHandler& handler)
 
 			case rl_method: // can this also be termined by CRLF?
 				// checkMethod(buf, buf_pos);
-				checkMethod(handler);
+				checkMethod(handler2);
 				rl_state = rl_first_divider;
 				break;
 
@@ -488,7 +520,7 @@ void	Header::parseRequestLine(RequestHandler& handler)
 				else if (ch == '/')
 				{
 					rl_state = rl_path;
-					handler.buf_pos--;
+					handler2.buf_pos--;
 					break;
 				}
 				error = 400;
@@ -510,7 +542,7 @@ void	Header::parseRequestLine(RequestHandler& handler)
 						rl_state = rl_done;
 						break;
 					case '.': // nginx does not allow two dots at the beginning if nothing comes after; a single dot leads to index (also on some websites with two dots); three dots to file not found
-						if (handler.buf[handler.buf_pos - 1] == '/')
+						if (handler2.buf[handler2.buf_pos - 1] == '/')
 							dot_in_path = 1;
 						break;
 					case '%':
@@ -518,7 +550,7 @@ void	Header::parseRequestLine(RequestHandler& handler)
 						// rl_state = rl_percent_encoded; // need to be followed by numercial code that needs to be interpreted --> otherwise 400 bad request (not the case for query)
 						break;
 					case '/': // checking with nginx, there can be several slashes after each other
-						handleMultipleSlashes(handler);
+						handleMultipleSlashes(handler2);
 						break;
 					case '?':
 						rl_state = rl_query;
@@ -583,7 +615,7 @@ void	Header::parseRequestLine(RequestHandler& handler)
 					break;
 				}
 				if (ch == 'H')
-					checkHttpVersion(handler);
+					checkHttpVersion(handler2);
 				break;
 
 			case rl_cr:
@@ -601,7 +633,7 @@ void	Header::parseRequestLine(RequestHandler& handler)
 			case rl_done:
 				std::cout << "request line fully parsed\n";
 				rl_parsing_done = 1;
-				handler.buf_pos--; // Why does this needs to be done?
+				handler2.buf_pos--; // Why does this needs to be done?
 				break;
 		}
 		// check for URI (path) --> request target (origin-form)

@@ -19,10 +19,12 @@ class RequestHandler;
 class Header
 {
 private:
-	/* data */
+	
 public:
-	Header(/* args */);
+	// Header(/* args */);
 	~Header();
+	explicit Header(RequestHandler&);
+	RequestHandler&	handler2;
 
 	std::string							method; // probably needs to be reset after being used
 	std::string							path; // probably needs to be reset after being used

@@ -51,7 +51,7 @@ std::string GETRequest::getBodyFromDir(RequestHandler& handler) // probably crea
 	DIR *directory;
 	struct dirent *entry;
 
-	directory = opendir((handler.server_config[handler.selected_server].locations[handler.selected_location].root + handler.server_config[handler.selected_server].locations[handler.selected_location].path).c_str());
+	directory = opendir((handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].root + handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].path).c_str());
 	if (directory != NULL)
 	{
 		entry = readdir(directory);
@@ -91,7 +91,7 @@ std::string	GETRequest::createHeaderFields(RequestHandler& handler, std::string 
 	std::string	header;
 
 	if (handler.url_relocation)
-		header.append("Location: " + handler.server_config[handler.selected_server].locations[handler.selected_location].redirect + "\r\n");
+		header.append("Location: " + handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].redirect + "\r\n");
 	else
 	{
 		std::string mime_type = identifyMIME(handler); // should not be called if we have a url redirection
@@ -140,7 +140,7 @@ void	GETRequest::checkRedirects(RequestHandler& handler)
 		}
 		else
 		{
-			if (handler.server_config[handler.selected_server].locations[handler.selected_location].autoIndex)
+			if (handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].autoIndex)
 				handler.autoindex = 1;
 			else
 			{
@@ -152,7 +152,7 @@ void	GETRequest::checkRedirects(RequestHandler& handler)
 	else
 	{
 		// file_type is already set by checkFileType
-		handler.file_path = handler.server_config[handler.selected_server].locations[handler.selected_location].root + "/" + handler.header.path;
+		handler.file_path = handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].root + "/" + handler.header.path;
 	}
 	std::cout << "location selected: " << handler.selected_location << std::endl;
 }
@@ -166,7 +166,7 @@ Response	*GETRequest::createResponse(RequestHandler& handler)
 		checkRedirects(handler);
 
 	// check allowed methods for the selected location
-	// if (!handler.server_config[handler.selected_server].locations[handler.selected_location].getAllowed)
+	// if (!handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].getAllowed)
 		// throw exception
 
 	response->status_line = createStatusLine(handler);
