@@ -25,6 +25,17 @@ private:
 	std::string							query;
 	std::string							path;
 	std::map<std::string, std::string>	header_fields;
+
+	// flags
+	bool								rl_parsing_done;
+	bool								headers_parsing_done;
+	bool								transfer_encoding_exists;
+	bool								content_length_exists;
+	bool								host_exists;
+	bool								path_encoded;
+	bool								query_encoded;
+	
+
 public:
 
 	std::string							getMethod() const;
@@ -40,40 +51,27 @@ public:
 	
 	std::string							redirected_path;
 	
-
-	int									rl_parsing_done; // probably needs to be reset after being used
-	int									headers_parsing_done; // probably needs to be reset after being used
-	int									transfer_encoding_exists;
-	int									content_length_exists;
-	int									host_exists;
+	
 	int									expect_exists;
 	int									body_length; // probably move some like these into a dedicated class
 
 	int									header_complete;
 	int									body_beginning;
-
-	int									path_encoded; // probably needs to be reset after being used
-	int									query_encoded;
-	int									dot_in_path;
-	// int									field_encoded;
-	// std::vector<std::string>			fields_encoded;
+	bool								dot_in_path;
+	
+	
 	int									error;
 
-	// void	parseRequestLine(unsigned char* buf, int* buf_pos, int bytes_read);
-	void	parseRequestLine(); // could the reference also be provided when constructing the object?
+	void	parseRequestLine();
 	void	parseHeaderFields();
-	// void	parseHeaderFields(unsigned char* buf, int* buf_pos, int bytes_read);
-	// void	checkMethod(unsigned char* buf, int* buf_pos);
 	void	checkMethod();
 	void	checkHttpVersion();
-	// void	checkHttpVersion(unsigned char* buf, int* buf_pos);
 	void	checkBodyLength(std::string);
 	void	decode();
 	void	decodeRequestLine(std::string&);
 	void	checkFields();
 	void	handleMultipleSlashes();
 	void	removeDots();
-	// void	decodeHeaderFields();
 
 	std::vector<std::string>	splitPath(std::string, char);
 
