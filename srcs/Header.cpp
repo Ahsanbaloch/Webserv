@@ -14,8 +14,6 @@ Header::Header(RequestHandler& src)
 	path_encoded = 0;
 	query_encoded = 0;
 	dot_in_path = 0;
-	// field_encoded = 0;
-	error = 0;
 	body_length = 0;
 
 	header_complete = 0;
@@ -88,12 +86,12 @@ void	Header::checkFields()
 	// others check such as empty host field value, TE != chunked etc. is done in parsing
 	if (header_fields.find("host") == header_fields.end()) // is is even connecting without host field?
 	{
-		error = 410;
+		handler.status = 410;
 		throw CustomException("Bad request");
 	}
 	if (!transfer_encoding_exists && !content_length_exists && method == "POST") // if both exist at the same time is check when parsing
 	{
-		error = 411;
+		handler.status = 411;
 		throw CustomException("Length Required");
 	}
 }
@@ -114,7 +112,7 @@ void	Header::decodeRequestLine(std::string& sequence)
 			}
 			else
 			{
-				error = 400;
+				handler.status = 400;
 				throw CustomException("decoding error");
 			}
 			if ((*it >= '0' && *it <= '9') || (*it >= 'a' && *it <= 'z') || (*it >= 'A' && *it <= 'Z'))
@@ -125,7 +123,7 @@ void	Header::decodeRequestLine(std::string& sequence)
 			}
 			else
 			{
-				error = 400;
+				handler.status = 400;
 				throw CustomException("decoding error");
 			}
 		}
@@ -212,14 +210,14 @@ void	Header::checkBodyLength(std::string value)
 					value.erase(*it);
 				else
 				{
-					error = 400;
+					handler.status = 400;
 					throw CustomException("Bad request"); // other error code?
 				}
 			}
 		}
 		else if (!isdigit(*it))
 		{
-			error = 400;
+			handler.status = 400;
 			throw CustomException("Bad request"); // other error code?
 		}
 	}
@@ -270,7 +268,7 @@ void	Header::parseHeaderFields()
 					headers_state = he_done;
 				else
 				{
-					error = 400;
+					handler.status = 400;
 					throw CustomException("Bad request");
 				}
 				break;
@@ -309,7 +307,7 @@ void	Header::parseHeaderFields()
 					header_value.append(1, ch);
 				else
 				{
-					error = 400;
+					handler.status = 400;
 					throw CustomException("Bad request");
 				}
 				break;
@@ -340,7 +338,7 @@ void	Header::parseHeaderFields()
 					rl_state = rl_done;
 				else 
 				{
-					error = 400;
+					handler.status = 400;
 					throw CustomException("Bad request");
 				}
 			
@@ -352,7 +350,7 @@ void	Header::parseHeaderFields()
 					if (content_length_exists || transfer_encoding_exists) // for security: when content_length is specified, TE shouldn't be
 					{
 						// to reduce attack vectors for request smuggling, we don't allow multiple content_length headers
-						error = 400; // correct error value
+						handler.status = 400; // correct error value
 						throw CustomException("Bad request");
 					}
 					content_length_exists = 1;
@@ -365,12 +363,12 @@ void	Header::parseHeaderFields()
 					if (transfer_encoding_exists || content_length_exists) // // for security: when content_length is specified, TE shouldn't be
 					{
 						// to reduce attack vectors for request smuggling, we don't allow multiple TE headers
-						error = 400; // correct error value
+						handler.status = 400; // correct error value
 						throw CustomException("Bad request");
 					}
 					if (header_value != "chunked")
 					{
-						error = 400;
+						handler.status = 400;
 						throw CustomException("Bad request");
 					}
 					transfer_encoding_exists = 1;
@@ -380,12 +378,12 @@ void	Header::parseHeaderFields()
 				{
 					if (host_exists)
 					{
-						error = 400;
+						handler.status = 400;
 						throw CustomException("Bad request");
 					}
 					if (header_value.empty())
 					{
-						error = 400;
+						handler.status = 400;
 						throw CustomException("Bad request");
 					}
 					host_exists = 1;
@@ -405,14 +403,14 @@ void	Header::parseHeaderFields()
 					// std::cout << "headers fully parsed\n";
 					break;
 				}
-				error = 400;
+				handler.status = 400;
 				throw CustomException("Bad request");
 		}
 	}
 
 	if (!headers_parsing_done) // is this the correct location to check?
 	{
-		error = 413; // correct error code when header is too large for buffer OR 431 Request Header Fields Too Large
+		handler.status = 413; // correct error code when header is too large for buffer OR 431 Request Header Fields Too Large
 		throw CustomException("Payload Too Large");  // correct error code when header is too large for buffer
 	}
 	header_complete = 1;
@@ -443,7 +441,7 @@ void	Header::checkMethod()
 				method = "GET";
 			else
 			{
-				error = 501;
+				handler.status = 501;
 				throw CustomException("Not implemented");
 			}
 			break;
@@ -454,7 +452,7 @@ void	Header::checkMethod()
 				method = "POST";
 			else
 			{
-				error = 501;
+				handler.status = 501;
 				throw CustomException("Not implemented");
 			}
 			break;
@@ -465,12 +463,12 @@ void	Header::checkMethod()
 				method = "DELETE";
 			else
 			{
-				error = 501;
+				handler.status = 501;
 				throw CustomException("Not implemented");
 			}
 			break;
 		default:
-			error = 501;
+			handler.status = 501;
 			throw CustomException("Not implemented");
 			break;
 		}
@@ -487,7 +485,7 @@ void	Header::checkHttpVersion()
 	}
 	else
 	{
-		error = 505;
+		handler.status = 505;
 		throw CustomException("HTTP Version Not Supported");
 	}
 }
@@ -543,7 +541,7 @@ void	Header::parseRequestLine()
 					handler.buf_pos--;
 					break;
 				}
-				error = 400;
+				handler.status = 400;
 				throw CustomException("Bad request");
 				
 			case rl_path:
@@ -581,7 +579,7 @@ void	Header::parseRequestLine()
 					default:
 						if (ch < 32 || ch == 127)
 						{
-							error = 400;
+							handler.status = 400;
 							throw CustomException("Bad request");
 						}
 						break;
@@ -614,7 +612,7 @@ void	Header::parseRequestLine()
 					default:
 						if (ch < 32 || ch == 127)
 						{
-							error = 400;
+							handler.status = 400;
 							throw CustomException("Bad request");
 						}
 						break;
@@ -646,7 +644,7 @@ void	Header::parseRequestLine()
 				}
 				else 
 				{
-					error = 400;
+					handler.status = 400;
 					throw CustomException("Bad request");
 				}
 			
@@ -667,7 +665,7 @@ void	Header::parseRequestLine()
 
 	if (!rl_parsing_done)
 	{
-		error = 414;
+		handler.status = 414;
 		throw CustomException("Request-URI Too Long");
 	}
 

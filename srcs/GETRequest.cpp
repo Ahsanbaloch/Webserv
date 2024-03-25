@@ -65,7 +65,7 @@ std::string GETRequest::getBodyFromDir(RequestHandler& handler) // probably crea
 	}
 	else
 	{
-		handler.header.error = 404;
+		handler.status = 404;
 		throw CustomException("Not found");
 	}
 	return (body);

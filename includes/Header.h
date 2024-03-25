@@ -6,13 +6,8 @@
 # include <vector>
 # include <sstream>
 # include <iostream>
+# include "defines.h"
 # include "CustomException.h"
-// # include "RequestHandler.h"
-
-// should be defined somewhere else in extra class
-#define LF 10
-#define CR 13
-#define SP 32
 
 class RequestHandler;
 
@@ -67,8 +62,6 @@ public:
 	bool								dot_in_path;
 	
 	
-	int									error;
-
 	void								parseRequestLine();
 	void								parseHeaderFields();
 	void								removeDots();

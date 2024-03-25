@@ -21,7 +21,7 @@ void	DELETERequest::deleteFile(RequestHandler& handler)
 
 	if (remove(file.c_str()) != 0)
 	{
-		handler.header.error = 404; // different error code?
+		handler.status = 404; // different error code?
 		throw CustomException("Not Found");
 	}
 	else
@@ -39,7 +39,7 @@ void	DELETERequest::deleteDir(RequestHandler& handler)
 	if (handler.header.getPath() == "/" || rmdir(dir.c_str()) != 0)
 	{
 		// indicate that it is forbidden to delete directories if they are empty or are the root
-		handler.header.error = 403;
+		handler.status = 403;
 		throw CustomException("Forbidden");
 	}
 	else
