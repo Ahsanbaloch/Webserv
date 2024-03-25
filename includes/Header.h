@@ -19,17 +19,19 @@ class RequestHandler;
 class Header
 {
 private:
-	RequestHandler&	handler;
-	std::string		method;
-	std::string		version;
-	std::string		query;
-	std::string		path;
+	RequestHandler&						handler;
+	std::string							method;
+	std::string							version;
+	std::string							query;
+	std::string							path;
+	std::map<std::string, std::string>	header_fields;
 public:
 
-	std::string	getMethod() const;
-	std::string	getHttpVersion() const;
-	std::string	getQuery() const;
-	std::string getPath() const;
+	std::string							getMethod() const;
+	std::string							getHttpVersion() const;
+	std::string							getQuery() const;
+	std::string 						getPath() const;
+	std::map<std::string, std::string>	getHeaderFields() const;
 
 	// Header(/* args */);
 	~Header();
@@ -38,8 +40,6 @@ public:
 	
 	std::string							redirected_path;
 	
-	
-	std::map<std::string, std::string>	header_fields;
 
 	int									rl_parsing_done; // probably needs to be reset after being used
 	int									headers_parsing_done; // probably needs to be reset after being used

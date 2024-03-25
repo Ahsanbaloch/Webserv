@@ -18,7 +18,7 @@ void	ARequest::findServerBlock(RequestHandler& handler)
 
 	for (int i = 0; i < size; i++)
 	{
-		if (handler.getServerConfig()[i].serverName == handler.header.header_fields["host"])
+		if (handler.getServerConfig()[i].serverName == handler.header.getHeaderFields()["host"])
 		{
 			handler.selected_server = i;
 			break;

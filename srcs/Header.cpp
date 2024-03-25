@@ -78,6 +78,11 @@ std::string Header::getPath() const
 	return (path);
 }
 
+std::map<std::string, std::string>	Header::getHeaderFields() const
+{
+	return (header_fields);
+}
+
 void	Header::checkFields()
 {
 	// others check such as empty host field value, TE != chunked etc. is done in parsing

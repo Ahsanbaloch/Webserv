@@ -87,7 +87,8 @@ void	RequestHandler::processRequest()
 		}
 		//for testing: print received headers
 		printf("\nheaders\n");
-		for (std::map<std::string, std::string>::iterator it = header.header_fields.begin(); it != header.header_fields.end(); it++)
+		std::map<std::string, std::string> headers = header.getHeaderFields();
+		for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
 		{
 			std::cout << "key: " << it->first << " ";
 			std::cout << "value: " << it->second << std::endl;
