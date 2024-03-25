@@ -15,7 +15,7 @@ DELETERequest::~DELETERequest()
 
 void	DELETERequest::deleteFile(RequestHandler& handler)
 {
-	std::string file = handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].root + handler.header.path;
+	std::string file = handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].root + handler.header.getPath();
 
 	std::cout << "fileeee: " << file << std::endl;
 
@@ -32,11 +32,11 @@ void	DELETERequest::deleteFile(RequestHandler& handler)
 
 void	DELETERequest::deleteDir(RequestHandler& handler)
 {
-	std::string	dir = handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].root + handler.header.path;
+	std::string	dir = handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].root + handler.header.getPath();
 	
 	std::cout << "dirrrr: " << dir << std::endl;
 
-	if (handler.header.path == "/" || rmdir(dir.c_str()) != 0)
+	if (handler.header.getPath() == "/" || rmdir(dir.c_str()) != 0)
 	{
 		// indicate that it is forbidden to delete directories if they are empty or are the root
 		handler.header.error = 403;

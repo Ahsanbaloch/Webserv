@@ -77,8 +77,8 @@ void	RequestHandler::processRequest()
 		// check if headers have already been parsed
 		if (!header.header_complete)
 		{
-			header.parseRequestLine(*this);
-			header.parseHeaderFields(*this); // check if it still works if no header is sent
+			header.parseRequestLine();
+			header.parseHeaderFields(); // check if it still works if no header is sent
 			if (header.dot_in_path)
 				header.removeDots();
 			header.decode(); // decode URL/Query if necessary
@@ -93,10 +93,10 @@ void	RequestHandler::processRequest()
 			std::cout << "value: " << it->second << std::endl;
 		}
 
-		std::cout << "identified method: " << header.method << '\n';
-		std::cout << "identified path: " << header.path << '\n';
-		std::cout << "identified query: " << header.query << '\n';
-		std::cout << "identified version: " << header.version << '\n';
+		std::cout << "identified method: " << header.getMethod() << '\n';
+		std::cout << "identified path: " << header.getPath() << '\n';
+		std::cout << "identified query: " << header.getQuery() << '\n';
+		std::cout << "identified version: " << header.getHttpVersion() << '\n';
 
 		if (header.expect_exists) // this is relevant for POST only, should this be done in another place? (e.g. POST request class)
 		{

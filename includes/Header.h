@@ -19,19 +19,27 @@ class RequestHandler;
 class Header
 {
 private:
-	
+	RequestHandler&	handler;
+	std::string		method;
+	std::string		version;
+	std::string		query;
+	std::string		path;
 public:
+
+	std::string	getMethod() const;
+	std::string	getHttpVersion() const;
+	std::string	getQuery() const;
+	std::string getPath() const;
+
 	// Header(/* args */);
 	~Header();
 	explicit Header(RequestHandler&);
-	RequestHandler&	handler2;
 
-	std::string							method; // probably needs to be reset after being used
-	std::string							path; // probably needs to be reset after being used
+	
 	std::string							redirected_path;
-	std::string							query; // probably needs to be reset after being used
-	std::string							version; // probably needs to be reset after being used
-	std::map<std::string, std::string>	header_fields; // rename to header_fields // probably needs to be reset after being used
+	
+	
+	std::map<std::string, std::string>	header_fields;
 
 	int									rl_parsing_done; // probably needs to be reset after being used
 	int									headers_parsing_done; // probably needs to be reset after being used
@@ -52,18 +60,18 @@ public:
 	int									error;
 
 	// void	parseRequestLine(unsigned char* buf, int* buf_pos, int bytes_read);
-	void	parseRequestLine(RequestHandler&); // could the reference also be provided when constructing the object?
-	void	parseHeaderFields(RequestHandler&);
+	void	parseRequestLine(); // could the reference also be provided when constructing the object?
+	void	parseHeaderFields();
 	// void	parseHeaderFields(unsigned char* buf, int* buf_pos, int bytes_read);
 	// void	checkMethod(unsigned char* buf, int* buf_pos);
-	void	checkMethod(RequestHandler&);
-	void	checkHttpVersion(RequestHandler&);
+	void	checkMethod();
+	void	checkHttpVersion();
 	// void	checkHttpVersion(unsigned char* buf, int* buf_pos);
 	void	checkBodyLength(std::string);
 	void	decode();
 	void	decodeRequestLine(std::string&);
 	void	checkFields();
-	void	handleMultipleSlashes(RequestHandler&);
+	void	handleMultipleSlashes();
 	void	removeDots();
 	// void	decodeHeaderFields();
 

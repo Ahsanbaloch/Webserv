@@ -82,7 +82,7 @@ void	ARequest::findLocationBlock(RequestHandler& handler) // double check if thi
 {
 	std::vector<std::string> uri_path_items;
 	if (handler.header.redirected_path.empty())
-		uri_path_items = splitPath(handler.header.path, '/');
+		uri_path_items = splitPath(handler.header.getPath(), '/');
 	else
 	{
 		std::string temp = "/" + handler.header.redirected_path;
@@ -119,7 +119,7 @@ int	ARequest::checkFileExistence(RequestHandler& handler)
 bool	ARequest::checkFileType(RequestHandler& handler)
 {
 	// what if there are two dots in the path? // is there a better way to identify the file type requested?
-	std::size_t found = handler.header.path.find('.');
+	std::size_t found = handler.header.getPath().find('.');
 	if (found == std::string::npos)
 	{
 		handler.file_type = "";
@@ -127,7 +127,7 @@ bool	ARequest::checkFileType(RequestHandler& handler)
 	}
 	else
 	{
-		handler.file_type = handler.header.path.substr(found + 1);
+		handler.file_type = handler.header.getPath().substr(found + 1);
 		return (1);
 	}
 }
@@ -152,11 +152,11 @@ ARequest* ARequest::newRequest(RequestHandler& handler)
 	}
 
 	// some more error handling could go here if not already done in Request Handler (or move it here; e.g. check for http version)
-	if (handler.header.method == "GET")
+	if (handler.header.getMethod() == "GET")
 		return (new GETRequest(handler));
-	else if (handler.header.method == "DELETE")
+	else if (handler.header.getMethod() == "DELETE")
 		return (new DELETERequest(handler));
-	else if (handler.header.method == "POST")
+	else if (handler.header.getMethod() == "POST")
 		;///
 	// check if something else and thus not implemented; but currently alsready done when parsing
 	return (NULL);

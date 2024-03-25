@@ -152,7 +152,7 @@ void	GETRequest::checkRedirects(RequestHandler& handler)
 	else
 	{
 		// file_type is already set by checkFileType
-		handler.file_path = handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].root + "/" + handler.header.path;
+		handler.file_path = handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].root + "/" + handler.header.getPath();
 	}
 	std::cout << "location selected: " << handler.selected_location << std::endl;
 }
