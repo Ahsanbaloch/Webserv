@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/21 16:41:17 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/22 19:37:07 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -229,12 +229,12 @@ void	config_pars::parseLocationBlock(t_location_config &location_config, const s
 			throw MissingValueException("cgi-ext");
 	}
 	location_config.root = extractVariables("root", location_block);
-	if (location_config.root.empty() && server_root.empty())
+	if (server_root.empty() && location_config.root.empty() && location_config.path != "/redir")
 		throw MissingValueException("root");
 	if (location_config.root.empty())
 		location_config.root = server_root;
 	location_config.index = extractVariables("index", location_block);
-	if (server_index.empty() && location_config.index.empty())
+	if (server_index.empty() && location_config.index.empty() && location_config.path != "/redir")
 		throw MissingValueException("index");
 	if (location_config.index.empty())
 		location_config.index = server_index;
