@@ -35,6 +35,13 @@ private:
 	bool								path_encoded;
 	bool								query_encoded;
 	
+	// helper functions
+	void								handleMultipleSlashes();
+	void								checkMethod();
+	void								decodeRequestLine(std::string&);
+	void								checkBodyLength(std::string);
+	void								checkHttpVersion();
+	std::vector<std::string>			splitPath(std::string, char); // maybe move somewhere else as similar as in ARquest class
 
 public:
 
@@ -62,19 +69,13 @@ public:
 	
 	int									error;
 
-	void	parseRequestLine();
-	void	parseHeaderFields();
-	void	checkMethod();
-	void	checkHttpVersion();
-	void	checkBodyLength(std::string);
-	void	decode();
-	void	decodeRequestLine(std::string&);
-	void	checkFields();
-	void	handleMultipleSlashes();
-	void	removeDots();
+	void								parseRequestLine();
+	void								parseHeaderFields();
+	void								removeDots();
+	void								decode();
+	void								checkFields();
 
-	std::vector<std::string>	splitPath(std::string, char);
-
+	// parsing states
 	enum {
 		rl_start = 0,
 		rl_method,
