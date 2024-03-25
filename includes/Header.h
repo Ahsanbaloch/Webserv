@@ -15,13 +15,16 @@ class Header
 {
 private:
 	RequestHandler&						handler;
+	
+	// extruded info from request
 	std::string							method;
-	std::string							version;
-	std::string							query;
 	std::string							path;
+	std::string							query;
+	std::string							version;
 	std::map<std::string, std::string>	header_fields;
 
 	// flags
+	bool								header_complete;
 	bool								rl_parsing_done;
 	bool								headers_parsing_done;
 	bool								transfer_encoding_exists;
@@ -29,44 +32,45 @@ private:
 	bool								host_exists;
 	bool								path_encoded;
 	bool								query_encoded;
+	bool								dot_in_path;
 	
-	// helper functions
+	// main methods
+	void								parseRequestLine();
+	void								parseHeaderFields();
+	void								removeDots();
+	void								checkFields();
+
+	// helper methods
 	void								handleMultipleSlashes();
 	void								checkMethod();
-	void								decodeRequestLine(std::string&);
+	void								decode(std::string&);
 	void								checkBodyLength(std::string);
 	void								checkHttpVersion();
 	std::vector<std::string>			splitPath(std::string, char); // maybe move somewhere else as similar as in ARquest class
 
+	// constructors
+	Header();
+	Header(const Header&);
+	Header& operator=(const Header&);
+
 public:
-
-	std::string							getMethod() const;
-	std::string							getHttpVersion() const;
-	std::string							getQuery() const;
-	std::string 						getPath() const;
-	std::map<std::string, std::string>	getHeaderFields() const;
-
-	// Header(/* args */);
-	~Header();
+	// constructors & destructors
 	explicit Header(RequestHandler&);
-
+	~Header();
 	
+	// getters
+	std::string							getMethod() const;
+	std::string 						getPath() const;
+	std::string							getQuery() const;
+	std::string							getHttpVersion() const;
+	std::map<std::string, std::string>	getHeaderFields() const;
+	bool								getHeaderStatus() const;
+
+	// TBD: move to request class???
 	std::string							redirected_path;
-	
-	
-	int									expect_exists;
-	int									body_length; // probably move some like these into a dedicated class
 
-	int									header_complete;
-	int									body_beginning;
-	bool								dot_in_path;
-	
-	
-	void								parseRequestLine();
-	void								parseHeaderFields();
-	void								removeDots();
-	void								decode();
-	void								checkFields();
+	// method
+	void								parseHeader();
 
 	// parsing states
 	enum {

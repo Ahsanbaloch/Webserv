@@ -2,59 +2,85 @@
 #include "Header.h"
 #include "RequestHandler.h"
 
-Header::Header(RequestHandler& src)
-	: handler(src)
+/////////////// CONSTRUCTORS & DESTRUCTORS //////////////////
+
+Header::Header()
+	: handler(*new RequestHandler()) // is there a better way to initialize the header reference?
 {
+	// is there a better way to initialize the variables?
+	header_complete = 0;
 	rl_parsing_done = 0;
 	headers_parsing_done = 0;
 	transfer_encoding_exists = 0;
 	content_length_exists = 0;
 	host_exists = 0;
-	expect_exists = 0;
 	path_encoded = 0;
 	query_encoded = 0;
 	dot_in_path = 0;
-	body_length = 0;
-
-	header_complete = 0;
-	body_beginning = 0;
-
-	method = ""; // does this reset the string?
-	redirected_path = "";
-	path = ""; // does this reset the string?
-	query = ""; // does this reset the string?
-	version = ""; // does this reset the string?
 }
 
+Header::Header(RequestHandler& src)
+	: handler(src)
+{
+	// is there a better way to initialize the variables?
+	header_complete = 0;
+	rl_parsing_done = 0;
+	headers_parsing_done = 0;
+	transfer_encoding_exists = 0;
+	content_length_exists = 0;
+	host_exists = 0;
+	path_encoded = 0;
+	query_encoded = 0;
+	dot_in_path = 0;
+}
 
-// Header::Header(/* args */)
-// {
-// 	rl_parsing_done = 0;
-// 	headers_parsing_done = 0;
-// 	transfer_encoding_exists = 0;
-// 	content_length_exists = 0;
-// 	host_exists = 0;
-// 	expect_exists = 0;
-// 	path_encoded = 0;
-// 	query_encoded = 0;
-// 	dot_in_path = 0;
-// 	// field_encoded = 0;
-// 	error = 0;
-// 	body_length = 0;
+Header::Header(const Header& src)
+	: handler(src.handler)
+{
+	// is there a better way to initialize the variables?
+	method = src.method;
+	path = src.path;
+	query = src.query;
+	version = src.version;
+	header_fields = src.header_fields;
+	header_complete = src.header_complete;
+	rl_parsing_done = src.rl_parsing_done;
+	headers_parsing_done = src.headers_parsing_done;
+	transfer_encoding_exists = src.transfer_encoding_exists;
+	content_length_exists = src.content_length_exists;
+	host_exists = src.host_exists;
+	path_encoded = src.path_encoded;
+	query_encoded = src.query_encoded;
+	dot_in_path = src.dot_in_path;
+}
 
-// 	header_complete = 0;
-// 	body_beginning = 0;
-
-// 	method = ""; // does this reset the string?
-// 	redirected_path = "";
-// 	path = ""; // does this reset the string?
-// 	query = ""; // does this reset the string?
-// 	version = ""; // does this reset the string?
-// }
+Header& Header::operator=(const Header& src)
+{
+	if (this != &src)
+	{
+		method = src.method;
+		path = src.path;
+		query = src.query;
+		version = src.version;
+		header_fields = src.header_fields;
+		header_complete = src.header_complete;
+		rl_parsing_done = src.rl_parsing_done;
+		headers_parsing_done = src.headers_parsing_done;
+		transfer_encoding_exists = src.transfer_encoding_exists;
+		content_length_exists = src.content_length_exists;
+		host_exists = src.host_exists;
+		path_encoded = src.path_encoded;
+		query_encoded = src.query_encoded;
+		dot_in_path = src.dot_in_path;
+	}
+	return (*this);
+}
 
 Header::~Header()
 {
 }
+
+/////////////// GETTERS //////////////////
 
 std::string	Header::getMethod() const
 {
@@ -76,9 +102,36 @@ std::string Header::getPath() const
 	return (path);
 }
 
+bool	Header::getHeaderStatus() const
+{
+	return (header_complete);
+}
+
 std::map<std::string, std::string>	Header::getHeaderFields() const
 {
 	return (header_fields);
+}
+
+
+/////////////// MAIN METHODS //////////////////
+
+void	Header::parseHeader()
+{
+	parseRequestLine();
+	parseHeaderFields();
+	if (dot_in_path)
+		removeDots();
+	// Decoding to do?: A common defense against response splitting is to filter requests for data that looks like encoded CR and LF (e.g., "%0D" and "%0A") --> What to do then?
+	// std::cout << "path before decoding: " << path << std::endl;
+	// std::cout << "query: " << query << std::endl;
+	if (path_encoded)
+		decode(path); 
+	if (query_encoded)
+		decode(query);
+	// std::cout << "path after decoding: " << path << std::endl;
+	// std::cout << "query after decoding: " << query << std::endl;
+	checkFields();
+	std::cout << "Header parsing complete\n";
 }
 
 void	Header::checkFields()
@@ -96,7 +149,7 @@ void	Header::checkFields()
 	}
 }
 
-void	Header::decodeRequestLine(std::string& sequence)
+void	Header::decode(std::string& sequence)
 {
 	for (std::string::iterator it = sequence.begin(); it != sequence.end(); it++)  // allowed values #01 - #FF (although ASCII only goes till #7F/7E)
 	{
@@ -130,27 +183,6 @@ void	Header::decodeRequestLine(std::string& sequence)
 		if (*it == '+')
 			*it = ' ';
 	}
-}
-
-
-void	Header::decode() // A common defense against response splitting is to filter requests for data that looks like encoded CR and LF (e.g., "%0D" and "%0A") --> What to do then?
-{
-	// std::cout << "path before decoding: " << path << std::endl;
-	// std::cout << "query: " << query << std::endl;
-	if (path_encoded)
-		decodeRequestLine(path);
-	if (query_encoded)
-		decodeRequestLine(query);
-	// if (field_encoded)
-	// {
-	// 	for (std::vector<std::string>::iterator it = fields_encoded.begin(); it != fields_encoded.end(); it++)
-	// 	{
-	// 		decodeRequestLine(header_fields[*it]);
-	// 	}
-	// }
-
-	// std::cout << "path after decoding: " << path << std::endl;
-	// std::cout << "query after decoding: " << query << std::endl;
 }
 
 
@@ -221,7 +253,7 @@ void	Header::checkBodyLength(std::string value)
 			throw CustomException("Bad request"); // other error code?
 		}
 	}
-	body_length = std::atoi(value.c_str());
+	handler.body_length = std::atoi(value.c_str());
 }
 
 void	Header::parseHeaderFields()
@@ -343,7 +375,7 @@ void	Header::parseHeaderFields()
 				}
 			
 			case he_done:
-				std::cout << "header line fully parsed\n";
+				// std::cout << "header line fully parsed\n";
 				// check if there is a body in the message
 				if (header_name == "content-length")
 				{
@@ -355,7 +387,7 @@ void	Header::parseHeaderFields()
 					}
 					content_length_exists = 1;
 					checkBodyLength(header_value);
-					if (body_length > 0)
+					if (handler.body_length > 0)
 						handler.body_expected = 1;
 				}
 				if (header_name == "transfer-encoding")
@@ -389,7 +421,7 @@ void	Header::parseHeaderFields()
 					host_exists = 1;
 				}
 				if (header_name == "expect")
-					expect_exists = 1; // in this case a response is expected before the (rest of) body is sent
+					handler.expect_exists = 1; // in this case a response is expected before the (rest of) body is sent
 				header_fields.insert(std::pair<std::string, std::string>(header_name, header_value));
 				header_name.clear();
 				header_value.clear();
@@ -414,7 +446,7 @@ void	Header::parseHeaderFields()
 		throw CustomException("Payload Too Large");  // correct error code when header is too large for buffer
 	}
 	header_complete = 1;
-	body_beginning = handler.buf_pos; // this is the last ch of the empty line at the end of the headers. Next ch is the first of the body
+	handler.body_beginning = handler.buf_pos; // this is the last ch of the empty line at the end of the headers. Next ch is the first of the body
 
 	// A sender MUST NOT send whitespace between the start-line and the first header field.
 	// A recipient that receives whitespace between the start-line and the first header field MUST either reject the message as invalid 
@@ -649,7 +681,7 @@ void	Header::parseRequestLine()
 				}
 			
 			case rl_done:
-				std::cout << "request line fully parsed\n";
+				// std::cout << "request line fully parsed\n";
 				rl_parsing_done = 1;
 				handler.buf_pos--; // Why does this needs to be done?
 				break;

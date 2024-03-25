@@ -75,14 +75,9 @@ void	RequestHandler::processRequest()
 	try
 	{
 		// check if headers have already been parsed
-		if (!header.header_complete)
+		if (!header.getHeaderStatus())
 		{
-			header.parseRequestLine();
-			header.parseHeaderFields(); // check if it still works if no header is sent
-			if (header.dot_in_path)
-				header.removeDots();
-			header.decode(); // decode URL/Query if necessary
-			header.checkFields();
+			header.parseHeader();
 			// How do the header fields in the request affect the response?
 		}
 		//for testing: print received headers
@@ -99,7 +94,7 @@ void	RequestHandler::processRequest()
 		std::cout << "identified query: " << header.getQuery() << '\n';
 		std::cout << "identified version: " << header.getHttpVersion() << '\n';
 
-		if (header.expect_exists) // this is relevant for POST only, should this be done in another place? (e.g. POST request class)
+		if (expect_exists) // this is relevant for POST only, should this be done in another place? (e.g. POST request class)
 		{
 			// check value of expect field?
 			// check content-length field before accepting?
