@@ -66,13 +66,20 @@ void	DarwinWorker::runEventLoop()
 			{
 				if (event_lst[i].filter == EVFILT_READ)
 				{
-					ConnectedClients[event_lst[i].ident]->processRequest();
+					if (ConnectedClients[event_lst[i].ident]->getRequestHandler() == NULL)
+						ConnectedClients[event_lst[i].ident]->initRequestHandler();
+					ConnectedClients[event_lst[i].ident]->getRequestHandler()->processRequest();
+					ConnectedClients[event_lst[i].ident]->setResponseStatus(ConnectedClients[event_lst[i].ident]->getRequestHandler()->response_ready);
+					// ConnectedClients[event_lst[i].ident]->processRequest();
 				}
-				else if (ConnectedClients[event_lst[i].ident]->response_ready && event_lst[i].filter == EVFILT_WRITE) // how to provide the reponse_ready info? // should this be an "If" OR "Else if"?
+				// else if (ConnectedClients[event_lst[i].ident]->response_ready && event_lst[i].filter == EVFILT_WRITE) // how to provide the reponse_ready info? // should this be an "If" OR "Else if"?
+				else if (ConnectedClients[event_lst[i].ident]->getResponseStatus() && event_lst[i].filter == EVFILT_WRITE) // how to provide the reponse_ready info? // should this be an "If" OR "Else if"?
 				{
-					ConnectedClients[event_lst[i].ident]->sendResponse();
+					// ConnectedClients[event_lst[i].ident]->sendResponse();
+					ConnectedClients[event_lst[i].ident]->getRequestHandler()->sendResponse();
 					// what about the connection header with value "keep-alive" and there is no error?
 						// --> probably need to reset all values for the requestHandler class otherwise the while loop exits (response_ready is still true)
+					delete ConnectedClients[event_lst[i].ident]->getRequestHandler();
 					delete ConnectedClients[event_lst[i].ident];
 					close(event_lst[i].ident); // close connection; how does it work with 100-continue response? 
 					ConnectedClients.erase(event_lst[i].ident);
@@ -88,10 +95,10 @@ void	DarwinWorker::addToConnectedClients(ListeningSocket& socket)
 	for (int i = 0; i < size; i++)
 	{
 		// construct handler with socket/configData as input (maybe reference?)
-		// ConnectionHandler * Handler = new ConncectionHandler(pending_fds[i], socket.server_config);
-		// ConnectedClients.insert(std::pair<int, ConnectionHandler*>(pending_fds[i], Handler));
-		RequestHandler* Handler = new RequestHandler(pending_fds[i], socket.server_config); // need to free that memory somewhere --> when disconnecting the client
-		ConnectedClients.insert(std::pair<int, RequestHandler*>(pending_fds[i], Handler));
+		ConnectionHandler* Handler = new ConnectionHandler(pending_fds[i], socket.server_config);
+		ConnectedClients.insert(std::pair<int, ConnectionHandler*>(pending_fds[i], Handler));
+		// RequestHandler* Handler = new RequestHandler(pending_fds[i], socket.server_config); // need to free that memory somewhere --> when disconnecting the client
+		// ConnectedClients.insert(std::pair<int, RequestHandler*>(pending_fds[i], Handler));
 	}
 }
 

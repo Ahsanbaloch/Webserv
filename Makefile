@@ -3,13 +3,12 @@ NAME = webserv
 CXX = c++
 
 CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -pedantic -fsanitize=address -g
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -pedantic
 
 SRCS_DIR = ./srcs/
 
 #SRCS := $(addprefix $(SRCS_DIR),DarwinWorker.cpp KQueue.cpp ListeningSocket.cpp ListeningSocketsBlock.cpp RequestHandler.cpp main.cpp EPoll.cpp LinuxWorker.cpp)
 
-SRCS := $(addprefix $(SRCS_DIR),ListeningSocket.cpp ListeningSocketsBlock.cpp RequestHandler.cpp Header.cpp ARequest.cpp GETRequest.cpp DELETERequest.cpp Response.cpp main.cpp config/config_pars_utils.cpp config/config_pars.cpp config/exception_parsing.cpp)
+SRCS := $(addprefix $(SRCS_DIR),ListeningSocket.cpp ListeningSocketsBlock.cpp RequestHandler.cpp Header.cpp ARequest.cpp GETRequest.cpp DELETERequest.cpp Response.cpp ConnectionHandler.cpp main.cpp config/config_pars_utils.cpp config/config_pars.cpp config/exception_parsing.cpp)
 
 ifeq ($(shell uname -s), Darwin)
     SRCS += $(addprefix $(SRCS_DIR),DarwinWorker.cpp KQueue.cpp)
