@@ -37,11 +37,12 @@ int	main(int argc, char **argv)
 				std::cout << "SERVER_ROOT: " << it2->server_root << std::endl;
 				std::cout << "SERVER_NDEX: " << it2->server_index << std::endl;
 				std::cout << "------------------" << std::endl;
-				for (std::vector<t_location_config>::iterator it3 = it2->locations.begin(); it3 != it2->locations.end(); it3++)
+			/* 	for (std::vector<t_location_config>::iterator it3 = it2->locations.begin(); it3 != it2->locations.end(); it3++)
 				{
 					std::cout << "location_root: " << it3->root << std::endl;
 					std::cout << "location_index: " << it3->index << std::endl;
-				}
+					std::cout << "redirect: " << it3->redirect << std::endl;
+				} */
 			}
 		}
 
