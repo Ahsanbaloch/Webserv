@@ -20,44 +20,53 @@ class RequestHandler
 {
 private:
 	std::vector<t_server_config>	server_config;
+	int								status;
+	int								selected_location;
+	int								selected_server;
+	int								connection_fd;
 
+	// flags
+	bool							response_ready;
+
+	// constructors
 	RequestHandler(const RequestHandler&);
 public:
-
-	std::vector<t_server_config>	getServerConfig() const;
-
+	// constructors & destructors
 	RequestHandler(int, std::vector<t_server_config>); // get ServerConfig as a reference? // might be able to remove int connection_fd as this is now part of the connection handler
 	RequestHandler(/* args */);
 	~RequestHandler();
 	RequestHandler& operator=(const RequestHandler&);
 
+	// getters
+	std::vector<t_server_config>	getServerConfig() const;
+	s_location_config				getLocationConfig() const;
+	int								getSelectedLocation() const; // only for testing purposes
+	int								getStatus() const;
+	bool							getResponseStatus() const;
+
+	// setters
+	void							setStatus(int);
+
+	
 	ARequest*			request;
 	Response*			response;
 	Header				header;
 	
-
-	int					selected_location; // should probably be in server_config struct
-	int					selected_server;
-	
-	int					connection_fd;
-	
+	// tbd
 	int					body_parsing_done;
 	int					chunk_length;
 	int					request_length;
-	int					status;
-	int					response_ready;
-	int					body_expected;
 	int					body_read;
-	int					body_length;
 	int					body_beginning;
-
-	int					expect_exists;
+	int					autoindex; // probably not needed and replaced by request to location config
+	int					body_length; // set inside header class
+	bool				body_expected; // set inside header class
+	bool				expect_exists; // set inside header class
 	
 	std::string			file_path;
 	std::string			file_type;
 	int					url_relocation;
 
-	int					autoindex;
 
 	std::stringstream	raw_buf;
 	std::stringstream	body;

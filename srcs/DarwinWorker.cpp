@@ -69,7 +69,7 @@ void	DarwinWorker::runEventLoop()
 					if (ConnectedClients[event_lst[i].ident]->getRequestHandler() == NULL)
 						ConnectedClients[event_lst[i].ident]->initRequestHandler();
 					ConnectedClients[event_lst[i].ident]->getRequestHandler()->processRequest();
-					ConnectedClients[event_lst[i].ident]->setResponseStatus(ConnectedClients[event_lst[i].ident]->getRequestHandler()->response_ready);
+					ConnectedClients[event_lst[i].ident]->setResponseStatus(ConnectedClients[event_lst[i].ident]->getRequestHandler()->getResponseStatus());
 					// ConnectedClients[event_lst[i].ident]->processRequest();
 				}
 				// else if (ConnectedClients[event_lst[i].ident]->response_ready && event_lst[i].filter == EVFILT_WRITE) // how to provide the reponse_ready info? // should this be an "If" OR "Else if"?

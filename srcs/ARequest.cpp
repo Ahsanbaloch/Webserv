@@ -33,10 +33,10 @@ ARequest& ARequest::operator=(const ARequest& src)
 
 int	ARequest::checkFileExistence()
 {	
-	if (handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].path == "/") // maybe also cases where location ends with /? Is this possible?
-		handler.header.redirected_path = handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].root + handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].path + handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].index;
+	if (handler.getLocationConfig().path == "/") // maybe also cases where location ends with /? Is this possible?
+		handler.header.redirected_path = handler.getLocationConfig().root + handler.getLocationConfig().path + handler.getLocationConfig().index;
 	else
-		handler.header.redirected_path = handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].root + handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].path + "/" + handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].index;
+		handler.header.redirected_path = handler.getLocationConfig().root + handler.getLocationConfig().path + "/" + handler.getLocationConfig().index;
 
 	std::cout << "index file path: " << handler.header.redirected_path << std::endl;
 	int result = access(handler.header.redirected_path.c_str(), F_OK); // call to access allowed?

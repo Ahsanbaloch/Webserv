@@ -51,6 +51,31 @@ std::vector<t_server_config>	RequestHandler::getServerConfig() const
 	return (server_config);
 }
 
+int	RequestHandler::getStatus() const
+{
+	return (status);
+}
+
+void	RequestHandler::setStatus(int status)
+{
+	this->status = status;
+}
+
+s_location_config	RequestHandler::getLocationConfig() const
+{
+	return (server_config[selected_server].locations[selected_location]);
+}
+
+int	RequestHandler::getSelectedLocation() const
+{
+	return (selected_location);
+}
+
+bool	RequestHandler::getResponseStatus() const
+{
+	return (response_ready);
+}
+
 
 void	RequestHandler::sendResponse()
 {
@@ -174,7 +199,7 @@ ARequest* RequestHandler::newRequest() // newResponse instead?
 		findLocationBlock();
 	
 	// Is this done in case of all methods or just GET?
-	if (!(server_config[selected_server].locations[selected_location].redirect.empty()))
+	if (!(getLocationConfig().redirect.empty()))
 	{
 		status = 307;
 		url_relocation = 1;
@@ -213,7 +238,7 @@ void	RequestHandler::findLocationBlock() // double check if this is entirely cor
 			max = matches;
 		}
 	}
-	std::cout << "Thats the one: " << server_config[selected_server].locations[selected_location].path << std::endl;
+	std::cout << "Thats the location block: " << getLocationConfig().path << std::endl;
 }
 
 std::vector<std::string>	RequestHandler::splitPath(std::string input, char delim)

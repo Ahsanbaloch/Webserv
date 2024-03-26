@@ -55,7 +55,7 @@ int	ConnectionHandler::getResponseStatus()
 	return (response_ready);
 }
 
-void	ConnectionHandler::setResponseStatus(int response_status)
+void	ConnectionHandler::setResponseStatus(bool response_status)
 {
 	response_ready = response_status;
 }

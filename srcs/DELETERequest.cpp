@@ -34,35 +34,35 @@ DELETERequest& DELETERequest::operator=(const DELETERequest& src)
 
 void	DELETERequest::deleteFile()
 {
-	std::string file = handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].root + handler.header.getPath();
+	std::string file = handler.getLocationConfig().root + handler.header.getPath();
 
 	std::cout << "fileeee: " << file << std::endl;
 
 	if (remove(file.c_str()) != 0)
 	{
-		handler.status = 404; // different error code?
+		handler.setStatus(404); // different error code?
 		throw CustomException("Not Found");
 	}
 	else
-		handler.status = 200;
+		handler.setStatus(200);
 	
 	// send 409 if the file is in use and thus cannot be deleted?
 }
 
 void	DELETERequest::deleteDir()
 {
-	std::string	dir = handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].root + handler.header.getPath();
+	std::string	dir = handler.getLocationConfig().root + handler.header.getPath();
 	
 	std::cout << "dirrrr: " << dir << std::endl;
 
 	if (handler.header.getPath() == "/" || rmdir(dir.c_str()) != 0)
 	{
 		// indicate that it is forbidden to delete directories if they are empty or are the root
-		handler.status = 403;
+		handler.setStatus(403);
 		throw CustomException("Forbidden");
 	}
 	else
-		handler.status = 200;
+		handler.setStatus(200);
 }
 
 std::string	DELETERequest::createStatusLine() // make Response method? --> set?
@@ -71,7 +71,7 @@ std::string	DELETERequest::createStatusLine() // make Response method? --> set?
 	std::ostringstream status_conversion;
 
 	status_line.append("HTTP/1.1 "); // alternative handler.head.version
-	status_conversion << handler.status;
+	status_conversion << handler.getStatus();
 	status_line.append(status_conversion.str());
 	status_line.append(" \r\n");  //A server MUST send the space that separates the status-code from the reason-phrase even when the reason-phrase is absent (i.e., the status-line would end with the space)
 	return (status_line);

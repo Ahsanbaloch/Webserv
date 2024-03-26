@@ -38,7 +38,7 @@ std::string	GETRequest::createStatusLine()
 	std::ostringstream status_conversion;
 
 	status_line.append("HTTP/1.1 "); // alternative handler.head.version
-	status_conversion << handler.status;
+	status_conversion << handler.getStatus();
 	status_line.append(status_conversion.str());
 	status_line.append(" \r\n");  //A server MUST send the space that separates the status-code from the reason-phrase even when the reason-phrase is absent (i.e., the status-line would end with the space)
 	return (status_line);
@@ -51,7 +51,7 @@ std::string	GETRequest::getBodyFromFile()
 	std::ifstream file(handler.file_path); // Open the file
 	if (!file.is_open()) 
 	{
-		handler.status = 404;
+		handler.setStatus(404);
 		throw CustomException("Not found");
 	}
 	std::stringstream buffer;
@@ -69,7 +69,7 @@ std::string GETRequest::getBodyFromDir() // probably create some html for it
 	DIR *directory;
 	struct dirent *entry;
 
-	directory = opendir((handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].root + handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].path).c_str());
+	directory = opendir((handler.getLocationConfig().root + handler.getLocationConfig().path).c_str());
 	if (directory != NULL)
 	{
 		entry = readdir(directory);
@@ -83,7 +83,7 @@ std::string GETRequest::getBodyFromDir() // probably create some html for it
 	}
 	else
 	{
-		handler.status = 404;
+		handler.setStatus(404);
 		throw CustomException("Not found");
 	}
 	return (body);
@@ -94,7 +94,7 @@ std::string GETRequest::createBody()
 {
 	std::string body;
 
-	if (handler.status >= 400) // check if error was identified (or is this handled somewhere else?)
+	if (handler.getStatus() >= 400) // check if error was identified (or is this handled somewhere else?)
 		; // From configData get specific info about which page should be displayed
 		// look up file and read content into response body
 	if (handler.autoindex == 1)
@@ -109,13 +109,13 @@ std::string	GETRequest::createHeaderFields(std::string body)
 	std::string	header;
 
 	if (handler.url_relocation)
-		header.append("Location: " + handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].redirect + "\r\n");
+		header.append("Location: " + handler.getLocationConfig().redirect + "\r\n");
 	else
 	{
 		std::string mime_type = identifyMIME(); // should not be called if we have a url redirection
 		if (mime_type.empty()) // only check when body should be sent?
 		{
-			handler.status = 415;
+			handler.setStatus(415);
 			throw CustomException("Unsupported Media Type");
 		}
 		else
@@ -159,11 +159,11 @@ void	GETRequest::checkRedirects()
 		}
 		else
 		{
-			if (handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].autoIndex)
+			if (handler.getLocationConfig().autoIndex)
 				handler.autoindex = 1;
 			else
 			{
-				handler.status = 404;
+				handler.setStatus(404);
 				throw CustomException("Not Found");
 			}
 		}
@@ -171,9 +171,9 @@ void	GETRequest::checkRedirects()
 	else
 	{
 		// file_type is already set by checkFileType
-		handler.file_path = handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].root + "/" + handler.header.getPath();
+		handler.file_path = handler.getLocationConfig().root + "/" + handler.header.getPath();
 	}
-	std::cout << "location selected: " << handler.selected_location << std::endl;
+	std::cout << "location selected: " << handler.getSelectedLocation() << std::endl;
 }
 
 std::string	GETRequest::identifyMIME()
@@ -205,7 +205,7 @@ Response	*GETRequest::createResponse()
 		// throw exception
 
 	response->status_line = createStatusLine();
-	if ((handler.status >= 100 && handler.status <= 103) || handler.status == 204 || handler.status == 304 || handler.status == 307)
+	if ((handler.getStatus() >= 100 && handler.getStatus() <= 103) || handler.getStatus() == 204 || handler.getStatus() == 304 || handler.getStatus() == 307)
 		response->body = ""; // or just initialize it like that // here no body should be created
 	else
 		response->body = createBody();
