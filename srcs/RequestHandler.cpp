@@ -1,14 +1,8 @@
 
 #include "RequestHandler.h"
 
-// next:
-// - create Request class (abstract)
-// - create dedicated classes starting with GET
-// - what does the response flow look like? --> where do I need to transfer what?
-// --> create E2E-Flow for GET request without body (afterwards do same for POST but with body)
-
-
 RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_config)
+	: header(*this)
 {
 	this->server_config = server_config;
 	connection_fd = fd;
@@ -19,13 +13,19 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	response_ready = 0;
 	body_expected = 0;
 	body_read = 0;
+	selected_location = 0;
+	selected_server = 0;
+	url_relocation = 0;
+	autoindex = 0;
 	request = NULL;
 	response = NULL;
 	raw_buf.setf(std::ios::app | std::ios::binary);
 	memset(&buf, 0, sizeof(buf));
+	// header = Header(*this);
 }
 
 RequestHandler::RequestHandler(/* args */)
+	: header(*this)
 {
 }
 
@@ -33,10 +33,15 @@ RequestHandler::~RequestHandler()
 {
 }
 
+std::vector<t_server_config>	RequestHandler::getServerConfig() const
+{
+	return (server_config);
+}
+
 
 void	RequestHandler::sendResponse()
 {
-	std::string resp = response->status_line + response->header_fields + response->body;	
+	std::string resp = response->status_line + response->header_fields + response->body;
 	send(connection_fd, resp.c_str(), resp.length(), 0); 
 	// check for errors when calling send
 }
@@ -44,14 +49,15 @@ void	RequestHandler::sendResponse()
 // read request handler
 void	RequestHandler::processRequest()
 {
-	for (std::vector<t_server_config>::iterator it = server_config.begin(); it != server_config.end(); it++)
-	{
-		std::cout << "port and server name: " << it->port << " " << it->serverName << std::endl;
-		for (std::vector<t_location_config>::iterator it2 = it->locations.begin(); it2 != it->locations.end(); it2++)
-		{
-			std::cout << "location: " << it2->path << std::endl;
-		}
-	}
+	// for testing if correct configuration info reaches RequestHandler
+	// for (std::vector<t_server_config>::iterator it = server_config.begin(); it != server_config.end(); it++)
+	// {
+	// 	std::cout << "port and server name: " << it->port << " " << it->serverName << std::endl;
+	// 	for (std::vector<t_location_config>::iterator it2 = it->locations.begin(); it2 != it->locations.end(); it2++)
+	// 	{
+	// 		std::cout << "location: " << it2->path << std::endl;
+	// 	}
+	// }
 
 	//how to handle cases in which the header is not recv in one go? (do those cases exist?)
 	bytes_read = recv(connection_fd, buf, sizeof(buf), 0);
@@ -59,81 +65,74 @@ void	RequestHandler::processRequest()
 		throw CustomException("Failed when processing read request\n");
 	if (bytes_read == 0)
 		return ; // also throw exception. Need to check the exception exactly // also close connection?
+	// close fd in case bytes_read == 0 ???
 	
 	buf[bytes_read] = '\0'; // correct? BUFFER_SIZE + 1?
 	request_length += bytes_read;
 
-	// check if headers have already been parsed
-	if (!header.header_complete)
-	{
-		try
-		{
-			// what about folding lines?
-			header.parseRequestLine(*this);
-			header.parseHeaderFields(*this); // check if it still works if no header is sent
-			
-			// check which conifg struct is the relevant one based on server name (or later in ARequest::newRequest?)
-				// --> see DigitalOcean for approach
-			// check if requested resource exists???
-			// decode URL/Query if necessary
-			// construct full URI?
-			// check somewhere if TE contains something else than "chunked" --> in this case respond with 501
-		}
-		catch(const std::exception& e)
-		{
-			// terminate connection and remove file descriptor from the event queue
-			std::cerr << e.what() << '\n';
-		}
-	}
-	// if immediate response is expected to receive body
-		// make reponse
-	// if body is expected
-	if (body_expected)
-	{
-		//here we need to account for max-body_size specified in config file
-		// if chunked
-			//store body chunks in file (already store in the appropriate object)
-		// if not chunked
-			// store body in stringstream or vector (already store in the appropriate object)
-		// if end of body has not been reached
-			// return to continue receiving
-	}
-	// if no body is expected OR end of body has been reached
-	if (!body_expected || body_read)
-	{
-		// create Request object? --> What is the object actually going to do?
-		request = ARequest::newRequest(*this);
-		// process request (based on the object type that has been created --> through base pointer?)
-			// create Response object inside the function and return it here --> should then be stored in RequestHandler so that sendResponse can send it  --> What is teh purpose of this object?
-		
-		for (std::vector<t_server_config>::iterator it = server_config.begin(); it != server_config.end(); it++)
-		{
-			std::cout << "port and server name after check: " << it->port << " " << it->serverName << std::endl;
-			for (std::vector<t_location_config>::iterator it2 = it->locations.begin(); it2 != it->locations.end(); it2++)
-			{
-				std::cout << "location: " << it2->path << std::endl;
-			}
-		}
-		
-		response = request->createResponse(*this);
-		// set Response to be ready
-	}
-	
+	printf("read %i bytes\n", bytes_read);
 
+	try
+	{
+		// check if headers have already been parsed
+		if (!header.getHeaderStatus())
+		{
+			header.parseHeader();
+			// How do the header fields in the request affect the response?
+		}
+		//for testing: print received headers
+		printf("\nheaders\n");
+		std::map<std::string, std::string> headers = header.getHeaderFields();
+		for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
+		{
+			std::cout << "key: " << it->first << " ";
+			std::cout << "value: " << it->second << std::endl;
+		}
+
+		std::cout << "identified method: " << header.getMethod() << '\n';
+		std::cout << "identified path: " << header.getPath() << '\n';
+		std::cout << "identified query: " << header.getQuery() << '\n';
+		std::cout << "identified version: " << header.getHttpVersion() << '\n';
+
+		if (expect_exists) // this is relevant for POST only, should this be done in another place? (e.g. POST request class)
+		{
+			// check value of expect field?
+			// check content-length field before accepting?
+			// create response signalling the client that the body can be send
+			// make reponse
+		}
+		// if body is expected
+		if (body_expected)
+		{
+			//here we need to account for max-body_size specified in config file
+			// if chunked
+				//store body chunks in file (already store in the appropriate object)
+			// if not chunked
+				// store body in stringstream or vector (already store in the appropriate object)
+			// if end of body has not been reached
+				// return to continue receiving
+		}
+		// if no body is expected OR end of body has been reached
+		if (!body_expected || body_read)
+		{
+			// try/catch block?
+			request = ARequest::newRequest(*this);
+			response = request->createResponse(*this);
+			// set Response to be ready
+		}
+		response_ready = 1;
+
+	}
+	catch(const std::exception& e)
+	{
+		response = new Response; // needs to be freed somewhere
+		response->errorResponse(*this);
+		response_ready = 1;
+		std::cerr << e.what() << '\n';
+	}
 
 	// The presence of a message body in a request is signaled by a Content-Length or Transfer-Encoding header field. Request message framing is independent of method semantics.
-
-	// interpret parsed input to decide what to do next
-		// construct targetURI? --> info from config file?
-		// --> split in GET / POST / DELETE ??
-		// GET requests can have a body but that has no semantic meaning --> so no need to check --> still need to recv the whole body before responding?
-		// --> also check if there is an expected immediate response, e.g. 100-continue
-		// if there are any encoded chars, decode them here? --> relevant for url/query
-		// construct the full URI here?
-	
-		// check if header includes Expect: 100-continue
-		// determine position where the header ends
-	
+	// GET requests can have a body but that has no semantic meaning --> so no need to check --> still need to recv the whole body before responding?
 	
 	// if we expect a body (only if POST?) // parse the body based on whether the request is a GET, POST or DELETE request? --> create specific objects for those requests?
 		// does the transmission format play a role here?
@@ -142,46 +141,12 @@ void	RequestHandler::processRequest()
 		// receive chunks?
 		// for each iteration: each call of this event, you will add an oneshot event for the TIMEOUT event (EVFILT_TIMER), --> see slack bookmark
 
-
 	// notes
 		// video: 2h mark --> set stringstream flags
 		// use uint8_t or unsigned char for storing the incoming data
 		// if there are any endoded characters in the header, they need to be decoded
 			// Some characters are utilized by URLs for special use in defining their syntax. When these characters are not used in their special role inside a URL, they must be encoded.
 			// characters such as {} are getting encoded by the client(?) and being transmitted e.g. with %7B%7D
-
-	
-	printf("\nheaders\n");
-	for (std::map<std::string, std::string>::iterator it = header.header_fields.begin(); it != header.header_fields.end(); it++)
-	{
-		std::cout << "key: " << it->first << " ";
-		std::cout << "value: " << it->second << std::endl;
-	}
-
-	
-	// if (transfer_encoding_exists && !content_length_exists) // creates issue with postman
-	// 	parseEncodedBody();
-	// if (transfer_encoding_exists)
-	// 	parseEncodedBody();
-	// else if (content_length_exists && !transfer_encoding_exists)
-	// 	parseContentBody();
-	// else
-	// {
-	// 	error = 400;
-	// 	throw CustomException("Bad request");
-	// 	// A server MAY reject a request that contains a message body but not a Content-Length by responding with 411 (Length Required).
-	// }
-	
-	std::cout << "identified method: " << header.method << '\n';
-	std::cout << "identified path: " << header.path << '\n';
-	std::cout << "identified query: " << header.query << '\n';
-	std::cout << "identified version: " << header.version << '\n';
-
-
-
-	printf("read %i bytes\n", bytes_read);
-	response_ready = 1;
-	// close fd in case bytes_read == 0 ???
 }
 
 

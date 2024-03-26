@@ -3,61 +3,83 @@
 
 # include <string>
 # include <map>
+# include <vector>
+# include <sstream>
 # include <iostream>
+# include "defines.h"
 # include "CustomException.h"
-// # include "RequestHandler.h"
-
-// should be defined somewhere else in extra class
-#define LF 10
-#define CR 13
-#define SP 32
 
 class RequestHandler;
+
+// rename class to RequestHeader
 
 class Header
 {
 private:
-	/* data */
+	RequestHandler&						handler;
+	
+	// extruded info from request
+	std::string							method;
+	std::string							path;
+	std::string							query;
+	std::string							version;
+	std::map<std::string, std::string>	header_fields;
+
+	// flags
+	bool								header_complete;
+	bool								rl_parsing_done;
+	bool								headers_parsing_done;
+	bool								transfer_encoding_exists;
+	bool								content_length_exists;
+	bool								host_exists;
+	bool								path_encoded;
+	bool								query_encoded;
+	bool								dot_in_path;
+	
+	// main methods
+	void								parseRequestLine();
+	void								parseHeaderFields();
+	void								removeDots();
+	void								checkFields();
+
+	// helper methods
+	void								handleMultipleSlashes();
+	void								checkMethod();
+	void								decode(std::string&);
+	void								checkBodyLength(std::string);
+	void								checkHttpVersion();
+	std::vector<std::string>			splitPath(std::string, char); // maybe move somewhere else as similar as in ARquest class
+
+	// constructors
+	Header();
+	Header(const Header&);
+	Header& operator=(const Header&);
+
 public:
-	Header(/* args */);
+	// constructors & destructors
+	explicit Header(RequestHandler&);
 	~Header();
+	
+	// getters
+	std::string							getMethod() const;
+	std::string 						getPath() const;
+	std::string							getQuery() const;
+	std::string							getHttpVersion() const;
+	std::map<std::string, std::string>	getHeaderFields() const;
+	bool								getHeaderStatus() const;
 
-	std::string							method; // probably needs to be reset after being used
-	std::string							path; // probably needs to be reset after being used
-	std::string							query; // probably needs to be reset after being used
-	std::string							version; // probably needs to be reset after being used
-	std::map<std::string, std::string>	header_fields; // rename to header_fields // probably needs to be reset after being used
+	// TBD: move to request class???
+	std::string							redirected_path;
 
-	int									rl_parsing_done; // probably needs to be reset after being used
-	int									headers_parsing_done; // probably needs to be reset after being used
-	int									transfer_encoding_exists;
-	int									content_length_exists;
-	int									host_exists;
-	int									expect_exists;
-	int									body_length; // probably move some like these into a dedicated class
+	// method
+	void								parseHeader();
 
-	int									header_complete;
-	int									body_beginning;
-
-	int									path_encoded; // probably needs to be reset after being used
-	int									error;
-
-	// void	parseRequestLine(unsigned char* buf, int* buf_pos, int bytes_read);
-	void	parseRequestLine(RequestHandler&); // could the reference also be provided when constructing the object?
-	void	parseHeaderFields(RequestHandler&);
-	// void	parseHeaderFields(unsigned char* buf, int* buf_pos, int bytes_read);
-	// void	checkMethod(unsigned char* buf, int* buf_pos);
-	void	checkMethod(RequestHandler&);
-	void	checkHttpVersion(RequestHandler&);
-	// void	checkHttpVersion(unsigned char* buf, int* buf_pos);
-	void	checkBodyLength(std::string);
-
+	// parsing states
 	enum {
 		rl_start = 0,
 		rl_method,
 		rl_first_divider,
 		rl_path,
-		rl_percent_encoded,
 		rl_query,
 		rl_http,
 		rl_cr,

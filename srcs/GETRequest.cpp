@@ -3,7 +3,6 @@
 
 GETRequest::GETRequest(RequestHandler&)
 {
-	is_directory = 0;
 }
 
 GETRequest::GETRequest(/* args */)
@@ -17,41 +16,25 @@ GETRequest::~GETRequest()
 std::string	GETRequest::createStatusLine(RequestHandler& handler)
 {
 	std::string status_line;
-	std::ostringstream err_conversion;
+	std::ostringstream status_conversion;
 
 	status_line.append("HTTP/1.1 "); // alternative handler.head.version
-	err_conversion << handler.status;
-	status_line.append(err_conversion.str());
+	status_conversion << handler.status;
+	status_line.append(status_conversion.str());
 	status_line.append(" \r\n");  //A server MUST send the space that separates the status-code from the reason-phrase even when the reason-phrase is absent (i.e., the status-line would end with the space)
 	return (status_line);
 }
 
 
-void	GETRequest::checkPathType(RequestHandler& handler)
+std::string	GETRequest::getBodyFromFile(RequestHandler& handler)
 {
-	char last_char = handler.header.path[handler.header.path.size() - 1];
-
-	if (last_char == '/')
-		is_directory = 1;
-	
-	std::cout << "is dir: " << is_directory << std::endl;
-}
-
-std::string	GETRequest::constructFilePath(RequestHandler& handler)
-{
-	std::string root = "./www/"; // how does root string end, always with '/' /// from where do I get root when it is location specific?
-	std::string file_path;
 	std::string body;
 
-	file_path.append(root);
-	file_path.append(handler.header.path);
-
-	std::ifstream file(file_path); // Open the HTML file
+	std::ifstream file(handler.file_path); // Open the file
 	if (!file.is_open()) 
 	{
-		// add proper error message
-		perror("Failed: ");
-		std::cerr << "Error opening file!" << std::endl;
+		handler.status = 404;
+		throw CustomException("Not found");
 	}
 	std::stringstream buffer;
 	buffer << file.rdbuf();
@@ -62,9 +45,30 @@ std::string	GETRequest::constructFilePath(RequestHandler& handler)
 	return (body);
 }
 
-void	GETRequest::findDirectory()
+std::string GETRequest::getBodyFromDir(RequestHandler& handler) // probably create some html for it
 {
-	
+	std::string body;
+	DIR *directory;
+	struct dirent *entry;
+
+	directory = opendir((handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].root + handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].path).c_str());
+	if (directory != NULL)
+	{
+		entry = readdir(directory);
+		while (entry)
+		{
+			body.append(entry->d_name);
+			body.append("\n");
+			entry = readdir(directory);
+		}
+		closedir(directory);
+	}
+	else
+	{
+		handler.status = 404;
+		throw CustomException("Not found");
+	}
+	return (body);
 }
 
 
@@ -75,103 +79,123 @@ std::string GETRequest::createBody(RequestHandler& handler)
 	if (handler.status >= 400) // check if error was identified (or is this handled somewhere else?)
 		; // From configData get specific info about which page should be displayed
 		// look up file and read content into response body
+	if (handler.autoindex == 1)
+		body = getBodyFromDir(handler);
 	else
-	{
-		checkPathType(handler);
-		if (is_directory)
-			findDirectory();
-		else
-			body = constructFilePath(handler);
-	}
+		body = getBodyFromFile(handler);
 	return (body);
 }
 
 std::string	GETRequest::createHeaderFields(RequestHandler& handler, std::string body)
 {
-	(void)handler;
 	std::string	header;
-	std::ostringstream length_conversion;
-	length_conversion << body.size();
 
-	header.append("Content-Type: text/html\r\n"); // how to determine correct MIME type?
-	header.append("Content-Length: ");
-	header.append(length_conversion.str());
-	header.append("\r\n\r\n");
+	if (handler.url_relocation)
+		header.append("Location: " + handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].redirect + "\r\n");
+	else
+	{
+		std::string mime_type = identifyMIME(handler); // should not be called if we have a url redirection
+		if (mime_type.empty()) // only check when body should be sent?
+		{
+			handler.status = 415;
+			throw CustomException("Unsupported Media Type");
+		}
+		else
+		{
+			std::ostringstream length_conversion;
+			length_conversion << body.size();
+			header.append("Content-Type: " + mime_type + "\r\n");
+			header.append("Content-Length: "); // alternatively TE: chunked?
+			header.append(length_conversion.str() + "\r\n");
+			// header.append("Location: url"); // redirect client to a different url or new path 
+			// what other headers to include?
+			// send Repsonses in Chunks?
+			// header.append("Transfer-Encoding: chunked");
+			// header.append("Cache-Control: no-cache");
+			// header.append("Set-Cookie: preference=darkmode; Domain=example.com");
+			// header.append("Server: nginx/1.21.0");
+			// header.append("Expires: Sat, 08 May 2023 12:00:00 GMT"); // If a client requests the same resource before the expiration date has passed, the server can return a cached copy of the resource.
+			// header.append("Last-Modified: Tue, 04 May 2023 16:00:00 GMT"); // This header specifies the date and time when the content being sent in the response was last modified. This can be used by clients to determine if the resource has changed since it was last requested.
+			// header.append("ETag: "abc123""); //This header provides a unique identifier for the content being sent in the response. This can be used by clients to determine if the resource has changed since it was last requested, without having to download the entire resource again.
+			// header.append("Keep-Alive: timeout=5, max=100"); // used to enable persistent connections between the client and the server, allowing multiple requests and responses to be sent over a single TCP connection
+			// Access-Control-Allow-Origin; X-Frame-Options; X-XSS-Protection; Referrer-Policy; X-Forwarded-For; X-Powered-By; 
+			header.append("\r\n");
+		}
+	}
 	return (header);
+}
+
+void	GETRequest::checkRedirects(RequestHandler& handler)
+{
+	// if the request is not for a file (otherwise the location has already been found)
+	if (!checkFileType(handler))
+	{
+		// check if file constructed from root, location path and index exists
+		if (checkFileExistence(handler) == 0)
+		{
+			// if file does exist, search again for correct location
+			findLocationBlock(handler); //should the root be taken into account when rechecking the location Block?
+			handler.file_path = handler.header.redirected_path;
+			handler.file_type = handler.file_path.substr(handler.file_path.find('.') + 1); // create a function for that in case it is not a file type
+		}
+		else
+		{
+			if (handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].autoIndex)
+				handler.autoindex = 1;
+			else
+			{
+				handler.status = 404;
+				throw CustomException("Not Found");
+			}
+		}
+	}
+	else
+	{
+		// file_type is already set by checkFileType
+		handler.file_path = handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].root + "/" + handler.header.getPath();
+	}
+	std::cout << "location selected: " << handler.selected_location << std::endl;
 }
 
 Response	*GETRequest::createResponse(RequestHandler& handler)
 {
 	Response *response = new Response; // needs to be delete somewhere
 
+	// check for direct redirects and internal redirects
+	if (!handler.url_relocation)
+		checkRedirects(handler);
+
+	// check allowed methods for the selected location
+	// if (!handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].getAllowed)
+		// throw exception
+
 	response->status_line = createStatusLine(handler);
-	if ((handler.status >= 100 && handler.status <= 103) || handler.status == 204 || handler.status == 304)
+	if ((handler.status >= 100 && handler.status <= 103) || handler.status == 204 || handler.status == 304 || handler.status == 307)
 		response->body = ""; // or just initialize it like that // here no body should be created
 	else
 		response->body = createBody(handler);
 	
 	response->header_fields = createHeaderFields(handler, response->body);
 
-	// CREATE BODY if required --> seperate function 
-	// check if path is a file or a directory (identified by last char in path string)
-	// if it is a file
-		// find requested file (start looking in X dir?)
-	// if it is a dir
-		// find directory that should be looked in
-		// check if this directory is in the server config
-		// if directory is in serverconfig
-			// go to directory
-			// search for index file specified in config file
-				// indexfile found
-					// read index file into response body
-				// indexfile not found
-					// check if auto-index is on
-					// if on
-						// display directory listing
-					// if off
-						// provide error reponse
-		// if directory is not in serverconfig
-			// do something
-
-	
-	// CREATE HEADERS
-		// if body is sent, calculate size of body (based on data type) and create Content-Length field
-			// (should only be sent if TE is not set)
-		// How to decide whether to send response in chunks or in one go --> probably based on size of the body
-		// Provide content-type field MIME type --> depends on the format of the content being sent, e.g. an html file (Content-Type: text/html)
-		// user Location header field for redirection?
-		// (set cookie header for cookies)
-		// server header --> should this actually be set?
-		// additional header fields: expires, last-modified, Access Control Origin, Keep Alive etc.
-
-	// Close the file when done
-	
-	// check if there has been any error detected
-
-	// fill the elements the Response is made of
-	// --> What should be the data types? (send takes a const void buf[.len] as argument)
-	// --> but can be string.c_str(); so that the response is actually a string
-	// a) Status Line = HTTP/1.1 SP <Status Code> SP (<Status Message/reason phrase>) CRLF
-		// not necessarily have to send the Status Message as this gets omitted anyway by the client
-		// however, the space after the status code has to be sent
-	// b) Header fields (no whitespace between field name and colon; one SP after colon) CRLF
-		// if body is sent; include content-length or TE
-		// how to determine what needs to be sent?
-	// c) empty line a.k.a CRLF
-	// d) body (optional)
-
-
-	// A sender MUST NOT send whitespace between the start-line and the first header field.
-
 	// The presence of a message body in a response depends on both the request method to which it is responding and the response status code. 
 	// e.g. POST 200 is different from GET 200
 
 	// A server MUST NOT send a Transfer-Encoding header field in any response with a status code of 1xx (Informational) or 204 (No Content)
 	// any response with a 1xx (Informational), 204 (No Content), or 304 (Not Modified) status code is always terminated by the first empty line after the header fields --> no body
-
-	// check type --> file vs dir
-	// check index
-	// check auto-index
 	return (response);
 }
 
+
+std::string	GETRequest::identifyMIME(RequestHandler& handler)
+{
+	// also check against accept header? --> return 406 if the requirement cannot be satisfied
+	// how to best identifyMIME?
+	if (handler.autoindex) // probably also rather going to be html
+		return ("text/plain");
+	else if (handler.file_type == "html")
+		return ("text/html");
+	else if (handler.file_type == "png" || handler.file_type == "ico")
+		return ("image/png");
+	else
+		return (""); // what should be the default return?
+}

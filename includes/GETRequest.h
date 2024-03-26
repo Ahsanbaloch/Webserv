@@ -1,6 +1,7 @@
 #ifndef GETREQUEST_H
 # define GETREQUEST_H
 
+#include <dirent.h> //allowed?
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -18,16 +19,16 @@ public:
 	explicit GETRequest(RequestHandler&);
 	~GETRequest();
 
-	int			is_directory;
-
 	Response	*createResponse(RequestHandler&);
 	std::string	createStatusLine(RequestHandler&);
 	std::string	createBody(RequestHandler&);
 	std::string createHeaderFields(RequestHandler&, std::string);
 	void		checkPathType(RequestHandler&);
+	std::string	identifyMIME(RequestHandler&);
+	void		checkRedirects(RequestHandler&);
 
-	std::string	constructFilePath(RequestHandler&);
-	void		findDirectory();
+	std::string	getBodyFromFile(RequestHandler&);
+	std::string	getBodyFromDir(RequestHandler&);
 };
 
 

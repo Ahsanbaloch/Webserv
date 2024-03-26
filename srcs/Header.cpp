@@ -2,31 +2,227 @@
 #include "Header.h"
 #include "RequestHandler.h"
 
-Header::Header(/* args */)
+/////////////// CONSTRUCTORS & DESTRUCTORS //////////////////
+
+Header::Header()
+	: handler(*new RequestHandler()) // is there a better way to initialize the header reference?
 {
+	// is there a better way to initialize the variables?
+	header_complete = 0;
 	rl_parsing_done = 0;
 	headers_parsing_done = 0;
 	transfer_encoding_exists = 0;
 	content_length_exists = 0;
 	host_exists = 0;
-	expect_exists = 0;
 	path_encoded = 0;
-	error = 0;
-	body_length = 0;
+	query_encoded = 0;
+	dot_in_path = 0;
+}
 
+Header::Header(RequestHandler& src)
+	: handler(src)
+{
+	// is there a better way to initialize the variables?
 	header_complete = 0;
-	body_beginning = 0;
+	rl_parsing_done = 0;
+	headers_parsing_done = 0;
+	transfer_encoding_exists = 0;
+	content_length_exists = 0;
+	host_exists = 0;
+	path_encoded = 0;
+	query_encoded = 0;
+	dot_in_path = 0;
+}
 
-	method = ""; // does this reset the string?
-	path = ""; // does this reset the string?
-	query = ""; // does this reset the string?
-	version = ""; // does this reset the string?
+Header::Header(const Header& src)
+	: handler(src.handler)
+{
+	// is there a better way to initialize the variables?
+	method = src.method;
+	path = src.path;
+	query = src.query;
+	version = src.version;
+	header_fields = src.header_fields;
+	header_complete = src.header_complete;
+	rl_parsing_done = src.rl_parsing_done;
+	headers_parsing_done = src.headers_parsing_done;
+	transfer_encoding_exists = src.transfer_encoding_exists;
+	content_length_exists = src.content_length_exists;
+	host_exists = src.host_exists;
+	path_encoded = src.path_encoded;
+	query_encoded = src.query_encoded;
+	dot_in_path = src.dot_in_path;
+}
+
+Header& Header::operator=(const Header& src)
+{
+	if (this != &src)
+	{
+		method = src.method;
+		path = src.path;
+		query = src.query;
+		version = src.version;
+		header_fields = src.header_fields;
+		header_complete = src.header_complete;
+		rl_parsing_done = src.rl_parsing_done;
+		headers_parsing_done = src.headers_parsing_done;
+		transfer_encoding_exists = src.transfer_encoding_exists;
+		content_length_exists = src.content_length_exists;
+		host_exists = src.host_exists;
+		path_encoded = src.path_encoded;
+		query_encoded = src.query_encoded;
+		dot_in_path = src.dot_in_path;
+	}
+	return (*this);
 }
 
 Header::~Header()
 {
 }
 
+/////////////// GETTERS //////////////////
+
+std::string	Header::getMethod() const
+{
+	return (method);
+}
+
+std::string Header::getHttpVersion() const
+{
+	return (version);
+}
+
+std::string Header::getQuery() const
+{
+	return (query);
+}
+
+std::string Header::getPath() const
+{
+	return (path);
+}
+
+bool	Header::getHeaderStatus() const
+{
+	return (header_complete);
+}
+
+std::map<std::string, std::string>	Header::getHeaderFields() const
+{
+	return (header_fields);
+}
+
+
+/////////////// MAIN METHODS //////////////////
+
+void	Header::parseHeader()
+{
+	parseRequestLine();
+	parseHeaderFields();
+	if (dot_in_path)
+		removeDots();
+	// Decoding to do?: A common defense against response splitting is to filter requests for data that looks like encoded CR and LF (e.g., "%0D" and "%0A") --> What to do then?
+	// std::cout << "path before decoding: " << path << std::endl;
+	// std::cout << "query: " << query << std::endl;
+	if (path_encoded)
+		decode(path); 
+	if (query_encoded)
+		decode(query);
+	// std::cout << "path after decoding: " << path << std::endl;
+	// std::cout << "query after decoding: " << query << std::endl;
+	checkFields();
+	std::cout << "Header parsing complete\n";
+}
+
+void	Header::checkFields()
+{
+	// others check such as empty host field value, TE != chunked etc. is done in parsing
+	if (header_fields.find("host") == header_fields.end()) // is is even connecting without host field?
+	{
+		handler.status = 410;
+		throw CustomException("Bad request");
+	}
+	if (!transfer_encoding_exists && !content_length_exists && method == "POST") // if both exist at the same time is check when parsing
+	{
+		handler.status = 411;
+		throw CustomException("Length Required");
+	}
+}
+
+void	Header::decode(std::string& sequence)
+{
+	for (std::string::iterator it = sequence.begin(); it != sequence.end(); it++)  // allowed values #01 - #FF (although ASCII only goes till #7F/7E)
+	{
+		if (*it == '%')
+		{
+			sequence.erase(it);
+			unsigned int decoded_char;
+			std::stringstream ss;
+			if ((*it >= '0' && *it <= '9') || (*it >= 'a' && *it <= 'z') || (*it >= 'A' && *it <= 'Z'))
+			{
+				ss << std::hex << *it;
+				sequence.erase(it);
+			}
+			else
+			{
+				handler.status = 400;
+				throw CustomException("decoding error");
+			}
+			if ((*it >= '0' && *it <= '9') || (*it >= 'a' && *it <= 'z') || (*it >= 'A' && *it <= 'Z'))
+			{
+				ss << std::hex << *it;
+				ss >> decoded_char;
+				*it = decoded_char;
+			}
+			else
+			{
+				handler.status = 400;
+				throw CustomException("decoding error");
+			}
+		}
+		if (*it == '+')
+			*it = ' ';
+	}
+}
+
+
+std::vector<std::string>	Header::splitPath(std::string input, char delim)
+{
+	std::istringstream			iss(input);
+	std::string					item;
+	std::vector<std::string>	result;
+	
+	while (std::getline(iss, item, delim))
+		result.push_back("/" + item);
+	return (result);
+}
+
+void	Header::removeDots()
+{
+	std::vector<std::string> updated_path;
+	std::vector<std::string> parts = splitPath(path, '/');
+
+	if (parts.size() > 1)
+		parts.erase(parts.begin());
+
+	for (std::vector<std::string>::iterator it = parts.begin(); it != parts.end(); it++)
+	{
+		std::cout << "part: " << *it << std::endl;
+		if (*it == "/.")
+			continue;
+		else if (*it == "/.." && updated_path.size() > 0)
+			updated_path.pop_back();
+		else if (*it != "/..")
+		{
+			updated_path.push_back(*it);
+		}
+	}
+	path.clear();
+	for (std::vector<std::string>::iterator it = updated_path.begin(); it != updated_path.end(); it++)
+		path.append(*it);
+	if (path.empty())
+		path.append("/");
+}
 
 
 void	Header::checkBodyLength(std::string value)
@@ -46,27 +242,27 @@ void	Header::checkBodyLength(std::string value)
 					value.erase(*it);
 				else
 				{
-					error = 400;
+					handler.status = 400;
 					throw CustomException("Bad request"); // other error code?
 				}
 			}
 		}
 		else if (!isdigit(*it))
 		{
-			error = 400;
+			handler.status = 400;
 			throw CustomException("Bad request"); // other error code?
 		}
 	}
-	body_length = std::atoi(value.c_str());
+	handler.body_length = std::atoi(value.c_str());
 }
 
-void	Header::parseHeaderFields(RequestHandler& handler)
+void	Header::parseHeaderFields()
 {
 	unsigned char	ch;
 	std::string		header_name = "";
 	std::string		header_value = "";
 
-	headers_state = he_start;
+	headers_state = he_start; // move to constructor?
 
 	while (!headers_parsing_done && (handler.buf_pos)++ < handler.bytes_read)
 	{
@@ -104,7 +300,7 @@ void	Header::parseHeaderFields(RequestHandler& handler)
 					headers_state = he_done;
 				else
 				{
-					error = 400;
+					handler.status = 400;
 					throw CustomException("Bad request");
 				}
 				break;
@@ -133,11 +329,17 @@ void	Header::parseHeaderFields(RequestHandler& handler)
 					headers_state = he_cr;
 				else if (ch == LF)
 					headers_state = he_done;
+				// else if (ch == '%')
+				// {
+				// 	field_encoded = 1;
+				// 	fields_encoded.push_back(header_name);
+				// 	header_value.append(1, ch);
+				// }
 				else if (ch > 32 && ch < 127) // accepted: a-z, A-Z, and 0-9 _ :;.,\/"'?!(){}[]@<>=-+*#$&`|~^%
 					header_value.append(1, ch);
 				else
 				{
-					error = 400;
+					handler.status = 400;
 					throw CustomException("Bad request");
 				}
 				break;
@@ -168,47 +370,58 @@ void	Header::parseHeaderFields(RequestHandler& handler)
 					rl_state = rl_done;
 				else 
 				{
-					error = 400;
+					handler.status = 400;
 					throw CustomException("Bad request");
 				}
 			
 			case he_done:
-				std::cout << "header line fully parsed\n";
+				// std::cout << "header line fully parsed\n";
 				// check if there is a body in the message
 				if (header_name == "content-length")
 				{
 					if (content_length_exists || transfer_encoding_exists) // for security: when content_length is specified, TE shouldn't be
 					{
 						// to reduce attack vectors for request smuggling, we don't allow multiple content_length headers
-						error = 400; // correct error value
+						handler.status = 400; // correct error value
 						throw CustomException("Bad request");
 					}
 					content_length_exists = 1;
-					handler.body_expected = 1;
 					checkBodyLength(header_value);
+					if (handler.body_length > 0)
+						handler.body_expected = 1;
 				}
 				if (header_name == "transfer-encoding")
 				{
 					if (transfer_encoding_exists || content_length_exists) // // for security: when content_length is specified, TE shouldn't be
 					{
 						// to reduce attack vectors for request smuggling, we don't allow multiple TE headers
-						error = 400; // correct error value
+						handler.status = 400; // correct error value
+						throw CustomException("Bad request");
+					}
+					if (header_value != "chunked")
+					{
+						handler.status = 400;
 						throw CustomException("Bad request");
 					}
 					transfer_encoding_exists = 1;
 					handler.body_expected = 1;
 				}
-				if (header_name == "host") // also ensure that value is not empty
+				if (header_name == "host")
 				{
 					if (host_exists)
 					{
-						error = 400;
+						handler.status = 400;
+						throw CustomException("Bad request");
+					}
+					if (header_value.empty())
+					{
+						handler.status = 400;
 						throw CustomException("Bad request");
 					}
 					host_exists = 1;
 				}
 				if (header_name == "expect")
-					expect_exists = 1; // in this case a response is expected before the (rest of) body is sent
+					handler.expect_exists = 1; // in this case a response is expected before the (rest of) body is sent
 				header_fields.insert(std::pair<std::string, std::string>(header_name, header_value));
 				header_name.clear();
 				header_value.clear();
@@ -219,21 +432,21 @@ void	Header::parseHeaderFields(RequestHandler& handler)
 				if (ch == LF)
 				{
 					headers_parsing_done = 1;
-					std::cout << "headers fully parsed\n";
+					// std::cout << "headers fully parsed\n";
 					break;
 				}
-				error = 400;
+				handler.status = 400;
 				throw CustomException("Bad request");
 		}
 	}
 
-	if (!headers_parsing_done)
+	if (!headers_parsing_done) // is this the correct location to check?
 	{
-		error = 413; // correct error code when header is too large for buffer
-		throw CustomException("413 Payload Too Large");  // correct error code when header is too large for buffer
+		handler.status = 413; // correct error code when header is too large for buffer OR 431 Request Header Fields Too Large
+		throw CustomException("Payload Too Large");  // correct error code when header is too large for buffer
 	}
 	header_complete = 1;
-	body_beginning = handler.buf_pos; // this is the last ch of the empty line at the end of the headers. Next ch is the first of the body
+	handler.body_beginning = handler.buf_pos; // this is the last ch of the empty line at the end of the headers. Next ch is the first of the body
 
 	// A sender MUST NOT send whitespace between the start-line and the first header field.
 	// A recipient that receives whitespace between the start-line and the first header field MUST either reject the message as invalid 
@@ -250,7 +463,7 @@ void	Header::parseHeaderFields(RequestHandler& handler)
 }
 
 // void	Header::checkMethod(unsigned char* buf, int* buf_pos)
-void	Header::checkMethod(RequestHandler& handler)
+void	Header::checkMethod()
 {
 	switch (handler.buf[handler.buf_pos])
 	{
@@ -260,8 +473,8 @@ void	Header::checkMethod(RequestHandler& handler)
 				method = "GET";
 			else
 			{
-				error = 400;
-				throw CustomException("Bad request");
+				handler.status = 501;
+				throw CustomException("Not implemented");
 			}
 			break;
 		
@@ -271,8 +484,8 @@ void	Header::checkMethod(RequestHandler& handler)
 				method = "POST";
 			else
 			{
-				error = 400;
-				throw CustomException("Bad request");
+				handler.status = 501;
+				throw CustomException("Not implemented");
 			}
 			break;
 
@@ -282,20 +495,19 @@ void	Header::checkMethod(RequestHandler& handler)
 				method = "DELETE";
 			else
 			{
-				error = 400;
-				throw CustomException("Bad request");
+				handler.status = 501;
+				throw CustomException("Not implemented");
 			}
 			break;
 		default:
-			// error
-			error = 400; // What is the correct error code?
-			throw CustomException("Bad request"); // or not implemented 501?
+			handler.status = 501;
+			throw CustomException("Not implemented");
 			break;
 		}
 }
 
 // void	Header::checkHttpVersion(unsigned char* buf, int* buf_pos)
-void	Header::checkHttpVersion(RequestHandler& handler)
+void	Header::checkHttpVersion()
 {
 	if (handler.buf[handler.buf_pos] == 'H' && handler.buf[++(handler.buf_pos)] == 'T' && handler.buf[++(handler.buf_pos)] == 'T' && handler.buf[++(handler.buf_pos)] == 'P' && handler.buf[++(handler.buf_pos)] == '/' && handler.buf[++(handler.buf_pos)] == '1'
 		&& handler.buf[++(handler.buf_pos)] == '.' && handler.buf[++(handler.buf_pos)] == '1')
@@ -305,15 +517,21 @@ void	Header::checkHttpVersion(RequestHandler& handler)
 	}
 	else
 	{
-		error = 400; // what is the correct error code here?
-		throw CustomException("Bad request"); // or not implemented 501?
+		handler.status = 505;
+		throw CustomException("HTTP Version Not Supported");
 	}
 }
 
-void	Header::parseRequestLine(RequestHandler& handler)
+void	Header::handleMultipleSlashes() // could probably also be a created as a special state
+{
+	while(handler.buf[handler.buf_pos] == '/')
+		handler.buf_pos++;
+	handler.buf_pos--;
+}
+
+void	Header::parseRequestLine()
 {
 	unsigned char	ch;
-	int				loops = 0;
 
 	// implement max request line rule? (414 and 501 errors)
 	// do we need to check for scheme and authority?
@@ -323,7 +541,7 @@ void	Header::parseRequestLine(RequestHandler& handler)
 	// unreseved:  - _ . ~
 	// alphanumeric
 
-	rl_state = rl_start;
+	rl_state = rl_start; // move to constructor?
 
 	while (!rl_parsing_done && (handler.buf_pos)++ < handler.bytes_read)
 	{
@@ -342,9 +560,7 @@ void	Header::parseRequestLine(RequestHandler& handler)
 
 			case rl_method: // can this also be termined by CRLF?
 				// checkMethod(buf, buf_pos);
-				checkMethod(handler);
-				if (error == 400)
-					throw CustomException("Bad request");
+				checkMethod();
 				rl_state = rl_first_divider;
 				break;
 
@@ -354,10 +570,10 @@ void	Header::parseRequestLine(RequestHandler& handler)
 				else if (ch == '/')
 				{
 					rl_state = rl_path;
-					path.append(1, static_cast<char>(ch));
+					handler.buf_pos--;
 					break;
 				}
-				error = 400;
+				handler.status = 400;
 				throw CustomException("Bad request");
 				
 			case rl_path:
@@ -376,12 +592,15 @@ void	Header::parseRequestLine(RequestHandler& handler)
 						rl_state = rl_done;
 						break;
 					case '.': // nginx does not allow two dots at the beginning if nothing comes after; a single dot leads to index (also on some websites with two dots); three dots to file not found
+						if (handler.buf[handler.buf_pos - 1] == '/')
+							dot_in_path = 1;
 						break;
 					case '%':
 						path_encoded = 1; // when interpreting request needs to be decoded
-						rl_state = rl_percent_encoded; // need to be followed by numercial code that needs to be interpreted --> otherwise 400 bad request (not the case for query)
+						// rl_state = rl_percent_encoded; // need to be followed by numercial code that needs to be interpreted --> otherwise 400 bad request (not the case for query)
 						break;
 					case '/': // checking with nginx, there can be several slashes after each other
+						handleMultipleSlashes();
 						break;
 					case '?':
 						rl_state = rl_query;
@@ -392,7 +611,7 @@ void	Header::parseRequestLine(RequestHandler& handler)
 					default:
 						if (ch < 32 || ch == 127)
 						{
-							error = 400;
+							handler.status = 400;
 							throw CustomException("Bad request");
 						}
 						break;
@@ -400,21 +619,9 @@ void	Header::parseRequestLine(RequestHandler& handler)
 					// case '#': // in what case is this character even encountered in a http message? probably only in the query part and when interpreting // fragments are not sent in the http request messages. The reason is that the fragment identifier is only used by the browser
 
 				}
-				if (rl_state == rl_path || rl_state == rl_percent_encoded)
+				if (rl_state == rl_path)
 					path.append(1, static_cast<char>(ch));
 				break;
-
-			case rl_percent_encoded: // allowed values #01 - #FF (although ASCII only goes till #7F/7E)
-				if (!(loops == 1 && ch == '0') && ((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F')))
-				{
-					loops++;
-					path.append(1, static_cast<char>(ch));
-					if (loops % 2 == 0)
-						rl_state = rl_path;
-					break;
-				}
-				error = 400;
-				throw CustomException("Bad request");
 
 			case rl_query:
 				switch (ch)
@@ -428,10 +635,16 @@ void	Header::parseRequestLine(RequestHandler& handler)
 					case LF:
 						rl_state = rl_done;
 						break;
+					case '%':
+						query_encoded = 1;
+						break;
+					case '+':
+						query_encoded = 1;
+						break;
 					default:
 						if (ch < 32 || ch == 127)
 						{
-							error = 400;
+							handler.status = 400;
 							throw CustomException("Bad request");
 						}
 						break;
@@ -440,7 +653,7 @@ void	Header::parseRequestLine(RequestHandler& handler)
 					query.append(1, static_cast<char>(ch));
 				break;
 
-			case rl_http: // do we need to check for diffferent versions?
+			case rl_http: 
 				if (ch == CR)
 				{
 					rl_state = rl_cr;
@@ -452,9 +665,7 @@ void	Header::parseRequestLine(RequestHandler& handler)
 					break;
 				}
 				if (ch == 'H')
-					checkHttpVersion(handler);
-				if (error == 400)
-					throw CustomException("Bad request");
+					checkHttpVersion();
 				break;
 
 			case rl_cr:
@@ -465,12 +676,12 @@ void	Header::parseRequestLine(RequestHandler& handler)
 				}
 				else 
 				{
-					error = 400;
+					handler.status = 400;
 					throw CustomException("Bad request");
 				}
 			
 			case rl_done:
-				std::cout << "request line fully parsed\n";
+				// std::cout << "request line fully parsed\n";
 				rl_parsing_done = 1;
 				handler.buf_pos--; // Why does this needs to be done?
 				break;
@@ -479,17 +690,15 @@ void	Header::parseRequestLine(RequestHandler& handler)
 			// doesn't allow any whitespace
 			// if invalid request-line
 				// respond with 400 (Bad Request) and close connection
-			// shouldn't include the ? + query part (?)
 
 		// enforce single-space grammar rule? --> check how nginx implements it
 			// check HTTP version
-			// specific error code if not a valid http version (400?)
 	}
 
 	if (!rl_parsing_done)
 	{
-		error = 414;
-		throw CustomException("414 Request-URI Too Long");
+		handler.status = 414;
+		throw CustomException("Request-URI Too Long");
 	}
 
 }

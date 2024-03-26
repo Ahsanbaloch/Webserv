@@ -13,15 +13,15 @@
 #include "config/config_pars.hpp"
 
 #define BUFFER_SIZE 8192 // this basically presents the max header size (incl. the request line)
-// #define LF 10
-// #define CR 13
-// #define SP 32
 
 class RequestHandler
 {
 private:
-	/* data */
+	std::vector<t_server_config>	server_config;
 public:
+
+	std::vector<t_server_config>	getServerConfig() const;
+
 	RequestHandler(int, std::vector<t_server_config>);
 	RequestHandler(/* args */);
 	~RequestHandler();
@@ -29,8 +29,13 @@ public:
 	ARequest*			request;
 	Response*			response;
 	Header				header;
-	std::vector<t_server_config> server_config;
+	
+
+	int					selected_location; // should probably be in server_config struct
+	int					selected_server;
+	
 	int					connection_fd;
+	
 	int					body_parsing_done;
 	int					chunk_length;
 	int					request_length;
@@ -38,7 +43,16 @@ public:
 	int					response_ready;
 	int					body_expected;
 	int					body_read;
+	int					body_length;
+	int					body_beginning;
 
+	int					expect_exists;
+	
+	std::string			file_path;
+	std::string			file_type;
+	int					url_relocation;
+
+	int					autoindex;
 
 	std::stringstream	raw_buf;
 	std::stringstream	body;
