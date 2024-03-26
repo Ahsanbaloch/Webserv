@@ -14,24 +14,25 @@
 class GETRequest: public ARequest
 {
 private:
-	/* data */
+	// helper methods
+	std::string	createStatusLine();
+	std::string	createBody();
+	std::string createHeaderFields(std::string);
+	std::string	identifyMIME();
+	void		checkRedirects();
+	std::string	getBodyFromFile();
+	std::string	getBodyFromDir();
+
+	// constructors
+	GETRequest();
+	GETRequest(const GETRequest&);
+	GETRequest& operator=(const GETRequest&);
 public:
-	GETRequest(/* args */);
+	// constructors & destructors
 	explicit GETRequest(RequestHandler&);
 	~GETRequest();
 
-	// RequestHandler&	handler;
-	Response	*createResponse(RequestHandler&);
-	std::string	createStatusLine(RequestHandler&);
-	std::string	createBody(RequestHandler&);
-	std::string createHeaderFields(RequestHandler&, std::string);
-	void		checkPathType(RequestHandler&);
-	std::string	identifyMIME(RequestHandler&);
-	void		checkRedirects(RequestHandler&);
-
-	std::string	getBodyFromFile(RequestHandler&);
-	std::string	getBodyFromDir(RequestHandler&);
+	Response	*createResponse();
 };
-
 
 #endif

@@ -1,111 +1,37 @@
 #include "ARequest.h"
-#include "GETRequest.h"
-#include "DELETERequest.h"
 #include "RequestHandler.h"
 
+///////// CONSTRUCTORS & DESTRUCTORS ///////////
 
 ARequest::ARequest()
+	: handler(*new RequestHandler())
 {
 }
 
+ARequest::ARequest(RequestHandler& request_handler) 
+	: handler(request_handler)
+{
+}
 
 ARequest::~ARequest()
 {
 }
 
-// instead of erasing all server blocks, could also store the index (similar to Location Blocks)
-void	ARequest::findServerBlock(RequestHandler& handler)
+ARequest::ARequest(const ARequest& src)
+	: handler(src.handler)
 {
-	int size = handler.getServerConfig().size();
-
-	for (int i = 0; i < size; i++)
-	{
-		if (handler.getServerConfig()[i].serverName == handler.header.getHeaderFields()["host"])
-		{
-			handler.selected_server = i;
-			break;
-		}
-	}
-
-	// std::vector<t_server_config>::iterator it = handler.getServerConfig().begin();
-	// for (std::vector<t_server_config>::iterator it2 = handler.getServerConfig().begin(); it2 != handler.getServerConfig().end(); it2++)
-	// {
-	// 	if (it2 == it || it2->serverName == handler.header.header_fields["host"])
-	// 		it = it2;
-	// 	else
-	// 	{
-	// 		handler.getServerConfig().erase(it2);
-	// 		it2--;
-	// 	}
-	// }
-	// if (it != handler.getServerConfig().begin())
-	// 	handler.getServerConfig().erase(handler.getServerConfig().begin());
 }
 
-std::vector<std::string>	ARequest::splitPath(std::string input, char delim)
+ARequest& ARequest::operator=(const ARequest& src)
 {
-	std::istringstream			iss(input);
-	std::string					item;
-	std::vector<std::string>	result;
-	
-	while (std::getline(iss, item, delim))
-		result.push_back("/" + item); // does adding "/" work in all cases?
-	// if (result.size() == 1 && result[0].empty())
-	// 	result[0] = '/';
-	return (result);
+	if (this != &src)
+		handler = src.handler;
+	return (*this);
 }
 
-int	ARequest::calcMatches(std::vector<std::string>& uri_path_items, std::vector<std::string>& location_path_items)
-{
-	// printf("splitted string\n");
-	// for (std::vector<std::string>::iterator it = uri_path_items.begin(); it != uri_path_items.end(); it++)
-	// {
-	// 	std::cout << "string uri: " << *it << std::endl;
-	// }
-	// for (std::vector<std::string>::iterator it = location_path_items.begin(); it != location_path_items.end(); it++)
-	// {
-	// 	std::cout << "string location: " << *it << std::endl;
-	// }
-	int	matches = 0;
-	int num_path_items = uri_path_items.size();
-	for (std::vector<std::string>::iterator it = location_path_items.begin(); it != location_path_items.end(); it++)
-	{
-		if (matches >= num_path_items)
-			break;
-		if (*it != uri_path_items[matches])
-			break;
-		matches++;
-	}
-	return (matches);
-}
+///////// METHODS ///////////
 
-
-void	ARequest::findLocationBlock(RequestHandler& handler) // double check if this is entirely correct approach
-{
-	std::vector<std::string> uri_path_items;
-	if (handler.header.redirected_path.empty())
-		uri_path_items = splitPath(handler.header.getPath(), '/');
-	else
-	{
-		std::string temp = "/" + handler.header.redirected_path;
-		uri_path_items = splitPath(temp, '/');
-	}
-	int	size = handler.getServerConfig()[handler.selected_server].locations.size();
-	int	max = 0;
-	for (int i = 0; i < size; i++)
-	{
-		std::vector<std::string> location_path_items = splitPath(handler.getServerConfig()[handler.selected_server].locations[i].path, '/');
-		int matches = calcMatches(uri_path_items, location_path_items);
-		if (matches > max)
-		{
-			handler.selected_location = i;
-			max = matches;
-		}
-	}
-	std::cout << "Thats the one: " << handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].path << std::endl;
-}
-
-int	ARequest::checkFileExistence(RequestHandler& handler)
+int	ARequest::checkFileExistence()
 {	
 	if (handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].path == "/") // maybe also cases where location ends with /? Is this possible?
 		handler.header.redirected_path = handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].root + handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].path + handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].index;
@@ -118,7 +44,7 @@ int	ARequest::checkFileExistence(RequestHandler& handler)
 	return (result);
 }
 
-bool	ARequest::checkFileType(RequestHandler& handler)
+bool	ARequest::checkFileType()
 {
 	// what if there are two dots in the path? // is there a better way to identify the file type requested?
 	std::size_t found = handler.header.getPath().find('.');

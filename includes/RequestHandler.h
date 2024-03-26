@@ -20,6 +20,8 @@ class RequestHandler
 {
 private:
 	std::vector<t_server_config>	server_config;
+
+	RequestHandler(const RequestHandler&);
 public:
 
 	std::vector<t_server_config>	getServerConfig() const;
@@ -27,6 +29,7 @@ public:
 	RequestHandler(int, std::vector<t_server_config>); // get ServerConfig as a reference? // might be able to remove int connection_fd as this is now part of the connection handler
 	RequestHandler(/* args */);
 	~RequestHandler();
+	RequestHandler& operator=(const RequestHandler&);
 
 	ARequest*			request;
 	Response*			response;

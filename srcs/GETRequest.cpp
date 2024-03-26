@@ -1,11 +1,15 @@
 
 #include "GETRequest.h"
 
-GETRequest::GETRequest(RequestHandler&)
+/////////// CONSTRUCTORS & DESTRUCTORS ///////////
+
+GETRequest::GETRequest(RequestHandler& src)
+	: ARequest(src)
 {
 }
 
 GETRequest::GETRequest(/* args */)
+	: ARequest()
 {
 }
 
@@ -13,7 +17,22 @@ GETRequest::~GETRequest()
 {
 }
 
-std::string	GETRequest::createStatusLine(RequestHandler& handler)
+GETRequest::GETRequest(const GETRequest& src)
+	: ARequest(src)
+{
+}
+
+GETRequest& GETRequest::operator=(const GETRequest& src)
+{
+	if (this != &src)
+		ARequest::operator=(src);
+	return (*this);
+}
+
+
+/////////// HELPER METHODS ///////////
+
+std::string	GETRequest::createStatusLine()
 {
 	std::string status_line;
 	std::ostringstream status_conversion;
@@ -25,8 +44,7 @@ std::string	GETRequest::createStatusLine(RequestHandler& handler)
 	return (status_line);
 }
 
-
-std::string	GETRequest::getBodyFromFile(RequestHandler& handler)
+std::string	GETRequest::getBodyFromFile()
 {
 	std::string body;
 
@@ -45,7 +63,7 @@ std::string	GETRequest::getBodyFromFile(RequestHandler& handler)
 	return (body);
 }
 
-std::string GETRequest::getBodyFromDir(RequestHandler& handler) // probably create some html for it
+std::string GETRequest::getBodyFromDir() // probably create some html for it
 {
 	std::string body;
 	DIR *directory;
@@ -72,7 +90,7 @@ std::string GETRequest::getBodyFromDir(RequestHandler& handler) // probably crea
 }
 
 
-std::string GETRequest::createBody(RequestHandler& handler)
+std::string GETRequest::createBody()
 {
 	std::string body;
 
@@ -80,13 +98,13 @@ std::string GETRequest::createBody(RequestHandler& handler)
 		; // From configData get specific info about which page should be displayed
 		// look up file and read content into response body
 	if (handler.autoindex == 1)
-		body = getBodyFromDir(handler);
+		body = getBodyFromDir();
 	else
-		body = getBodyFromFile(handler);
+		body = getBodyFromFile();
 	return (body);
 }
 
-std::string	GETRequest::createHeaderFields(RequestHandler& handler, std::string body)
+std::string	GETRequest::createHeaderFields(std::string body)
 {
 	std::string	header;
 
@@ -94,7 +112,7 @@ std::string	GETRequest::createHeaderFields(RequestHandler& handler, std::string 
 		header.append("Location: " + handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].redirect + "\r\n");
 	else
 	{
-		std::string mime_type = identifyMIME(handler); // should not be called if we have a url redirection
+		std::string mime_type = identifyMIME(); // should not be called if we have a url redirection
 		if (mime_type.empty()) // only check when body should be sent?
 		{
 			handler.status = 415;
@@ -125,13 +143,13 @@ std::string	GETRequest::createHeaderFields(RequestHandler& handler, std::string 
 	return (header);
 }
 
-void	GETRequest::checkRedirects(RequestHandler& handler)
+void	GETRequest::checkRedirects()
 {
 	// if the request is not for a file (otherwise the location has already been found)
-	if (!checkFileType(handler))
+	if (!checkFileType())
 	{
 		// check if file constructed from root, location path and index exists
-		if (checkFileExistence(handler) == 0)
+		if (checkFileExistence() == 0)
 		{
 			// if file does exist, search again for correct location
 			// findLocationBlock(handler); //should the root be taken into account when rechecking the location Block?
@@ -158,36 +176,7 @@ void	GETRequest::checkRedirects(RequestHandler& handler)
 	std::cout << "location selected: " << handler.selected_location << std::endl;
 }
 
-Response	*GETRequest::createResponse(RequestHandler& handler)
-{
-	Response *response = new Response; // needs to be delete somewhere
-
-	// check for direct redirects and internal redirects
-	if (!handler.url_relocation)
-		checkRedirects(handler);
-
-	// check allowed methods for the selected location
-	// if (!handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].getAllowed)
-		// throw exception
-
-	response->status_line = createStatusLine(handler);
-	if ((handler.status >= 100 && handler.status <= 103) || handler.status == 204 || handler.status == 304 || handler.status == 307)
-		response->body = ""; // or just initialize it like that // here no body should be created
-	else
-		response->body = createBody(handler);
-	
-	response->header_fields = createHeaderFields(handler, response->body);
-
-	// The presence of a message body in a response depends on both the request method to which it is responding and the response status code. 
-	// e.g. POST 200 is different from GET 200
-
-	// A server MUST NOT send a Transfer-Encoding header field in any response with a status code of 1xx (Informational) or 204 (No Content)
-	// any response with a 1xx (Informational), 204 (No Content), or 304 (Not Modified) status code is always terminated by the first empty line after the header fields --> no body
-	return (response);
-}
-
-
-std::string	GETRequest::identifyMIME(RequestHandler& handler)
+std::string	GETRequest::identifyMIME()
 {
 	// also check against accept header? --> return 406 if the requirement cannot be satisfied
 	// how to best identifyMIME?
@@ -199,4 +188,34 @@ std::string	GETRequest::identifyMIME(RequestHandler& handler)
 		return ("image/png");
 	else
 		return (""); // what should be the default return?
+}
+
+/////////// MAIN METHODS ///////////
+
+Response	*GETRequest::createResponse()
+{
+	Response *response = new Response; // needs to be delete somewhere
+
+	// check for direct redirects and internal redirects
+	if (!handler.url_relocation)
+		checkRedirects();
+
+	// check allowed methods for the selected location
+	// if (!handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].getAllowed)
+		// throw exception
+
+	response->status_line = createStatusLine();
+	if ((handler.status >= 100 && handler.status <= 103) || handler.status == 204 || handler.status == 304 || handler.status == 307)
+		response->body = ""; // or just initialize it like that // here no body should be created
+	else
+		response->body = createBody();
+	
+	response->header_fields = createHeaderFields(response->body);
+
+	// The presence of a message body in a response depends on both the request method to which it is responding and the response status code. 
+	// e.g. POST 200 is different from GET 200
+
+	// A server MUST NOT send a Transfer-Encoding header field in any response with a status code of 1xx (Informational) or 204 (No Content)
+	// any response with a 1xx (Informational), 204 (No Content), or 304 (Not Modified) status code is always terminated by the first empty line after the header fields --> no body
+	return (response);
 }

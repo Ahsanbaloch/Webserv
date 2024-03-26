@@ -1,11 +1,15 @@
 
 #include "DELETERequest.h"
 
-DELETERequest::DELETERequest(RequestHandler&)
+///////// CONSTRUCTORS & DESTRUCTOR //////////
+
+DELETERequest::DELETERequest(RequestHandler& src)
+	: ARequest(src)
 {
 }
 
 DELETERequest::DELETERequest(/* args */)
+	: ARequest()
 {
 }
 
@@ -13,7 +17,22 @@ DELETERequest::~DELETERequest()
 {
 }
 
-void	DELETERequest::deleteFile(RequestHandler& handler)
+DELETERequest::DELETERequest(const DELETERequest& src)
+	: ARequest(src)
+{
+}
+
+DELETERequest& DELETERequest::operator=(const DELETERequest& src)
+{
+	if (this != &src)
+		ARequest::operator=(src);
+	return (*this);
+}
+
+
+///////// HELPER METHODS //////////
+
+void	DELETERequest::deleteFile()
 {
 	std::string file = handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].root + handler.header.getPath();
 
@@ -30,7 +49,7 @@ void	DELETERequest::deleteFile(RequestHandler& handler)
 	// send 409 if the file is in use and thus cannot be deleted?
 }
 
-void	DELETERequest::deleteDir(RequestHandler& handler)
+void	DELETERequest::deleteDir()
 {
 	std::string	dir = handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].root + handler.header.getPath();
 	
@@ -46,8 +65,7 @@ void	DELETERequest::deleteDir(RequestHandler& handler)
 		handler.status = 200;
 }
 
-
-std::string	DELETERequest::createStatusLine(RequestHandler& handler) // make Response method? --> set?
+std::string	DELETERequest::createStatusLine() // make Response method? --> set?
 {
 	std::string status_line;
 	std::ostringstream status_conversion;
@@ -60,8 +78,9 @@ std::string	DELETERequest::createStatusLine(RequestHandler& handler) // make Res
 }
 
 
+///////// MAIN METHODS //////////
 
-Response	*DELETERequest::createResponse(RequestHandler& handler)
+Response	*DELETERequest::createResponse()
 {
 	Response *response = new Response; // needs to be delete somewhere
 
@@ -70,12 +89,12 @@ Response	*DELETERequest::createResponse(RequestHandler& handler)
 		// throw exception
 
 	// check if file or directory that is requested to be deleted
-	if (checkFileType(handler))
-		deleteFile(handler);
+	if (checkFileType())
+		deleteFile();
 	else
-		deleteDir(handler);
+		deleteDir();
 
-	response->status_line = createStatusLine(handler);
+	response->status_line = createStatusLine();
 	response->header_fields = "Content-Type: plain/text\r\nContent-Length: 3\r\n\r\n"; // maybe send a html response here instead
 	response->body = "200"; // should be gotten from handler.status
 

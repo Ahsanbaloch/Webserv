@@ -33,6 +33,19 @@ RequestHandler::~RequestHandler()
 {
 }
 
+// RequestHandler::RequestHandler(const RequestHandler& src)
+// 	: header(src.header)
+// {
+// }
+
+RequestHandler& RequestHandler::operator=(const RequestHandler& src)
+{
+	if (this != &src)
+	{
+	}
+	return (*this);
+}
+
 std::vector<t_server_config>	RequestHandler::getServerConfig() const
 {
 	return (server_config);
@@ -117,7 +130,7 @@ void	RequestHandler::processRequest()
 		{
 			// try/catch block?
 			request = newRequest();
-			response = request->createResponse(*this);
+			response = request->createResponse();
 			// set Response to be ready
 		}
 		response_ready = 1;

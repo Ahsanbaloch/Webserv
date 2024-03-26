@@ -10,21 +10,26 @@ class RequestHandler;
 
 class ARequest
 {
-private:
-	static std::vector<std::string>	splitPath(std::string input, char delim);
-	static int	calcMatches(std::vector<std::string>&, std::vector<std::string>&);
+protected:
+	RequestHandler&	handler;
+
+	// methods
+	bool			checkFileType();
+	int				checkFileExistence();
+
+	// constructors
+	ARequest();
+	ARequest(const ARequest&);
+	ARequest& operator=(const ARequest&);
+
 public:
-	ARequest(/* args */);
+	// constructors & destructors
+	explicit ARequest(RequestHandler&);
 	virtual ~ARequest();
 
-	static void	findServerBlock(RequestHandler&);
-	void	findLocationBlock(RequestHandler&);
-	bool	checkFileType(RequestHandler&);
-	static int	checkFileExistence(RequestHandler&);
+	// methods
+	virtual Response	*createResponse() = 0;
 
-	virtual Response *createResponse(RequestHandler&) = 0;
-
-	
 };
 
 #endif

@@ -11,19 +11,23 @@
 class DELETERequest: public ARequest
 {
 private:
-	/* data */
-public:
+	// helper methods
+	void		deleteFile();
+	void		deleteDir();
+	std::string	createStatusLine();
+
+	// constructors
 	DELETERequest();
+	DELETERequest(const DELETERequest&);
+	DELETERequest& operator=(const DELETERequest&);
+
+public:
+	// constructors & destructors
 	explicit DELETERequest(RequestHandler&);
 	~DELETERequest();
 
-	Response	*createResponse(RequestHandler&);
+	Response	*createResponse();
 
-	void		deleteFile(RequestHandler&);
-	void		deleteDir(RequestHandler&);
-	std::string	createStatusLine(RequestHandler&);
 };
-
-
 
 #endif
