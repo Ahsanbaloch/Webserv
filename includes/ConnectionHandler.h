@@ -29,6 +29,7 @@ public:
 	// setters
 	void			initRequestHandler();
 	void			setResponseStatus(int);
+	void			removeRequestHandler();
 	
 
 };

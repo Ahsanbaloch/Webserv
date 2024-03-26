@@ -60,3 +60,9 @@ void	ConnectionHandler::setResponseStatus(int response_status)
 {
 	response_ready = response_status;
 }
+
+void	ConnectionHandler::removeRequestHandler()
+{
+	delete handler;
+	handler = NULL;
+}
