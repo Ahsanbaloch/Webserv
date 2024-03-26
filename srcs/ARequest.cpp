@@ -4,6 +4,11 @@
 #include "RequestHandler.h"
 
 
+ARequest::ARequest()
+{
+}
+
+
 ARequest::~ARequest()
 {
 }
@@ -75,30 +80,30 @@ int	ARequest::calcMatches(std::vector<std::string>& uri_path_items, std::vector<
 }
 
 
-// void	ARequest::findLocationBlock(RequestHandler& handler) // double check if this is entirely correct approach
-// {
-// 	std::vector<std::string> uri_path_items;
-// 	if (handler.header.redirected_path.empty())
-// 		uri_path_items = splitPath(handler.header.getPath(), '/');
-// 	else
-// 	{
-// 		std::string temp = "/" + handler.header.redirected_path;
-// 		uri_path_items = splitPath(temp, '/');
-// 	}
-// 	int	size = handler.getServerConfig()[handler.selected_server].locations.size();
-// 	int	max = 0;
-// 	for (int i = 0; i < size; i++)
-// 	{
-// 		std::vector<std::string> location_path_items = splitPath(handler.getServerConfig()[handler.selected_server].locations[i].path, '/');
-// 		int matches = calcMatches(uri_path_items, location_path_items);
-// 		if (matches > max)
-// 		{
-// 			handler.selected_location = i;
-// 			max = matches;
-// 		}
-// 	}
-// 	std::cout << "Thats the one: " << handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].path << std::endl;
-// }
+void	ARequest::findLocationBlock(RequestHandler& handler) // double check if this is entirely correct approach
+{
+	std::vector<std::string> uri_path_items;
+	if (handler.header.redirected_path.empty())
+		uri_path_items = splitPath(handler.header.getPath(), '/');
+	else
+	{
+		std::string temp = "/" + handler.header.redirected_path;
+		uri_path_items = splitPath(temp, '/');
+	}
+	int	size = handler.getServerConfig()[handler.selected_server].locations.size();
+	int	max = 0;
+	for (int i = 0; i < size; i++)
+	{
+		std::vector<std::string> location_path_items = splitPath(handler.getServerConfig()[handler.selected_server].locations[i].path, '/');
+		int matches = calcMatches(uri_path_items, location_path_items);
+		if (matches > max)
+		{
+			handler.selected_location = i;
+			max = matches;
+		}
+	}
+	std::cout << "Thats the one: " << handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].path << std::endl;
+}
 
 int	ARequest::checkFileExistence(RequestHandler& handler)
 {	

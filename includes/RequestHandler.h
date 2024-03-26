@@ -10,6 +10,8 @@
 #include "CustomException.h"
 #include "Header.h"
 #include "ARequest.h"
+#include "GETRequest.h"
+#include "DELETERequest.h"
 #include "config/config_pars.hpp"
 #include "defines.h"
 

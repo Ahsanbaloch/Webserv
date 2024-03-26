@@ -1,13 +1,13 @@
 
 #include "DELETERequest.h"
 
-// DELETERequest::DELETERequest(RequestHandler&)
-// {
-// }
+DELETERequest::DELETERequest(RequestHandler&)
+{
+}
 
-// DELETERequest::DELETERequest(/* args */)
-// {
-// }
+DELETERequest::DELETERequest(/* args */)
+{
+}
 
 DELETERequest::~DELETERequest()
 {

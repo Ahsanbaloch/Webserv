@@ -18,7 +18,7 @@ public:
 	virtual ~ARequest();
 
 	static void	findServerBlock(RequestHandler&);
-	// void	findLocationBlock(RequestHandler&);
+	void	findLocationBlock(RequestHandler&);
 	bool	checkFileType(RequestHandler&);
 	static int	checkFileExistence(RequestHandler&);
 

@@ -1,14 +1,13 @@
 
 #include "GETRequest.h"
 
-GETRequest::GETRequest(RequestHandler& src)
-	: handler(src)
+GETRequest::GETRequest(RequestHandler&)
 {
 }
 
-// GETRequest::GETRequest(/* args */)
-// {
-// }
+GETRequest::GETRequest(/* args */)
+{
+}
 
 GETRequest::~GETRequest()
 {

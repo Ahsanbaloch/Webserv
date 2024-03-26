@@ -20,7 +20,7 @@ public:
 	explicit GETRequest(RequestHandler&);
 	~GETRequest();
 
-	RequestHandler&	handler;
+	// RequestHandler&	handler;
 	Response	*createResponse(RequestHandler&);
 	std::string	createStatusLine(RequestHandler&);
 	std::string	createBody(RequestHandler&);

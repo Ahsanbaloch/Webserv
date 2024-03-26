@@ -1,7 +1,5 @@
 
 #include "RequestHandler.h"
-#include "GETRequest.h"
-#include "DELETERequest.h"
 
 RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_config)
 	: header(*this)
@@ -172,7 +170,7 @@ ARequest* RequestHandler::newRequest() // newResponse instead?
 	if (header.getMethod() == "GET")
 		return (new GETRequest(*this));
 	else if (header.getMethod() == "DELETE")
-		return (new DELETERequest);
+		return (new DELETERequest(*this));
 	else if (header.getMethod() == "POST")
 		;///
 	// check if something else and thus not implemented; but currently alsready done when parsing
