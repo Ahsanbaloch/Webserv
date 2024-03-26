@@ -1,13 +1,14 @@
 
 #include "GETRequest.h"
 
-GETRequest::GETRequest(RequestHandler&)
+GETRequest::GETRequest(RequestHandler& src)
+	: handler(src)
 {
 }
 
-GETRequest::GETRequest(/* args */)
-{
-}
+// GETRequest::GETRequest(/* args */)
+// {
+// }
 
 GETRequest::~GETRequest()
 {
@@ -134,7 +135,8 @@ void	GETRequest::checkRedirects(RequestHandler& handler)
 		if (checkFileExistence(handler) == 0)
 		{
 			// if file does exist, search again for correct location
-			findLocationBlock(handler); //should the root be taken into account when rechecking the location Block?
+			// findLocationBlock(handler); //should the root be taken into account when rechecking the location Block?
+			handler.findLocationBlock();
 			handler.file_path = handler.header.redirected_path;
 			handler.file_type = handler.file_path.substr(handler.file_path.find('.') + 1); // create a function for that in case it is not a file type
 		}

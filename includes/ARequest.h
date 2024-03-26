@@ -17,11 +17,9 @@ public:
 	ARequest(/* args */);
 	virtual ~ARequest();
 
-	static ARequest *newRequest(RequestHandler&);
-
 	static void	findServerBlock(RequestHandler&);
-	static void	findLocationBlock(RequestHandler&);
-	static bool	checkFileType(RequestHandler&);
+	// void	findLocationBlock(RequestHandler&);
+	bool	checkFileType(RequestHandler&);
 	static int	checkFileExistence(RequestHandler&);
 
 	virtual Response *createResponse(RequestHandler&) = 0;

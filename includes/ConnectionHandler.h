@@ -19,6 +19,7 @@ private:
 	ConnectionHandler&	operator=(const ConnectionHandler&);
 
 public:
+	// constructors & destructor
 	ConnectionHandler(int, std::vector<t_server_config>);
 	~ConnectionHandler();
 
@@ -29,8 +30,9 @@ public:
 	// setters
 	void			initRequestHandler();
 	void			setResponseStatus(int);
+
+	// methods
 	void			removeRequestHandler();
-	
 
 };
 

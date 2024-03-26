@@ -10,6 +10,7 @@
 #include "RequestHandler.h"
 #include "Response.h"
 
+
 class GETRequest: public ARequest
 {
 private:
@@ -19,6 +20,7 @@ public:
 	explicit GETRequest(RequestHandler&);
 	~GETRequest();
 
+	RequestHandler&	handler;
 	Response	*createResponse(RequestHandler&);
 	std::string	createStatusLine(RequestHandler&);
 	std::string	createBody(RequestHandler&);

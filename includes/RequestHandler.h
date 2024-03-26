@@ -11,8 +11,8 @@
 #include "Header.h"
 #include "ARequest.h"
 #include "config/config_pars.hpp"
+#include "defines.h"
 
-#define BUFFER_SIZE 8192 // this basically presents the max header size (incl. the request line)
 
 class RequestHandler
 {
@@ -22,7 +22,7 @@ public:
 
 	std::vector<t_server_config>	getServerConfig() const;
 
-	RequestHandler(int, std::vector<t_server_config>);
+	RequestHandler(int, std::vector<t_server_config>); // get ServerConfig as a reference? // might be able to remove int connection_fd as this is now part of the connection handler
 	RequestHandler(/* args */);
 	~RequestHandler();
 
@@ -64,6 +64,13 @@ public:
 	void	sendResponse();
 	void	parseEncodedBody();
 	void	parseBody();
+
+	void	findServerBlock();
+	void	findLocationBlock();
+	int		calcMatches(std::vector<std::string>&, std::vector<std::string>&);
+	std::vector<std::string>	splitPath(std::string input, char delim);
+
+	ARequest* newRequest();
 
 	enum {
 		body_start = 0,

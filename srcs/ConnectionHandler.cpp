@@ -36,7 +36,6 @@ ConnectionHandler::ConnectionHandler(int fd, std::vector<t_server_config> server
 	handler = NULL;
 }
 
-
 ConnectionHandler::~ConnectionHandler()
 {
 }

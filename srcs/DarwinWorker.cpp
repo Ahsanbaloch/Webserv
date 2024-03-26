@@ -81,7 +81,7 @@ void	DarwinWorker::runEventLoop()
 						// --> probably need to reset all values for the requestHandler class otherwise the while loop exits (response_ready is still true)
 					ConnectedClients[event_lst[i].ident]->removeRequestHandler();
 					ConnectedClients[event_lst[i].ident]->setResponseStatus(0);
-					// close connection if "keep-alive header is not set"
+					// close connection if "keep-alive header is not set" // also close connection if an error response was sent?
 					// delete ConnectedClients[event_lst[i].ident];
 					// close(event_lst[i].ident); // close connection; how does it work with 100-continue response? 
 					// ConnectedClients.erase(event_lst[i].ident);

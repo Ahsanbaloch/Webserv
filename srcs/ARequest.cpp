@@ -3,9 +3,6 @@
 #include "DELETERequest.h"
 #include "RequestHandler.h"
 
-ARequest::ARequest(/* args */)
-{
-}
 
 ARequest::~ARequest()
 {
@@ -78,30 +75,30 @@ int	ARequest::calcMatches(std::vector<std::string>& uri_path_items, std::vector<
 }
 
 
-void	ARequest::findLocationBlock(RequestHandler& handler) // double check if this is entirely correct approach
-{
-	std::vector<std::string> uri_path_items;
-	if (handler.header.redirected_path.empty())
-		uri_path_items = splitPath(handler.header.getPath(), '/');
-	else
-	{
-		std::string temp = "/" + handler.header.redirected_path;
-		uri_path_items = splitPath(temp, '/');
-	}
-	int	size = handler.getServerConfig()[handler.selected_server].locations.size();
-	int	max = 0;
-	for (int i = 0; i < size; i++)
-	{
-		std::vector<std::string> location_path_items = splitPath(handler.getServerConfig()[handler.selected_server].locations[i].path, '/');
-		int matches = calcMatches(uri_path_items, location_path_items);
-		if (matches > max)
-		{
-			handler.selected_location = i;
-			max = matches;
-		}
-	}
-	std::cout << "Thats the one: " << handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].path << std::endl;
-}
+// void	ARequest::findLocationBlock(RequestHandler& handler) // double check if this is entirely correct approach
+// {
+// 	std::vector<std::string> uri_path_items;
+// 	if (handler.header.redirected_path.empty())
+// 		uri_path_items = splitPath(handler.header.getPath(), '/');
+// 	else
+// 	{
+// 		std::string temp = "/" + handler.header.redirected_path;
+// 		uri_path_items = splitPath(temp, '/');
+// 	}
+// 	int	size = handler.getServerConfig()[handler.selected_server].locations.size();
+// 	int	max = 0;
+// 	for (int i = 0; i < size; i++)
+// 	{
+// 		std::vector<std::string> location_path_items = splitPath(handler.getServerConfig()[handler.selected_server].locations[i].path, '/');
+// 		int matches = calcMatches(uri_path_items, location_path_items);
+// 		if (matches > max)
+// 		{
+// 			handler.selected_location = i;
+// 			max = matches;
+// 		}
+// 	}
+// 	std::cout << "Thats the one: " << handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].path << std::endl;
+// }
 
 int	ARequest::checkFileExistence(RequestHandler& handler)
 {	
@@ -130,34 +127,4 @@ bool	ARequest::checkFileType(RequestHandler& handler)
 		handler.file_type = handler.header.getPath().substr(found + 1);
 		return (1);
 	}
-}
-
-ARequest* ARequest::newRequest(RequestHandler& handler)
-{
-	// find server block if there are multiple that match (this applies to all request types)
-	if (handler.getServerConfig().size() > 1)
-		findServerBlock(handler);
-
-	// std::cout << "selected server: " << handler.getServerConfig()[handler.selected_server].serverName << std::endl;
-
-	// find location block within server block if multiple exist (this applies to all request types; for GET requests there might be an internal redirect happening later on)
-	if (handler.getServerConfig()[handler.selected_server].locations.size() > 1)
-		findLocationBlock(handler);
-
-	// Is this done in case of all methods or just GET?
-	if (!(handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].redirect.empty())) // move this to the ARequest?
-	{
-		handler.status = 307;
-		handler.url_relocation = 1;
-	}
-
-	// some more error handling could go here if not already done in Request Handler (or move it here; e.g. check for http version)
-	if (handler.header.getMethod() == "GET")
-		return (new GETRequest(handler));
-	else if (handler.header.getMethod() == "DELETE")
-		return (new DELETERequest(handler));
-	else if (handler.header.getMethod() == "POST")
-		;///
-	// check if something else and thus not implemented; but currently alsready done when parsing
-	return (NULL);
 }

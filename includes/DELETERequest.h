@@ -14,7 +14,7 @@ private:
 	/* data */
 public:
 	DELETERequest();
-	explicit DELETERequest(RequestHandler&);
+	// explicit DELETERequest(RequestHandler&);
 	~DELETERequest();
 
 	Response	*createResponse(RequestHandler&);

@@ -1,5 +1,7 @@
 
 #include "RequestHandler.h"
+#include "GETRequest.h"
+#include "DELETERequest.h"
 
 RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_config)
 	: header(*this)
@@ -116,7 +118,7 @@ void	RequestHandler::processRequest()
 		if (!body_expected || body_read)
 		{
 			// try/catch block?
-			request = ARequest::newRequest(*this);
+			request = newRequest();
 			response = request->createResponse(*this);
 			// set Response to be ready
 		}
@@ -147,6 +149,127 @@ void	RequestHandler::processRequest()
 		// if there are any endoded characters in the header, they need to be decoded
 			// Some characters are utilized by URLs for special use in defining their syntax. When these characters are not used in their special role inside a URL, they must be encoded.
 			// characters such as {} are getting encoded by the client(?) and being transmitted e.g. with %7B%7D
+}
+
+
+ARequest* RequestHandler::newRequest() // newResponse instead?
+{
+	// find server block if there are multiple that match (this applies to all request types)
+	if (server_config.size() > 1)
+		findServerBlock();
+	
+	// find location block within server block if multiple exist (this applies to all request types; for GET requests there might be an internal redirect happening later on)
+	if (server_config[selected_server].locations.size() > 1)
+		findLocationBlock();
+	
+	// Is this done in case of all methods or just GET?
+	if (!(server_config[selected_server].locations[selected_location].redirect.empty()))
+	{
+		status = 307;
+		url_relocation = 1;
+	}
+
+	if (header.getMethod() == "GET")
+		return (new GETRequest(*this));
+	else if (header.getMethod() == "DELETE")
+		return (new DELETERequest);
+	else if (header.getMethod() == "POST")
+		;///
+	// check if something else and thus not implemented; but currently alsready done when parsing
+	return (NULL);
+}
+
+
+void	RequestHandler::findLocationBlock() // double check if this is entirely correct approach
+{
+	std::vector<std::string> uri_path_items;
+	if (header.redirected_path.empty())
+		uri_path_items = splitPath(header.getPath(), '/');
+	else
+	{
+		std::string temp = "/" + header.redirected_path;
+		uri_path_items = splitPath(temp, '/');
+	}
+	int	size = server_config[selected_server].locations.size();
+	int	max = 0;
+	for (int i = 0; i < size; i++)
+	{
+		std::vector<std::string> location_path_items = splitPath(server_config[selected_server].locations[i].path, '/');
+		int matches = calcMatches(uri_path_items, location_path_items);
+		if (matches > max)
+		{
+			selected_location = i;
+			max = matches;
+		}
+	}
+	std::cout << "Thats the one: " << server_config[selected_server].locations[selected_location].path << std::endl;
+}
+
+std::vector<std::string>	RequestHandler::splitPath(std::string input, char delim)
+{
+	std::istringstream			iss(input);
+	std::string					item;
+	std::vector<std::string>	result;
+	
+	while (std::getline(iss, item, delim))
+		result.push_back("/" + item); // does adding "/" work in all cases?
+	// if (result.size() == 1 && result[0].empty())
+	// 	result[0] = '/';
+	return (result);
+}
+
+int	RequestHandler::calcMatches(std::vector<std::string>& uri_path_items, std::vector<std::string>& location_path_items)
+{
+	// printf("splitted string\n");
+	// for (std::vector<std::string>::iterator it = uri_path_items.begin(); it != uri_path_items.end(); it++)
+	// {
+	// 	std::cout << "string uri: " << *it << std::endl;
+	// }
+	// for (std::vector<std::string>::iterator it = location_path_items.begin(); it != location_path_items.end(); it++)
+	// {
+	// 	std::cout << "string location: " << *it << std::endl;
+	// }
+	int	matches = 0;
+	int num_path_items = uri_path_items.size();
+	for (std::vector<std::string>::iterator it = location_path_items.begin(); it != location_path_items.end(); it++)
+	{
+		if (matches >= num_path_items)
+			break;
+		if (*it != uri_path_items[matches])
+			break;
+		matches++;
+	}
+	return (matches);
+}
+
+
+
+void	RequestHandler::findServerBlock()
+{
+	int size = server_config.size();
+
+	for (int i = 0; i < size; i++)
+	{
+		if (server_config[i].serverName == header.getHeaderFields()["host"])
+		{
+			selected_server = i;
+			break;
+		}
+	}
+
+	// std::vector<t_server_config>::iterator it = handler.getServerConfig().begin();
+	// for (std::vector<t_server_config>::iterator it2 = handler.getServerConfig().begin(); it2 != handler.getServerConfig().end(); it2++)
+	// {
+	// 	if (it2 == it || it2->serverName == handler.header.header_fields["host"])
+	// 		it = it2;
+	// 	else
+	// 	{
+	// 		handler.getServerConfig().erase(it2);
+	// 		it2--;
+	// 	}
+	// }
+	// if (it != handler.getServerConfig().begin())
+	// 	handler.getServerConfig().erase(handler.getServerConfig().begin());
 }
 
 
