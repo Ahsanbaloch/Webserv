@@ -68,7 +68,7 @@ public:
 	std::map<std::string, std::string>	getHeaderFields() const;
 	bool								getHeaderStatus() const;
 
-	// TBD: move to request class???
+	// TBD: move to request class??? 
 	std::string							redirected_path;
 
 	// method
