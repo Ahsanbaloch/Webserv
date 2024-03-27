@@ -19,15 +19,18 @@
 class RequestHandler
 {
 private:
+	Header							header;
+
 	std::vector<t_server_config>	server_config;
 	int								status;
 	int								selected_location;
 	int								selected_server;
-	int								connection_fd;
+	int								connection_fd; // probably not needed
+	int								bytes_read;
 
 	// flags
 	bool							response_ready;
-
+	
 	// constructors
 	RequestHandler(const RequestHandler&);
 public:
@@ -43,48 +46,39 @@ public:
 	int								getSelectedLocation() const; // only for testing purposes
 	int								getStatus() const;
 	bool							getResponseStatus() const;
+	int								getBytesRead() const;
+	const Header&					getHeaderInfo();
 
 	// setters
 	void							setStatus(int);
 
+	ARequest*						request;
+	Response*						response;
 	
-	ARequest*			request;
-	Response*			response;
-	Header				header;
 	
 	// tbd
-	int					body_parsing_done;
-	int					chunk_length;
-	int					request_length;
-	int					body_read;
-	int					body_beginning;
-	int					autoindex; // probably not needed and replaced by request to location config
-	int					body_length; // set inside header class
-	bool				body_expected; // set inside header class
-	bool				expect_exists; // set inside header class
+	int								body_parsing_done;
+	int								chunk_length;
+	int								request_length;
+	int								body_read;
+	int								body_beginning;
+	int								body_length; // set inside header class
+	std::stringstream				raw_buf;
+	std::stringstream				body;
+	unsigned char					buf[BUFFER_SIZE]; // use std::vector<unsigned char> buf(BUFFER_SIZE) or uint8_t instead? // don't use the string type for your buffer because for upload and binary file you can have some \0 in the middle of the content). + CRLF interpretation --> request smuggling
+	int								buf_pos;
+	void							parseEncodedBody();
+	void							parseBody();
 	
-	std::string			file_path;
-	std::string			file_type;
-	int					url_relocation;
+	// methods
+	void							processRequest();
+	void							sendResponse();
+	void							findServerBlock();
+	void							findLocationBlock();
+	int								calcMatches(std::vector<std::string>&, std::vector<std::string>&); // make private?
+	std::vector<std::string>		splitPath(std::string input, char delim);
 
-
-	std::stringstream	raw_buf;
-	std::stringstream	body;
-	unsigned char		buf[BUFFER_SIZE]; // use std::vector<unsigned char> buf(BUFFER_SIZE) or uint8_t instead? // don't use the string type for your buffer because for upload and binary file you can have some \0 in the middle of the content). + CRLF interpretation --> request smuggling
-	int					buf_pos;
-	int					bytes_read;
-
-	void	processRequest();
-	void	sendResponse();
-	void	parseEncodedBody();
-	void	parseBody();
-
-	void	findServerBlock();
-	void	findLocationBlock();
-	int		calcMatches(std::vector<std::string>&, std::vector<std::string>&);
-	std::vector<std::string>	splitPath(std::string input, char delim);
-
-	ARequest* newRequest();
+	ARequest*						newRequest();
 
 	enum {
 		body_start = 0,

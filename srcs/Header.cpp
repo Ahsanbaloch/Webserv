@@ -17,6 +17,8 @@ Header::Header()
 	path_encoded = 0;
 	query_encoded = 0;
 	dot_in_path = 0;
+	body_expected = 0;
+	expect_exists = 0;
 }
 
 Header::Header(RequestHandler& src)
@@ -32,6 +34,8 @@ Header::Header(RequestHandler& src)
 	path_encoded = 0;
 	query_encoded = 0;
 	dot_in_path = 0;
+	body_expected = 0;
+	expect_exists = 0;
 }
 
 Header::Header(const Header& src)
@@ -52,6 +56,8 @@ Header::Header(const Header& src)
 	path_encoded = src.path_encoded;
 	query_encoded = src.query_encoded;
 	dot_in_path = src.dot_in_path;
+	body_expected = src.body_expected;
+	expect_exists = src.expect_exists;
 }
 
 Header& Header::operator=(const Header& src)
@@ -72,6 +78,8 @@ Header& Header::operator=(const Header& src)
 		path_encoded = src.path_encoded;
 		query_encoded = src.query_encoded;
 		dot_in_path = src.dot_in_path;
+		body_expected = src.body_expected;
+		expect_exists = src.expect_exists;
 	}
 	return (*this);
 }
@@ -112,6 +120,15 @@ std::map<std::string, std::string>	Header::getHeaderFields() const
 	return (header_fields);
 }
 
+bool	Header::getBodyStatus() const
+{
+	return (body_expected);
+}
+
+bool	Header::getHeaderExpectedStatus() const
+{
+	return (expect_exists);
+}
 
 /////////////// MAIN METHODS //////////////////
 
@@ -185,22 +202,10 @@ void	Header::decode(std::string& sequence)
 	}
 }
 
-
-std::vector<std::string>	Header::splitPath(std::string input, char delim)
-{
-	std::istringstream			iss(input);
-	std::string					item;
-	std::vector<std::string>	result;
-	
-	while (std::getline(iss, item, delim))
-		result.push_back("/" + item);
-	return (result);
-}
-
 void	Header::removeDots()
 {
 	std::vector<std::string> updated_path;
-	std::vector<std::string> parts = splitPath(path, '/');
+	std::vector<std::string> parts = handler.splitPath(path, '/');
 
 	if (parts.size() > 1)
 		parts.erase(parts.begin());
@@ -264,7 +269,7 @@ void	Header::parseHeaderFields()
 
 	headers_state = he_start; // move to constructor?
 
-	while (!headers_parsing_done && (handler.buf_pos)++ < handler.bytes_read)
+	while (!headers_parsing_done && (handler.buf_pos)++ < handler.getBytesRead())
 	{
 		ch = handler.buf[handler.buf_pos];
 	
@@ -388,7 +393,7 @@ void	Header::parseHeaderFields()
 					content_length_exists = 1;
 					checkBodyLength(header_value);
 					if (handler.body_length > 0)
-						handler.body_expected = 1;
+						body_expected = 1;
 				}
 				if (header_name == "transfer-encoding")
 				{
@@ -404,7 +409,7 @@ void	Header::parseHeaderFields()
 						throw CustomException("Bad request");
 					}
 					transfer_encoding_exists = 1;
-					handler.body_expected = 1;
+					body_expected = 1;
 				}
 				if (header_name == "host")
 				{
@@ -421,7 +426,7 @@ void	Header::parseHeaderFields()
 					host_exists = 1;
 				}
 				if (header_name == "expect")
-					handler.expect_exists = 1; // in this case a response is expected before the (rest of) body is sent
+					expect_exists = 1; // in this case a response is expected before the (rest of) body is sent
 				header_fields.insert(std::pair<std::string, std::string>(header_name, header_value));
 				header_name.clear();
 				header_value.clear();
@@ -543,7 +548,7 @@ void	Header::parseRequestLine()
 
 	rl_state = rl_start; // move to constructor?
 
-	while (!rl_parsing_done && (handler.buf_pos)++ < handler.bytes_read)
+	while (!rl_parsing_done && (handler.buf_pos)++ < handler.getBytesRead())
 	{
 		ch = handler.buf[handler.buf_pos];
 	

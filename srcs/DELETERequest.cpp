@@ -34,7 +34,7 @@ DELETERequest& DELETERequest::operator=(const DELETERequest& src)
 
 void	DELETERequest::deleteFile()
 {
-	std::string file = handler.getLocationConfig().root + handler.header.getPath();
+	std::string file = handler.getLocationConfig().root + handler.getHeaderInfo().getPath();
 
 	std::cout << "fileeee: " << file << std::endl;
 
@@ -51,11 +51,11 @@ void	DELETERequest::deleteFile()
 
 void	DELETERequest::deleteDir()
 {
-	std::string	dir = handler.getLocationConfig().root + handler.header.getPath();
+	std::string	dir = handler.getLocationConfig().root + handler.getHeaderInfo().getPath();
 	
 	std::cout << "dirrrr: " << dir << std::endl;
 
-	if (handler.header.getPath() == "/" || rmdir(dir.c_str()) != 0)
+	if (handler.getHeaderInfo().getPath() == "/" || rmdir(dir.c_str()) != 0)
 	{
 		// indicate that it is forbidden to delete directories if they are empty or are the root
 		handler.setStatus(403);

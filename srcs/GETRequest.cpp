@@ -4,12 +4,12 @@
 /////////// CONSTRUCTORS & DESTRUCTORS ///////////
 
 GETRequest::GETRequest(RequestHandler& src)
-	: ARequest(src)
+	: ARequest(src), auto_index(0)
 {
 }
 
 GETRequest::GETRequest(/* args */)
-	: ARequest()
+	: ARequest(), auto_index(0)
 {
 }
 
@@ -18,14 +18,17 @@ GETRequest::~GETRequest()
 }
 
 GETRequest::GETRequest(const GETRequest& src)
-	: ARequest(src)
+	: ARequest(src), auto_index(src.auto_index)
 {
 }
 
 GETRequest& GETRequest::operator=(const GETRequest& src)
 {
 	if (this != &src)
+	{
 		ARequest::operator=(src);
+		auto_index = src.auto_index;
+	}
 	return (*this);
 }
 
@@ -48,7 +51,7 @@ std::string	GETRequest::getBodyFromFile()
 {
 	std::string body;
 
-	std::ifstream file(handler.file_path); // Open the file
+	std::ifstream file(file_path); // Open the file
 	if (!file.is_open()) 
 	{
 		handler.setStatus(404);
@@ -89,7 +92,6 @@ std::string GETRequest::getBodyFromDir() // probably create some html for it
 	return (body);
 }
 
-
 std::string GETRequest::createBody()
 {
 	std::string body;
@@ -97,7 +99,7 @@ std::string GETRequest::createBody()
 	if (handler.getStatus() >= 400) // check if error was identified (or is this handled somewhere else?)
 		; // From configData get specific info about which page should be displayed
 		// look up file and read content into response body
-	if (handler.autoindex == 1)
+	if (auto_index)
 		body = getBodyFromDir();
 	else
 		body = getBodyFromFile();
@@ -108,7 +110,7 @@ std::string	GETRequest::createHeaderFields(std::string body)
 {
 	std::string	header;
 
-	if (handler.url_relocation)
+	if (!handler.getLocationConfig().redirect.empty())
 		header.append("Location: " + handler.getLocationConfig().redirect + "\r\n");
 	else
 	{
@@ -154,13 +156,13 @@ void	GETRequest::checkRedirects()
 			// if file does exist, search again for correct location
 			// findLocationBlock(handler); //should the root be taken into account when rechecking the location Block?
 			handler.findLocationBlock();
-			handler.file_path = handler.header.redirected_path;
-			handler.file_type = handler.file_path.substr(handler.file_path.find('.') + 1); // create a function for that in case it is not a file type
+			file_path = redirected_path;
+			file_type = file_path.substr(file_path.find('.') + 1); // create a function for that in case it is not a file type
 		}
 		else
 		{
 			if (handler.getLocationConfig().autoIndex)
-				handler.autoindex = 1;
+				auto_index = 1;
 			else
 			{
 				handler.setStatus(404);
@@ -171,7 +173,7 @@ void	GETRequest::checkRedirects()
 	else
 	{
 		// file_type is already set by checkFileType
-		handler.file_path = handler.getLocationConfig().root + "/" + handler.header.getPath();
+		file_path = handler.getLocationConfig().root + "/" + handler.getHeaderInfo().getPath();
 	}
 	std::cout << "location selected: " << handler.getSelectedLocation() << std::endl;
 }
@@ -180,11 +182,11 @@ std::string	GETRequest::identifyMIME()
 {
 	// also check against accept header? --> return 406 if the requirement cannot be satisfied
 	// how to best identifyMIME?
-	if (handler.autoindex) // probably also rather going to be html
+	if (auto_index) // probably also rather going to be html
 		return ("text/plain");
-	else if (handler.file_type == "html")
+	else if (file_type == "html")
 		return ("text/html");
-	else if (handler.file_type == "png" || handler.file_type == "ico")
+	else if (file_type == "png" || file_type == "ico")
 		return ("image/png");
 	else
 		return (""); // what should be the default return?
@@ -197,8 +199,11 @@ Response	*GETRequest::createResponse()
 	Response *response = new Response; // needs to be delete somewhere
 
 	// check for direct redirects and internal redirects
-	if (!handler.url_relocation)
+	if (!handler.getLocationConfig().redirect.empty())
+		handler.setStatus(307);
+	else
 		checkRedirects();
+
 
 	// check allowed methods for the selected location
 	// if (!handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].getAllowed)

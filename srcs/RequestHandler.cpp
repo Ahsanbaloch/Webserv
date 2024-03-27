@@ -11,12 +11,9 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	body_parsing_done = 0;
 	chunk_length = 0;
 	response_ready = 0;
-	body_expected = 0;
 	body_read = 0;
 	selected_location = 0;
 	selected_server = 0;
-	url_relocation = 0;
-	autoindex = 0;
 	request = NULL;
 	response = NULL;
 	raw_buf.setf(std::ios::app | std::ios::binary);
@@ -76,6 +73,15 @@ bool	RequestHandler::getResponseStatus() const
 	return (response_ready);
 }
 
+int		RequestHandler::getBytesRead() const
+{
+	return (bytes_read);
+}
+
+const Header&	RequestHandler::getHeaderInfo()
+{
+	return (header);
+}
 
 void	RequestHandler::sendResponse()
 {
@@ -132,7 +138,7 @@ void	RequestHandler::processRequest()
 		std::cout << "identified query: " << header.getQuery() << '\n';
 		std::cout << "identified version: " << header.getHttpVersion() << '\n';
 
-		if (expect_exists) // this is relevant for POST only, should this be done in another place? (e.g. POST request class)
+		if (header.getHeaderExpectedStatus()) // this is relevant for POST only, should this be done in another place? (e.g. POST request class)
 		{
 			// check value of expect field?
 			// check content-length field before accepting?
@@ -140,7 +146,7 @@ void	RequestHandler::processRequest()
 			// make reponse
 		}
 		// if body is expected
-		if (body_expected)
+		if (header.getBodyStatus())
 		{
 			//here we need to account for max-body_size specified in config file
 			// if chunked
@@ -151,7 +157,7 @@ void	RequestHandler::processRequest()
 				// return to continue receiving
 		}
 		// if no body is expected OR end of body has been reached
-		if (!body_expected || body_read)
+		if (!header.getBodyStatus() || body_read)
 		{
 			// try/catch block?
 			request = newRequest();
@@ -197,13 +203,6 @@ ARequest* RequestHandler::newRequest() // newResponse instead?
 	// find location block within server block if multiple exist (this applies to all request types; for GET requests there might be an internal redirect happening later on)
 	if (server_config[selected_server].locations.size() > 1)
 		findLocationBlock();
-	
-	// Is this done in case of all methods or just GET?
-	if (!(getLocationConfig().redirect.empty()))
-	{
-		status = 307;
-		url_relocation = 1;
-	}
 
 	if (header.getMethod() == "GET")
 		return (new GETRequest(*this));
@@ -219,11 +218,11 @@ ARequest* RequestHandler::newRequest() // newResponse instead?
 void	RequestHandler::findLocationBlock() // double check if this is entirely correct approach
 {
 	std::vector<std::string> uri_path_items;
-	if (header.redirected_path.empty())
+	if (request->getRedirectedPath().empty())
 		uri_path_items = splitPath(header.getPath(), '/');
 	else
 	{
-		std::string temp = "/" + header.redirected_path;
+		std::string temp = "/" + request->getRedirectedPath();
 		uri_path_items = splitPath(temp, '/');
 	}
 	int	size = server_config[selected_server].locations.size();

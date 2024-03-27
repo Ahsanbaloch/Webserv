@@ -13,6 +13,10 @@ class ARequest
 protected:
 	RequestHandler&	handler;
 
+	// vars
+	std::string			file_type;
+	std::string			redirected_path;
+
 	// methods
 	bool			checkFileType();
 	int				checkFileExistence();
@@ -26,6 +30,9 @@ public:
 	// constructors & destructors
 	explicit ARequest(RequestHandler&);
 	virtual ~ARequest();
+
+	// getters
+	std::string			getRedirectedPath() const;
 
 	// methods
 	virtual Response	*createResponse() = 0;

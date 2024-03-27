@@ -14,6 +14,12 @@
 class GETRequest: public ARequest
 {
 private:
+	// var
+	std::string			file_path; // better name?
+
+	//flags
+	bool				auto_index;
+
 	// helper methods
 	std::string	createStatusLine();
 	std::string	createBody();
