@@ -52,6 +52,9 @@ RequestHandler& RequestHandler::operator=(const RequestHandler& src)
 	return (*this);
 }
 
+
+///////// GETTERS ///////////
+
 std::vector<t_server_config>	RequestHandler::getServerConfig() const
 {
 	return (server_config);
@@ -60,11 +63,6 @@ std::vector<t_server_config>	RequestHandler::getServerConfig() const
 int	RequestHandler::getStatus() const
 {
 	return (status);
-}
-
-void	RequestHandler::setStatus(int status)
-{
-	this->status = status;
 }
 
 s_location_config	RequestHandler::getLocationConfig() const
@@ -91,6 +89,18 @@ const Header&	RequestHandler::getHeaderInfo()
 {
 	return (header);
 }
+
+
+///////// SETTERS ///////////
+
+void	RequestHandler::setStatus(int status)
+{
+	this->status = status;
+}
+
+
+
+///////// METHODS ///////////
 
 void	RequestHandler::sendResponse()
 {
@@ -300,7 +310,6 @@ void	RequestHandler::findServerBlock()
 			break;
 		}
 	}
-
 	// std::vector<t_server_config>::iterator it = handler.getServerConfig().begin();
 	// for (std::vector<t_server_config>::iterator it2 = handler.getServerConfig().begin(); it2 != handler.getServerConfig().end(); it2++)
 	// {
@@ -315,6 +324,8 @@ void	RequestHandler::findServerBlock()
 	// if (it != handler.getServerConfig().begin())
 	// 	handler.getServerConfig().erase(handler.getServerConfig().begin());
 }
+
+
 
 
 void	RequestHandler::parseEncodedBody()
