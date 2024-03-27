@@ -1,5 +1,5 @@
-#ifndef AREQUEST_H
-# define AREQUEST_H
+#ifndef ARESPONSE_H
+# define ARESPONSE_H
 
 # include <string>
 # include <map>
@@ -8,7 +8,7 @@
 
 class RequestHandler;
 
-class ARequest
+class AResponse
 {
 protected:
 	RequestHandler&	handler;
@@ -26,14 +26,14 @@ protected:
 	int				checkFileExistence();
 
 	// constructors
-	ARequest();
-	ARequest(const ARequest&);
-	ARequest& operator=(const ARequest&);
+	AResponse();
+	AResponse(const AResponse&);
+	AResponse& operator=(const AResponse&);
 
 public:
 	// constructors & destructors
-	explicit ARequest(RequestHandler&);
-	virtual ~ARequest();
+	explicit AResponse(RequestHandler&);
+	virtual ~AResponse();
 
 	// getters
 	std::string			getRedirectedPath() const;

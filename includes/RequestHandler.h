@@ -9,10 +9,10 @@
 #include <cstdio>
 #include "CustomException.h"
 #include "Header.h"
-#include "ARequest.h"
-#include "GETRequest.h"
-#include "DELETERequest.h"
-#include "ERRORRequest.h"
+#include "AResponse.h"
+#include "GETResponse.h"
+#include "DELETEResponse.h"
+#include "ERRORResponse.h"
 #include "config/config_pars.hpp"
 #include "defines.h"
 
@@ -54,7 +54,7 @@ public:
 	// setters
 	void							setStatus(int);
 
-	ARequest*						request;
+	AResponse*						request;
 	
 	// tbd
 	int								body_parsing_done;
@@ -77,7 +77,7 @@ public:
 	void							findLocationBlock();
 	int								calcMatches(std::vector<std::string>&, std::vector<std::string>&); // make private?
 	std::vector<std::string>		splitPath(std::string input, char delim);
-	ARequest*						newRequest();
+	AResponse*						newRequest();
 
 	enum {
 		body_start = 0,

@@ -1,20 +1,20 @@
 
-#include "ERRORRequest.h"
+#include "ERRORResponse.h"
 
-ERRORRequest::ERRORRequest(/* args */)
+ERRORResponse::ERRORResponse(/* args */)
 {
 }
 
-ERRORRequest::ERRORRequest(RequestHandler& src)
-	:  ARequest(src)
+ERRORResponse::ERRORResponse(RequestHandler& src)
+	:  AResponse(src)
 {
 }
 
-ERRORRequest::~ERRORRequest()
+ERRORResponse::~ERRORResponse()
 {
 }
 
-void	ERRORRequest::createResponse()
+void	ERRORResponse::createResponse()
 {
 	std::ostringstream status_conversion;
 	std::ostringstream length_conversion;

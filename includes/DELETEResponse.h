@@ -1,14 +1,14 @@
-#ifndef DELETEREQUEST_H
-# define DELETEREQUEST_H
+#ifndef DELETERESPONSE_H
+# define DELETERESPONSE_H
 
 #include <iostream>
 #include <sstream>
 #include <cstdio>
-#include "ARequest.h"
+#include "AResponse.h"
 #include "RequestHandler.h"
 #include "Response.h"
 
-class DELETERequest: public ARequest
+class DELETEResponse: public AResponse
 {
 private:
 	// helper methods
@@ -17,14 +17,14 @@ private:
 	std::string	createStatusLine();
 
 	// constructors
-	DELETERequest();
-	DELETERequest(const DELETERequest&);
-	DELETERequest& operator=(const DELETERequest&);
+	DELETEResponse();
+	DELETEResponse(const DELETEResponse&);
+	DELETEResponse& operator=(const DELETEResponse&);
 
 public:
 	// constructors & destructors
-	explicit DELETERequest(RequestHandler&);
-	~DELETERequest();
+	explicit DELETEResponse(RequestHandler&);
+	~DELETEResponse();
 
 	void	createResponse();
 

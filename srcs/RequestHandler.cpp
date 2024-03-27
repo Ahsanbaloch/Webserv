@@ -189,7 +189,7 @@ void	RequestHandler::processRequest()
 	}
 	catch(const std::exception& e)
 	{
-		request = new ERRORRequest(*this);
+		request = new ERRORResponse(*this);
 		request->createResponse();
 		// response = new Response; // needs to be freed somewhere
 		// response->errorResponse(*this);
@@ -216,7 +216,7 @@ void	RequestHandler::processRequest()
 }
 
 
-ARequest* RequestHandler::newRequest() // newResponse instead?
+AResponse* RequestHandler::newRequest() // newResponse instead?
 {
 	// find server block if there are multiple that match (this applies to all request types)
 	if (server_config.size() > 1)
@@ -227,9 +227,9 @@ ARequest* RequestHandler::newRequest() // newResponse instead?
 		findLocationBlock();
 
 	if (header.getMethod() == "GET")
-		return (new GETRequest(*this));
+		return (new GETResponse(*this));
 	else if (header.getMethod() == "DELETE")
-		return (new DELETERequest(*this));
+		return (new DELETEResponse(*this));
 	else if (header.getMethod() == "POST")
 		;///
 	// check if something else and thus not implemented; but currently alsready done when parsing

@@ -1,38 +1,38 @@
 
-#include "DELETERequest.h"
+#include "DELETEResponse.h"
 
 ///////// CONSTRUCTORS & DESTRUCTOR //////////
 
-DELETERequest::DELETERequest(RequestHandler& src)
-	: ARequest(src)
+DELETEResponse::DELETEResponse(RequestHandler& src)
+	: AResponse(src)
 {
 }
 
-DELETERequest::DELETERequest(/* args */)
-	: ARequest()
+DELETEResponse::DELETEResponse(/* args */)
+	: AResponse()
 {
 }
 
-DELETERequest::~DELETERequest()
+DELETEResponse::~DELETEResponse()
 {
 }
 
-DELETERequest::DELETERequest(const DELETERequest& src)
-	: ARequest(src)
+DELETEResponse::DELETEResponse(const DELETEResponse& src)
+	: AResponse(src)
 {
 }
 
-DELETERequest& DELETERequest::operator=(const DELETERequest& src)
+DELETEResponse& DELETEResponse::operator=(const DELETEResponse& src)
 {
 	if (this != &src)
-		ARequest::operator=(src);
+		AResponse::operator=(src);
 	return (*this);
 }
 
 
 ///////// HELPER METHODS //////////
 
-void	DELETERequest::deleteFile()
+void	DELETEResponse::deleteFile()
 {
 	std::string file = handler.getLocationConfig().root + handler.getHeaderInfo().getPath();
 
@@ -49,7 +49,7 @@ void	DELETERequest::deleteFile()
 	// send 409 if the file is in use and thus cannot be deleted?
 }
 
-void	DELETERequest::deleteDir()
+void	DELETEResponse::deleteDir()
 {
 	std::string	dir = handler.getLocationConfig().root + handler.getHeaderInfo().getPath();
 	
@@ -65,7 +65,7 @@ void	DELETERequest::deleteDir()
 		handler.setStatus(200);
 }
 
-std::string	DELETERequest::createStatusLine() // make Response method? --> set?
+std::string	DELETEResponse::createStatusLine() // make Response method? --> set?
 {
 	std::string status_line;
 	std::ostringstream status_conversion;
@@ -80,7 +80,7 @@ std::string	DELETERequest::createStatusLine() // make Response method? --> set?
 
 ///////// MAIN METHODS //////////
 
-void	DELETERequest::createResponse()
+void	DELETEResponse::createResponse()
 {
 	// Response *response = new Response; // needs to be delete somewhere
 

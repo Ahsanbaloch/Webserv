@@ -1,32 +1,32 @@
 
-#include "GETRequest.h"
+#include "GETResponse.h"
 
 /////////// CONSTRUCTORS & DESTRUCTORS ///////////
 
-GETRequest::GETRequest(RequestHandler& src)
-	: ARequest(src), auto_index(0)
+GETResponse::GETResponse(RequestHandler& src)
+	: AResponse(src), auto_index(0)
 {
 }
 
-GETRequest::GETRequest(/* args */)
-	: ARequest(), auto_index(0)
+GETResponse::GETResponse(/* args */)
+	: AResponse(), auto_index(0)
 {
 }
 
-GETRequest::~GETRequest()
+GETResponse::~GETResponse()
 {
 }
 
-GETRequest::GETRequest(const GETRequest& src)
-	: ARequest(src), auto_index(src.auto_index)
+GETResponse::GETResponse(const GETResponse& src)
+	: AResponse(src), auto_index(src.auto_index)
 {
 }
 
-GETRequest& GETRequest::operator=(const GETRequest& src)
+GETResponse& GETResponse::operator=(const GETResponse& src)
 {
 	if (this != &src)
 	{
-		ARequest::operator=(src);
+		AResponse::operator=(src);
 		auto_index = src.auto_index;
 	}
 	return (*this);
@@ -35,7 +35,7 @@ GETRequest& GETRequest::operator=(const GETRequest& src)
 
 /////////// HELPER METHODS ///////////
 
-std::string	GETRequest::createStatusLine()
+std::string	GETResponse::createStatusLine()
 {
 	std::string status_line;
 	std::ostringstream status_conversion;
@@ -47,7 +47,7 @@ std::string	GETRequest::createStatusLine()
 	return (status_line);
 }
 
-std::string	GETRequest::getBodyFromFile()
+std::string	GETResponse::getBodyFromFile()
 {
 	std::string body;
 
@@ -66,7 +66,7 @@ std::string	GETRequest::getBodyFromFile()
 	return (body);
 }
 
-std::string GETRequest::getBodyFromDir() // probably create some html for it
+std::string GETResponse::getBodyFromDir() // probably create some html for it
 {
 	std::string body;
 	DIR *directory;
@@ -92,7 +92,7 @@ std::string GETRequest::getBodyFromDir() // probably create some html for it
 	return (body);
 }
 
-std::string GETRequest::createBody()
+std::string GETResponse::createBody()
 {
 	std::string body;
 
@@ -106,7 +106,7 @@ std::string GETRequest::createBody()
 	return (body);
 }
 
-std::string	GETRequest::createHeaderFields(std::string body)
+std::string	GETResponse::createHeaderFields(std::string body)
 {
 	std::string	header;
 
@@ -145,7 +145,7 @@ std::string	GETRequest::createHeaderFields(std::string body)
 	return (header);
 }
 
-void	GETRequest::checkRedirects()
+void	GETResponse::checkRedirects()
 {
 	// if the request is not for a file (otherwise the location has already been found)
 	if (!checkFileType())
@@ -178,7 +178,7 @@ void	GETRequest::checkRedirects()
 	std::cout << "location selected: " << handler.getSelectedLocation() << std::endl;
 }
 
-std::string	GETRequest::identifyMIME()
+std::string	GETResponse::identifyMIME()
 {
 	// also check against accept header? --> return 406 if the requirement cannot be satisfied
 	// how to best identifyMIME?
@@ -194,7 +194,7 @@ std::string	GETRequest::identifyMIME()
 
 /////////// MAIN METHODS ///////////
 
-void	GETRequest::createResponse()
+void	GETResponse::createResponse()
 {
 	// Response *response = new Response; // needs to be delete somewhere
 

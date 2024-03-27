@@ -1,17 +1,17 @@
-#ifndef GETREQUEST_H
-# define GETREQUEST_H
+#ifndef GETRESPONSE_H
+# define GETRESPONSE_H
 
 #include <dirent.h> //allowed?
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <sstream>
-#include "ARequest.h"
+#include "AResponse.h"
 #include "RequestHandler.h"
 #include "Response.h"
 
 
-class GETRequest: public ARequest
+class GETResponse: public AResponse
 {
 private:
 	// var
@@ -30,13 +30,13 @@ private:
 	std::string	getBodyFromDir();
 
 	// constructors
-	GETRequest();
-	GETRequest(const GETRequest&);
-	GETRequest& operator=(const GETRequest&);
+	GETResponse();
+	GETResponse(const GETResponse&);
+	GETResponse& operator=(const GETResponse&);
 public:
 	// constructors & destructors
-	explicit GETRequest(RequestHandler&);
-	~GETRequest();
+	explicit GETResponse(RequestHandler&);
+	~GETResponse();
 
 	void	createResponse();
 };

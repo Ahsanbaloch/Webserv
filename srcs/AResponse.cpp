@@ -1,28 +1,28 @@
-#include "ARequest.h"
+#include "AResponse.h"
 #include "RequestHandler.h"
 
 ///////// CONSTRUCTORS & DESTRUCTORS ///////////
 
-ARequest::ARequest()
+AResponse::AResponse()
 	: handler(*new RequestHandler())
 {
 }
 
-ARequest::ARequest(RequestHandler& request_handler) 
+AResponse::AResponse(RequestHandler& request_handler) 
 	: handler(request_handler)
 {
 }
 
-ARequest::~ARequest()
+AResponse::~AResponse()
 {
 }
 
-ARequest::ARequest(const ARequest& src)
+AResponse::AResponse(const AResponse& src)
 	: handler(src.handler)
 {
 }
 
-ARequest& ARequest::operator=(const ARequest& src)
+AResponse& AResponse::operator=(const AResponse& src)
 {
 	if (this != &src)
 		handler = src.handler;
@@ -31,29 +31,29 @@ ARequest& ARequest::operator=(const ARequest& src)
 
 ////////// GETTERS ///////////
 
-std::string	ARequest::getRedirectedPath() const
+std::string	AResponse::getRedirectedPath() const
 {
 	return (redirected_path);
 }
 
-std::string ARequest::getRespondsHeaderFields() const
+std::string AResponse::getRespondsHeaderFields() const
 {
 	return (header_fields);
 }
 
-std::string ARequest::getResponseBody() const
+std::string AResponse::getResponseBody() const
 {
 	return (body);
 }
 
-std::string ARequest::getResponseStatusLine() const
+std::string AResponse::getResponseStatusLine() const
 {
 	return (status_line);
 }
 
 ///////// METHODS ///////////
 
-int	ARequest::checkFileExistence()
+int	AResponse::checkFileExistence()
 {	
 	if (handler.getLocationConfig().path == "/") // maybe also cases where location ends with /? Is this possible?
 		redirected_path = handler.getLocationConfig().root + handler.getLocationConfig().path + handler.getLocationConfig().index;
@@ -66,7 +66,7 @@ int	ARequest::checkFileExistence()
 	return (result);
 }
 
-bool	ARequest::checkFileType()
+bool	AResponse::checkFileType()
 {
 	// what if there are two dots in the path? // is there a better way to identify the file type requested?
 	std::size_t found = handler.getHeaderInfo().getPath().find('.');
