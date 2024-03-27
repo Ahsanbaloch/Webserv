@@ -80,9 +80,9 @@ std::string	DELETERequest::createStatusLine() // make Response method? --> set?
 
 ///////// MAIN METHODS //////////
 
-Response	*DELETERequest::createResponse()
+void	DELETERequest::createResponse()
 {
-	Response *response = new Response; // needs to be delete somewhere
+	// Response *response = new Response; // needs to be delete somewhere
 
 	// check allowed methods for the selected location
 	// if (!handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].getAllowed)
@@ -94,9 +94,9 @@ Response	*DELETERequest::createResponse()
 	else
 		deleteDir();
 
-	response->status_line = createStatusLine();
-	response->header_fields = "Content-Type: plain/text\r\nContent-Length: 3\r\n\r\n"; // maybe send a html response here instead
-	response->body = "200"; // should be gotten from handler.status
+	status_line = createStatusLine();
+	header_fields = "Content-Type: plain/text\r\nContent-Length: 3\r\n\r\n"; // maybe send a html response here instead
+	body = "200"; // should be gotten from handler.status
 
 
 	// What if there is a deletion request; while a file is in the process of being rendered?
@@ -107,6 +107,6 @@ Response	*DELETERequest::createResponse()
 
 	// send a 200 (OK) status code if the action has been enacted and the response message includes a representation describing the status
 
-	return (response);
+	// return (response);
 	
 }

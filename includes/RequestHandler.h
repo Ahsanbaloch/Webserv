@@ -12,6 +12,7 @@
 #include "ARequest.h"
 #include "GETRequest.h"
 #include "DELETERequest.h"
+#include "ERRORRequest.h"
 #include "config/config_pars.hpp"
 #include "defines.h"
 

@@ -38,7 +38,7 @@ public:
 	explicit GETRequest(RequestHandler&);
 	~GETRequest();
 
-	Response	*createResponse();
+	void	createResponse();
 };
 
 #endif

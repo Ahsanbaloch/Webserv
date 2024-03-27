@@ -194,9 +194,9 @@ std::string	GETRequest::identifyMIME()
 
 /////////// MAIN METHODS ///////////
 
-Response	*GETRequest::createResponse()
+void	GETRequest::createResponse()
 {
-	Response *response = new Response; // needs to be delete somewhere
+	// Response *response = new Response; // needs to be delete somewhere
 
 	// check for direct redirects and internal redirects
 	if (!handler.getLocationConfig().redirect.empty())
@@ -209,18 +209,18 @@ Response	*GETRequest::createResponse()
 	// if (!handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].getAllowed)
 		// throw exception
 
-	response->status_line = createStatusLine();
+	status_line = createStatusLine();
 	if ((handler.getStatus() >= 100 && handler.getStatus() <= 103) || handler.getStatus() == 204 || handler.getStatus() == 304 || handler.getStatus() == 307)
-		response->body = ""; // or just initialize it like that // here no body should be created
+		body = ""; // or just initialize it like that // here no body should be created
 	else
-		response->body = createBody();
+		body = createBody();
 	
-	response->header_fields = createHeaderFields(response->body);
+	header_fields = createHeaderFields(body);
 
 	// The presence of a message body in a response depends on both the request method to which it is responding and the response status code. 
 	// e.g. POST 200 is different from GET 200
 
 	// A server MUST NOT send a Transfer-Encoding header field in any response with a status code of 1xx (Informational) or 204 (No Content)
 	// any response with a 1xx (Informational), 204 (No Content), or 304 (Not Modified) status code is always terminated by the first empty line after the header fields --> no body
-	return (response);
+	// return (response);
 }

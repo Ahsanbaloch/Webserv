@@ -26,7 +26,7 @@ public:
 	explicit DELETERequest(RequestHandler&);
 	~DELETERequest();
 
-	Response	*createResponse();
+	void	createResponse();
 
 };
 

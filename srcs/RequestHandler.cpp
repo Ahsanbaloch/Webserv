@@ -104,7 +104,8 @@ void	RequestHandler::setStatus(int status)
 
 void	RequestHandler::sendResponse()
 {
-	std::string resp = response->status_line + response->header_fields + response->body;
+	// std::string resp = response->status_line + response->header_fields + response->body;
+	std::string resp = request->getResponseStatusLine() + request->getRespondsHeaderFields() + request->getResponseBody();
 	send(connection_fd, resp.c_str(), resp.length(), 0); 
 	// check for errors when calling send
 }
@@ -180,7 +181,8 @@ void	RequestHandler::processRequest()
 		{
 			// try/catch block?
 			request = newRequest();
-			response = request->createResponse();
+			request->createResponse();
+			// response = request->createResponse();
 			// set Response to be ready
 		}
 		response_ready = 1;
@@ -188,8 +190,10 @@ void	RequestHandler::processRequest()
 	}
 	catch(const std::exception& e)
 	{
-		response = new Response; // needs to be freed somewhere
-		response->errorResponse(*this);
+		request = new ERRORRequest(*this);
+		request->createResponse();
+		// response = new Response; // needs to be freed somewhere
+		// response->errorResponse(*this);
 		response_ready = 1;
 		std::cerr << e.what() << '\n';
 	}
