@@ -24,7 +24,6 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	buf_pos = -1;
 	
 	request = NULL;
-	response = NULL;
 
 	raw_buf.setf(std::ios::app | std::ios::binary);
 	memset(&buf, 0, sizeof(buf));

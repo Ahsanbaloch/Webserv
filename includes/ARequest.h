@@ -43,7 +43,6 @@ public:
 
 	// methods
 	virtual void		createResponse() = 0;
-	void				errorResponse();
 
 };
 

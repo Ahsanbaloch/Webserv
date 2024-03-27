@@ -53,25 +53,6 @@ std::string ARequest::getResponseStatusLine() const
 
 ///////// METHODS ///////////
 
-void	ARequest::errorResponse()
-{
-	std::ostringstream status_conversion;
-	std::ostringstream length_conversion;
-
-	status_line.append("HTTP/1.1 ");
-	status_conversion << handler.getStatus();
-	status_line.append(status_conversion.str());
-	status_line.append(" \r\n");
-
-	body.append(status_conversion.str());
-	length_conversion << status_conversion.str().size();
-
-	header_fields.append("Content-Type: plain/text\r\n");
-	header_fields.append("Content-Length: ");
-	header_fields.append(length_conversion.str() + "\r\n");
-	header_fields.append("\r\n");
-}
-
 int	ARequest::checkFileExistence()
 {	
 	if (handler.getLocationConfig().path == "/") // maybe also cases where location ends with /? Is this possible?

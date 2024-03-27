@@ -55,8 +55,6 @@ public:
 	void							setStatus(int);
 
 	ARequest*						request;
-	Response*						response;
-	
 	
 	// tbd
 	int								body_parsing_done;
