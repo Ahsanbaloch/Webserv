@@ -54,7 +54,7 @@ public:
 	// setters
 	void							setStatus(int);
 
-	AResponse*						request;
+	AResponse*						response;
 	
 	// tbd
 	int								body_parsing_done;
@@ -77,7 +77,7 @@ public:
 	void							findLocationBlock();
 	int								calcMatches(std::vector<std::string>&, std::vector<std::string>&); // make private?
 	std::vector<std::string>		splitPath(std::string input, char delim);
-	AResponse*						newRequest();
+	AResponse*						prepareResponse();
 
 	enum {
 		body_start = 0,

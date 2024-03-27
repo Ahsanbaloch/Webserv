@@ -23,7 +23,7 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 
 	buf_pos = -1;
 	
-	request = NULL;
+	response = NULL;
 
 	raw_buf.setf(std::ios::app | std::ios::binary);
 	memset(&buf, 0, sizeof(buf));
@@ -104,7 +104,7 @@ void	RequestHandler::setStatus(int status)
 void	RequestHandler::sendResponse()
 {
 	// std::string resp = response->status_line + response->header_fields + response->body;
-	std::string resp = request->getResponseStatusLine() + request->getRespondsHeaderFields() + request->getResponseBody();
+	std::string resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
 	send(connection_fd, resp.c_str(), resp.length(), 0); 
 	// check for errors when calling send
 }
@@ -179,8 +179,8 @@ void	RequestHandler::processRequest()
 		if (!header.getBodyStatus() || body_read)
 		{
 			// try/catch block?
-			request = newRequest();
-			request->createResponse();
+			response = prepareResponse();
+			response->createResponse();
 			// response = request->createResponse();
 			// set Response to be ready
 		}
@@ -189,8 +189,8 @@ void	RequestHandler::processRequest()
 	}
 	catch(const std::exception& e)
 	{
-		request = new ERRORResponse(*this);
-		request->createResponse();
+		response = new ERRORResponse(*this);
+		response->createResponse();
 		// response = new Response; // needs to be freed somewhere
 		// response->errorResponse(*this);
 		response_ready = 1;
@@ -216,7 +216,7 @@ void	RequestHandler::processRequest()
 }
 
 
-AResponse* RequestHandler::newRequest() // newResponse instead?
+AResponse* RequestHandler::prepareResponse()
 {
 	// find server block if there are multiple that match (this applies to all request types)
 	if (server_config.size() > 1)
@@ -240,11 +240,11 @@ AResponse* RequestHandler::newRequest() // newResponse instead?
 void	RequestHandler::findLocationBlock() // double check if this is entirely correct approach
 {
 	std::vector<std::string> uri_path_items;
-	if (request->getRedirectedPath().empty())
+	if (response->getRedirectedPath().empty())
 		uri_path_items = splitPath(header.getPath(), '/');
 	else
 	{
-		std::string temp = "/" + request->getRedirectedPath();
+		std::string temp = "/" + response->getRedirectedPath();
 		uri_path_items = splitPath(temp, '/');
 	}
 	int	size = server_config[selected_server].locations.size();
