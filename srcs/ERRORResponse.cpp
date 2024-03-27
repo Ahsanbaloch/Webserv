@@ -29,7 +29,7 @@ std::string	ERRORResponse::createBody(std::string status_code)
 	std::string html_var = "ERROR_CODE";
 	std::string default_err_file = "./www/default_error.html";
 
-	// implement check whether location specifies particulary error file
+	// implement check whether location specifies particular error file
 
 	std::ifstream file(default_err_file);
 	if (!file.is_open()) 

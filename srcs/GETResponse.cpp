@@ -103,7 +103,7 @@ std::string GETResponse::createBody()
 	return (body);
 }
 
-std::string	GETResponse::createHeaderFields(std::string body)
+std::string	GETResponse::createHeaderFields(std::string body) // probably don't need parameter anymore
 {
 	std::string	header;
 
