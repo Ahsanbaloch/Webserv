@@ -8,7 +8,6 @@
 #include <sstream>
 #include "AResponse.h"
 #include "RequestHandler.h"
-#include "Response.h"
 
 
 class GETResponse: public AResponse

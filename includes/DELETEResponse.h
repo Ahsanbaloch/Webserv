@@ -6,7 +6,6 @@
 #include <cstdio>
 #include "AResponse.h"
 #include "RequestHandler.h"
-#include "Response.h"
 
 class DELETEResponse: public AResponse
 {
