@@ -36,7 +36,7 @@ void	DELETEResponse::deleteFile()
 {
 	std::string file = handler.getLocationConfig().root + handler.getHeaderInfo().getPath();
 
-	std::cout << "fileeee: " << file << std::endl;
+	std::cout << "file to be deleted: " << file << std::endl;
 
 	if (remove(file.c_str()) != 0)
 	{
@@ -53,7 +53,7 @@ void	DELETEResponse::deleteDir()
 {
 	std::string	dir = handler.getLocationConfig().root + handler.getHeaderInfo().getPath();
 	
-	std::cout << "dirrrr: " << dir << std::endl;
+	std::cout << "directory to be deleted " << dir << std::endl;
 
 	if (handler.getHeaderInfo().getPath() == "/" || rmdir(dir.c_str()) != 0)
 	{
@@ -99,7 +99,6 @@ void	DELETEResponse::createResponse()
 	status_line = createStatusLine();
 	header_fields = "Content-Type: plain/text\r\nContent-Length: 3\r\n\r\n"; // maybe send a html response here instead
 	body = "200"; // should be gotten from handler.status
-
 
 	// What if there is a deletion request; while a file is in the process of being rendered?
 

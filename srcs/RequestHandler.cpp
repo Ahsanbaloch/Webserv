@@ -119,7 +119,6 @@ void	RequestHandler::setStatus(int status)
 
 void	RequestHandler::sendResponse()
 {
-	// std::string resp = response->status_line + response->header_fields + response->body;
 	std::string resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
 	send(connection_fd, resp.c_str(), resp.length(), 0); 
 	// check for errors when calling send
@@ -246,7 +245,6 @@ AResponse* RequestHandler::prepareResponse()
 		return (new DELETEResponse(*this)); // need to free this somewhere
 	else if (header.getMethod() == "POST")
 		;///
-	// check if something else and thus not implemented; but currently alsready done when parsing
 	return (NULL);
 }
 
@@ -254,7 +252,7 @@ AResponse* RequestHandler::prepareResponse()
 void	RequestHandler::findLocationBlock() // double check if this is entirely correct approach
 {
 	std::vector<std::string> uri_path_items;
-	if (response->getRedirectedPath().empty())
+	if (response == NULL || response->getRedirectedPath().empty())
 		uri_path_items = splitPath(header.getPath(), '/');
 	else
 	{

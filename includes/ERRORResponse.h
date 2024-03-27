@@ -15,6 +15,8 @@ public:
 	~ERRORResponse();
 
 	void	createResponse();
+	std::string getDefaultErrorMessage(std::string);
+	std::string	createBody(std::string);
 };
 
 #endif
