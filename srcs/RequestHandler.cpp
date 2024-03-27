@@ -47,6 +47,22 @@ RequestHandler& RequestHandler::operator=(const RequestHandler& src)
 {
 	if (this != &src)
 	{
+		// header = src.header;
+		server_config = src.server_config;
+		status = src.status;
+		selected_location = src.selected_location;
+		selected_server = src.selected_server;
+		connection_fd = src.connection_fd;
+		bytes_read = src.bytes_read;
+		response_ready = src.response_ready;
+		body_parsing_done = src.body_parsing_done;
+		chunk_length = src.chunk_length;
+		request_length = src.request_length;
+		body_read = src.body_read;
+		body_beginning = src.body_beginning;
+		body_length = src.body_length;
+		buf_pos = src.buf_pos;
+		response = src.response;
 	}
 	return (*this);
 }
@@ -189,10 +205,8 @@ void	RequestHandler::processRequest()
 	}
 	catch(const std::exception& e)
 	{
-		response = new ERRORResponse(*this);
+		response = new ERRORResponse(*this); // need to free this somewhere
 		response->createResponse();
-		// response = new Response; // needs to be freed somewhere
-		// response->errorResponse(*this);
 		response_ready = 1;
 		std::cerr << e.what() << '\n';
 	}
@@ -227,9 +241,9 @@ AResponse* RequestHandler::prepareResponse()
 		findLocationBlock();
 
 	if (header.getMethod() == "GET")
-		return (new GETResponse(*this));
+		return (new GETResponse(*this)); // need to free this somewhere
 	else if (header.getMethod() == "DELETE")
-		return (new DELETEResponse(*this));
+		return (new DELETEResponse(*this)); // need to free this somewhere
 	else if (header.getMethod() == "POST")
 		;///
 	// check if something else and thus not implemented; but currently alsready done when parsing

@@ -96,9 +96,6 @@ std::string GETResponse::createBody()
 {
 	std::string body;
 
-	if (handler.getStatus() >= 400) // check if error was identified (or is this handled somewhere else?)
-		; // From configData get specific info about which page should be displayed
-		// look up file and read content into response body
 	if (auto_index)
 		body = getBodyFromDir();
 	else
@@ -145,7 +142,7 @@ std::string	GETResponse::createHeaderFields(std::string body)
 	return (header);
 }
 
-void	GETResponse::checkRedirects()
+void	GETResponse::checkInternalRedirects()
 {
 	// if the request is not for a file (otherwise the location has already been found)
 	if (!checkFileType())
@@ -196,18 +193,18 @@ std::string	GETResponse::identifyMIME()
 
 void	GETResponse::createResponse()
 {
-	// Response *response = new Response; // needs to be delete somewhere
-
 	// check for direct redirects and internal redirects
 	if (!handler.getLocationConfig().redirect.empty())
 		handler.setStatus(307);
 	else
-		checkRedirects();
-
+		checkInternalRedirects();
 
 	// check allowed methods for the selected location
-	// if (!handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].getAllowed)
-		// throw exception
+	if (!handler.getLocationConfig().GET)
+	{
+		handler.setStatus(405);
+		throw CustomException("Method Not Allowed");
+	}
 
 	status_line = createStatusLine();
 	if ((handler.getStatus() >= 100 && handler.getStatus() <= 103) || handler.getStatus() == 204 || handler.getStatus() == 304 || handler.getStatus() == 307)

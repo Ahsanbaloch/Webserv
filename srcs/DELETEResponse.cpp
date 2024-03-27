@@ -82,11 +82,12 @@ std::string	DELETEResponse::createStatusLine() // make Response method? --> set?
 
 void	DELETEResponse::createResponse()
 {
-	// Response *response = new Response; // needs to be delete somewhere
-
 	// check allowed methods for the selected location
-	// if (!handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].getAllowed)
-		// throw exception
+	if (!handler.getLocationConfig().DELETE)
+	{
+		handler.setStatus(405);
+		throw CustomException("Method Not Allowed");
+	}
 
 	// check if file or directory that is requested to be deleted
 	if (checkFileType())
@@ -94,6 +95,7 @@ void	DELETEResponse::createResponse()
 	else
 		deleteDir();
 
+	// create extra function for this
 	status_line = createStatusLine();
 	header_fields = "Content-Type: plain/text\r\nContent-Length: 3\r\n\r\n"; // maybe send a html response here instead
 	body = "200"; // should be gotten from handler.status
@@ -106,7 +108,4 @@ void	DELETEResponse::createResponse()
 	// send a 204 (No Content) status code if the action has been enacted and no further information is to be supplied
 
 	// send a 200 (OK) status code if the action has been enacted and the response message includes a representation describing the status
-
-	// return (response);
-	
 }

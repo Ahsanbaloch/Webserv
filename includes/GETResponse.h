@@ -24,7 +24,7 @@ private:
 	std::string	createBody();
 	std::string createHeaderFields(std::string);
 	std::string	identifyMIME();
-	void		checkRedirects();
+	void		checkInternalRedirects();
 	std::string	getBodyFromFile();
 	std::string	getBodyFromDir();
 
