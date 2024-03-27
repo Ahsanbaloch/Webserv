@@ -25,7 +25,7 @@ private:
 	int								status;
 	int								selected_location;
 	int								selected_server;
-	int								connection_fd; // probably not needed
+	int								connection_fd;
 	int								bytes_read;
 
 	// flags
@@ -33,10 +33,11 @@ private:
 	
 	// constructors
 	RequestHandler(const RequestHandler&);
+
 public:
 	// constructors & destructors
 	RequestHandler(int, std::vector<t_server_config>); // get ServerConfig as a reference? // might be able to remove int connection_fd as this is now part of the connection handler
-	RequestHandler(/* args */);
+	RequestHandler();
 	~RequestHandler();
 	RequestHandler& operator=(const RequestHandler&);
 
@@ -77,7 +78,6 @@ public:
 	void							findLocationBlock();
 	int								calcMatches(std::vector<std::string>&, std::vector<std::string>&); // make private?
 	std::vector<std::string>		splitPath(std::string input, char delim);
-
 	ARequest*						newRequest();
 
 	enum {

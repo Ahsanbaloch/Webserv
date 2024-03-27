@@ -1,24 +1,33 @@
 
 #include "RequestHandler.h"
 
+///////// CONSTRUCTORS & DESTRUCTORS ///////////
+
 RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_config)
 	: header(*this)
 {
 	this->server_config = server_config;
 	connection_fd = fd;
 	status = 200;
-	buf_pos = -1;
-	body_parsing_done = 0;
-	chunk_length = 0;
-	response_ready = 0;
-	body_read = 0;
 	selected_location = 0;
 	selected_server = 0;
+	bytes_read = 0;
+	response_ready = 0;
+
+	body_parsing_done = 0;
+	chunk_length = 0;
+	request_length = 0;
+	body_read = 0;
+	body_beginning = 0;
+	body_length = 0;
+
+	buf_pos = -1;
+	
 	request = NULL;
 	response = NULL;
+
 	raw_buf.setf(std::ios::app | std::ios::binary);
 	memset(&buf, 0, sizeof(buf));
-	// header = Header(*this);
 }
 
 RequestHandler::RequestHandler(/* args */)
