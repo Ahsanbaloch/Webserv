@@ -20,7 +20,7 @@
 class RequestHandler
 {
 private:
-	RequestHeader							header;
+	RequestHeader					request_header;
 
 	std::vector<t_server_config>	server_config;
 	int								status;
