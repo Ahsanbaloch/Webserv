@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 14:14:51 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/28 15:41:43 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/28 17:52:13 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,7 @@ typedef struct s_location_config {
 	bool										POST;
 	bool										DELETE;
 	bool										autoIndex;
+	s_errorPage									errorPage;
 }	t_location_config;
 
 typedef struct s_server_config {

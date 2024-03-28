@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/28 15:40:51 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/28 22:13:09 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -112,13 +112,25 @@ void	config_pars::parse_server_block(t_server_config &server_config, const std::
 	extractIpPort(globalPart, server_config.Ip, server_config.port);
 	server_config.serverName = extractServerVariable("Server_name", globalPart);
 	server_config.bodySize = extractBodySize(globalPart);
-	std::string error_page_string = extractServerVariable("error_page", globalPart);
-	if (!error_page_string.empty())
-		extractErrorPage(server_config.errorPage.error_page_status, server_config.errorPage.html_page, error_page_string);
+	std::string error_string = extractServerVariable("error_page", globalPart);
 	if (!locationPart.empty())
-    	Location_block(server_config, locationPart, server_config.server_root, server_config.server_index);
+    	Location_block(server_config, locationPart, server_config.server_root, server_config.server_index, error_string);
 	else
 		throw InvalidLocationException();
+}
+
+void config_pars::extractErrorPage(int &status, std::string & page, std::string split_string)
+{
+	if (split_string.find(" ") != std::string::npos)
+	{
+		std::istringstream iss(split_string);
+		iss >> status;
+		iss >> page;
+		std::cout << "page: " << page << std::endl;
+	}
+	else
+		status = -1;
+		page = "/index.html";
 }
 
 std::string config_pars::extractServerVariable(const std::string variable, const std::string &server_block)
@@ -188,7 +200,7 @@ int	config_pars::extractBodySize(const std::string &server_block)
 }
 
 
-void	config_pars::Location_block(t_server_config &server_config, const std::string &config_block, std::string server_root, std::string server_index)
+void	config_pars::Location_block(t_server_config &server_config, const std::string &config_block, std::string server_root, std::string server_index, std::string error_string)
 {
 	std::vector<std::string> location_blocks;
 	splitLocationBlocks(location_blocks, config_block);
@@ -197,7 +209,7 @@ void	config_pars::Location_block(t_server_config &server_config, const std::stri
 		throw InvalidLocationException();
 	for (size_t i = 0; i < location_blocks.size(); i++)
 	{
-		parseLocationBlock(location_config, location_blocks[i], server_root, server_index);
+		parseLocationBlock(location_config, location_blocks[i], server_root, server_index, error_string);
 		server_config.locations.push_back(location_config);
 	}
 }
@@ -219,10 +231,9 @@ void	config_pars::checkDuplicatePath(std::map<std::string, std::vector<t_server_
 	}
 }
 
-void	config_pars::parseLocationBlock(t_location_config &location_config, const std::string &location_block, std::string server_root, std::string server_index)
+void	config_pars::parseLocationBlock(t_location_config &location_config, const std::string &location_block, std::string server_root, std::string server_index, std::string string_error)
 {
 	location_config.path = extractPath(location_block);
-	//if (location_config.path == "/redir") //should use this condition to check if the path is redir or not?
 	location_config.redirect = extractVariables("redirect_url",location_block);
 	if (location_config.path == "/cgi-bin" )
 	{
@@ -240,6 +251,19 @@ void	config_pars::parseLocationBlock(t_location_config &location_config, const s
 		throw MissingValueException("index");
 	if (location_config.index.empty())
 		location_config.index = server_index;
+	std::string error_page_string = extractVariables("error_page", location_block);
+	if (error_page_string.empty() && string_error.empty())
+	{
+		location_config.errorPage.error_page_status = -1;
+		location_config.errorPage.html_page = "/index.html";
+	}
+	else if (!error_page_string.empty())
+		extractErrorPage(location_config.errorPage.error_page_status, location_config.errorPage.html_page, error_page_string);
+	else
+		extractErrorPage(location_config.errorPage.error_page_status, location_config.errorPage.html_page, string_error);
+	
+	std::cout << "Error Page Status: " << location_config.errorPage.error_page_status << std::endl;
+	std::cout << "Error Page: " << location_config.errorPage.html_page << std::endl; 
 	allowMethods(location_config.GET, location_config.POST, location_config.DELETE, location_block);
 	location_config.autoIndex = extractAutoIndex(location_block);
 }
