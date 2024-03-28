@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   config_pars.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mamesser <mamesser@student.42wolfsburg.    +#+  +:+       +#+        */
+/*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/26 11:15:38 by mamesser         ###   ########.fr       */
+/*   Updated: 2024/03/28 15:40:51 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -112,7 +112,9 @@ void	config_pars::parse_server_block(t_server_config &server_config, const std::
 	extractIpPort(globalPart, server_config.Ip, server_config.port);
 	server_config.serverName = extractServerVariable("Server_name", globalPart);
 	server_config.bodySize = extractBodySize(globalPart);
-	server_config.errorPage = extractServerVariable("error_page", globalPart);
+	std::string error_page_string = extractServerVariable("error_page", globalPart);
+	if (!error_page_string.empty())
+		extractErrorPage(server_config.errorPage.error_page_status, server_config.errorPage.html_page, error_page_string);
 	if (!locationPart.empty())
     	Location_block(server_config, locationPart, server_config.server_root, server_config.server_index);
 	else

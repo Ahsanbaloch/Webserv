@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 14:22:42 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/20 11:17:48 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/28 15:42:07 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,6 +45,7 @@ class config_pars
 		bool		extractAutoIndex(const std::string &location_block); //extract autoindex
 		void		allowMethods(bool &GET, bool &POST, bool &DELETE, const std::string location_block); //allow methods
 		int			extractBodySize(const std::string &server_block); //extract body size
+		void 		extractErrorPage(int &status, std::string & page, std::string split_string);
 		std::string	extractServerVariable(const std::string variable, const std::string &server_block); //extract server variable
 	public:
 		config_pars(int argc, char **argv);
