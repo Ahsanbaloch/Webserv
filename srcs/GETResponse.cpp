@@ -147,6 +147,7 @@ void	GETResponse::checkInternalRedirects()
 	// if the request is not for a file (otherwise the location has already been found)
 	if (!checkFileType())
 	{
+		printf("Hey\n");
 		// check if file constructed from root, location path and index exists
 		if (checkFileExistence() == 0)
 		{
@@ -159,7 +160,10 @@ void	GETResponse::checkInternalRedirects()
 		else
 		{
 			if (handler.getLocationConfig().autoIndex)
+			{
+				printf("auto index found\n");
 				auto_index = 1;
+			}
 			else
 			{
 				handler.setStatus(404);
@@ -183,6 +187,8 @@ std::string	GETResponse::identifyMIME()
 		return ("text/plain");
 	else if (file_type == "html")
 		return ("text/html");
+	else if (file_type == "jpeg")
+		return ("image/jpeg");
 	else if (file_type == "png" || file_type == "ico")
 		return ("image/png");
 	else
