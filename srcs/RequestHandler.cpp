@@ -1,27 +1,32 @@
 
 #include "RequestHandler.h"
 
+///////// CONSTRUCTORS & DESTRUCTORS ///////////
+
 RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_config)
 	: header(*this)
 {
 	this->server_config = server_config;
 	connection_fd = fd;
 	status = 200;
-	buf_pos = -1;
-	body_parsing_done = 0;
-	chunk_length = 0;
-	response_ready = 0;
-	body_expected = 0;
-	body_read = 0;
 	selected_location = 0;
 	selected_server = 0;
-	url_relocation = 0;
-	autoindex = 0;
-	request = NULL;
+	bytes_read = 0;
+	response_ready = 0;
+
+	body_parsing_done = 0;
+	chunk_length = 0;
+	request_length = 0;
+	body_read = 0;
+	body_beginning = 0;
+	body_length = 0;
+
+	buf_pos = -1;
+	
 	response = NULL;
+
 	raw_buf.setf(std::ios::app | std::ios::binary);
 	memset(&buf, 0, sizeof(buf));
-	// header = Header(*this);
 }
 
 RequestHandler::RequestHandler(/* args */)
@@ -33,15 +38,88 @@ RequestHandler::~RequestHandler()
 {
 }
 
+// RequestHandler::RequestHandler(const RequestHandler& src)
+// 	: header(src.header)
+// {
+// }
+
+RequestHandler& RequestHandler::operator=(const RequestHandler& src)
+{
+	if (this != &src)
+	{
+		// header = src.header;
+		server_config = src.server_config;
+		status = src.status;
+		selected_location = src.selected_location;
+		selected_server = src.selected_server;
+		connection_fd = src.connection_fd;
+		bytes_read = src.bytes_read;
+		response_ready = src.response_ready;
+		body_parsing_done = src.body_parsing_done;
+		chunk_length = src.chunk_length;
+		request_length = src.request_length;
+		body_read = src.body_read;
+		body_beginning = src.body_beginning;
+		body_length = src.body_length;
+		buf_pos = src.buf_pos;
+		response = src.response;
+	}
+	return (*this);
+}
+
+
+///////// GETTERS ///////////
+
 std::vector<t_server_config>	RequestHandler::getServerConfig() const
 {
 	return (server_config);
 }
 
+int	RequestHandler::getStatus() const
+{
+	return (status);
+}
+
+s_location_config	RequestHandler::getLocationConfig() const
+{
+	return (server_config[selected_server].locations[selected_location]);
+}
+
+int	RequestHandler::getSelectedLocation() const
+{
+	return (selected_location);
+}
+
+bool	RequestHandler::getResponseStatus() const
+{
+	return (response_ready);
+}
+
+int		RequestHandler::getBytesRead() const
+{
+	return (bytes_read);
+}
+
+const Header&	RequestHandler::getHeaderInfo()
+{
+	return (header);
+}
+
+
+///////// SETTERS ///////////
+
+void	RequestHandler::setStatus(int status)
+{
+	this->status = status;
+}
+
+
+
+///////// METHODS ///////////
 
 void	RequestHandler::sendResponse()
 {
-	std::string resp = response->status_line + response->header_fields + response->body;
+	std::string resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
 	send(connection_fd, resp.c_str(), resp.length(), 0); 
 	// check for errors when calling send
 }
@@ -94,7 +172,7 @@ void	RequestHandler::processRequest()
 		std::cout << "identified query: " << header.getQuery() << '\n';
 		std::cout << "identified version: " << header.getHttpVersion() << '\n';
 
-		if (expect_exists) // this is relevant for POST only, should this be done in another place? (e.g. POST request class)
+		if (header.getHeaderExpectedStatus()) // this is relevant for POST only, should this be done in another place? (e.g. POST request class)
 		{
 			// check value of expect field?
 			// check content-length field before accepting?
@@ -102,7 +180,7 @@ void	RequestHandler::processRequest()
 			// make reponse
 		}
 		// if body is expected
-		if (body_expected)
+		if (header.getBodyStatus())
 		{
 			//here we need to account for max-body_size specified in config file
 			// if chunked
@@ -113,11 +191,12 @@ void	RequestHandler::processRequest()
 				// return to continue receiving
 		}
 		// if no body is expected OR end of body has been reached
-		if (!body_expected || body_read)
+		if (!header.getBodyStatus() || body_read)
 		{
 			// try/catch block?
-			request = ARequest::newRequest(*this);
-			response = request->createResponse(*this);
+			response = prepareResponse();
+			response->createResponse();
+			// response = request->createResponse();
 			// set Response to be ready
 		}
 		response_ready = 1;
@@ -125,8 +204,8 @@ void	RequestHandler::processRequest()
 	}
 	catch(const std::exception& e)
 	{
-		response = new Response; // needs to be freed somewhere
-		response->errorResponse(*this);
+		response = new ERRORResponse(*this); // need to free this somewhere
+		response->createResponse();
 		response_ready = 1;
 		std::cerr << e.what() << '\n';
 	}
@@ -148,6 +227,120 @@ void	RequestHandler::processRequest()
 			// Some characters are utilized by URLs for special use in defining their syntax. When these characters are not used in their special role inside a URL, they must be encoded.
 			// characters such as {} are getting encoded by the client(?) and being transmitted e.g. with %7B%7D
 }
+
+
+AResponse* RequestHandler::prepareResponse()
+{
+	// find server block if there are multiple that match (this applies to all request types)
+	if (server_config.size() > 1)
+		findServerBlock();
+	
+	// find location block within server block if multiple exist (this applies to all request types; for GET requests there might be an internal redirect happening later on)
+	if (server_config[selected_server].locations.size() > 1)
+		findLocationBlock();
+
+	if (header.getMethod() == "GET")
+		return (new GETResponse(*this)); // need to free this somewhere
+	else if (header.getMethod() == "DELETE")
+		return (new DELETEResponse(*this)); // need to free this somewhere
+	else if (header.getMethod() == "POST")
+		;///
+	return (NULL);
+}
+
+
+void	RequestHandler::findLocationBlock() // double check if this is entirely correct approach
+{
+	std::vector<std::string> uri_path_items;
+	if (response == NULL || response->getRedirectedPath().empty())
+		uri_path_items = splitPath(header.getPath(), '/');
+	else
+	{
+		std::string temp = "/" + response->getRedirectedPath();
+		uri_path_items = splitPath(temp, '/');
+	}
+	int	size = server_config[selected_server].locations.size();
+	int	max = 0;
+	for (int i = 0; i < size; i++)
+	{
+		std::vector<std::string> location_path_items = splitPath(server_config[selected_server].locations[i].path, '/');
+		int matches = calcMatches(uri_path_items, location_path_items);
+		if (matches > max)
+		{
+			selected_location = i;
+			max = matches;
+		}
+	}
+	std::cout << "Thats the location block: " << getLocationConfig().path << std::endl;
+}
+
+std::vector<std::string>	RequestHandler::splitPath(std::string input, char delim)
+{
+	std::istringstream			iss(input);
+	std::string					item;
+	std::vector<std::string>	result;
+	
+	while (std::getline(iss, item, delim))
+		result.push_back("/" + item); // does adding "/" work in all cases?
+	// if (result.size() == 1 && result[0].empty())
+	// 	result[0] = '/';
+	return (result);
+}
+
+int	RequestHandler::calcMatches(std::vector<std::string>& uri_path_items, std::vector<std::string>& location_path_items)
+{
+	// printf("splitted string\n");
+	// for (std::vector<std::string>::iterator it = uri_path_items.begin(); it != uri_path_items.end(); it++)
+	// {
+	// 	std::cout << "string uri: " << *it << std::endl;
+	// }
+	// for (std::vector<std::string>::iterator it = location_path_items.begin(); it != location_path_items.end(); it++)
+	// {
+	// 	std::cout << "string location: " << *it << std::endl;
+	// }
+	int	matches = 0;
+	int num_path_items = uri_path_items.size();
+	for (std::vector<std::string>::iterator it = location_path_items.begin(); it != location_path_items.end(); it++)
+	{
+		if (matches >= num_path_items)
+			break;
+		if (*it != uri_path_items[matches])
+			break;
+		matches++;
+	}
+	return (matches);
+}
+
+
+
+void	RequestHandler::findServerBlock()
+{
+	int size = server_config.size();
+
+	for (int i = 0; i < size; i++)
+	{
+		if (server_config[i].serverName == header.getHeaderFields()["host"])
+		{
+			selected_server = i;
+			break;
+		}
+	}
+	// std::vector<t_server_config>::iterator it = handler.getServerConfig().begin();
+	// for (std::vector<t_server_config>::iterator it2 = handler.getServerConfig().begin(); it2 != handler.getServerConfig().end(); it2++)
+	// {
+	// 	if (it2 == it || it2->serverName == handler.header.header_fields["host"])
+	// 		it = it2;
+	// 	else
+	// 	{
+	// 		handler.getServerConfig().erase(it2);
+	// 		it2--;
+	// 	}
+	// }
+	// if (it != handler.getServerConfig().begin())
+	// 	handler.getServerConfig().erase(handler.getServerConfig().begin());
+}
+
+
 
 
 void	RequestHandler::parseEncodedBody()

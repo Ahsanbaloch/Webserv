@@ -1,39 +1,60 @@
 
-#include "GETRequest.h"
+#include "GETResponse.h"
 
-GETRequest::GETRequest(RequestHandler&)
+/////////// CONSTRUCTORS & DESTRUCTORS ///////////
+
+GETResponse::GETResponse(RequestHandler& src)
+	: AResponse(src), auto_index(0)
 {
 }
 
-GETRequest::GETRequest(/* args */)
+GETResponse::GETResponse(/* args */)
+	: AResponse(), auto_index(0)
 {
 }
 
-GETRequest::~GETRequest()
+GETResponse::~GETResponse()
 {
 }
 
-std::string	GETRequest::createStatusLine(RequestHandler& handler)
+GETResponse::GETResponse(const GETResponse& src)
+	: AResponse(src), auto_index(src.auto_index)
+{
+}
+
+GETResponse& GETResponse::operator=(const GETResponse& src)
+{
+	if (this != &src)
+	{
+		AResponse::operator=(src);
+		auto_index = src.auto_index;
+	}
+	return (*this);
+}
+
+
+/////////// HELPER METHODS ///////////
+
+std::string	GETResponse::createStatusLine()
 {
 	std::string status_line;
 	std::ostringstream status_conversion;
 
 	status_line.append("HTTP/1.1 "); // alternative handler.head.version
-	status_conversion << handler.status;
+	status_conversion << handler.getStatus();
 	status_line.append(status_conversion.str());
 	status_line.append(" \r\n");  //A server MUST send the space that separates the status-code from the reason-phrase even when the reason-phrase is absent (i.e., the status-line would end with the space)
 	return (status_line);
 }
 
-
-std::string	GETRequest::getBodyFromFile(RequestHandler& handler)
+std::string	GETResponse::getBodyFromFile()
 {
 	std::string body;
 
-	std::ifstream file(handler.file_path); // Open the file
+	std::ifstream file(file_path); // Open the file
 	if (!file.is_open()) 
 	{
-		handler.status = 404;
+		handler.setStatus(404);
 		throw CustomException("Not found");
 	}
 	std::stringstream buffer;
@@ -45,13 +66,13 @@ std::string	GETRequest::getBodyFromFile(RequestHandler& handler)
 	return (body);
 }
 
-std::string GETRequest::getBodyFromDir(RequestHandler& handler) // probably create some html for it
+std::string GETResponse::getBodyFromDir() // probably create some html for it
 {
 	std::string body;
 	DIR *directory;
 	struct dirent *entry;
 
-	directory = opendir((handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].root + handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].path).c_str());
+	directory = opendir((handler.getLocationConfig().root + handler.getLocationConfig().path).c_str());
 	if (directory != NULL)
 	{
 		entry = readdir(directory);
@@ -65,39 +86,35 @@ std::string GETRequest::getBodyFromDir(RequestHandler& handler) // probably crea
 	}
 	else
 	{
-		handler.status = 404;
+		handler.setStatus(404);
 		throw CustomException("Not found");
 	}
 	return (body);
 }
 
-
-std::string GETRequest::createBody(RequestHandler& handler)
+std::string GETResponse::createBody()
 {
 	std::string body;
 
-	if (handler.status >= 400) // check if error was identified (or is this handled somewhere else?)
-		; // From configData get specific info about which page should be displayed
-		// look up file and read content into response body
-	if (handler.autoindex == 1)
-		body = getBodyFromDir(handler);
+	if (auto_index)
+		body = getBodyFromDir();
 	else
-		body = getBodyFromFile(handler);
+		body = getBodyFromFile();
 	return (body);
 }
 
-std::string	GETRequest::createHeaderFields(RequestHandler& handler, std::string body)
+std::string	GETResponse::createHeaderFields(std::string body) // probably don't need parameter anymore
 {
 	std::string	header;
 
-	if (handler.url_relocation)
-		header.append("Location: " + handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].redirect + "\r\n");
+	if (!handler.getLocationConfig().redirect.empty())
+		header.append("Location: " + handler.getLocationConfig().redirect + "\r\n");
 	else
 	{
-		std::string mime_type = identifyMIME(handler); // should not be called if we have a url redirection
+		std::string mime_type = identifyMIME(); // should not be called if we have a url redirection
 		if (mime_type.empty()) // only check when body should be sent?
 		{
-			handler.status = 415;
+			handler.setStatus(415);
 			throw CustomException("Unsupported Media Type");
 		}
 		else
@@ -125,26 +142,31 @@ std::string	GETRequest::createHeaderFields(RequestHandler& handler, std::string 
 	return (header);
 }
 
-void	GETRequest::checkRedirects(RequestHandler& handler)
+void	GETResponse::checkInternalRedirects()
 {
 	// if the request is not for a file (otherwise the location has already been found)
-	if (!checkFileType(handler))
+	if (!checkFileType())
 	{
+		printf("Hey\n");
 		// check if file constructed from root, location path and index exists
-		if (checkFileExistence(handler) == 0)
+		if (checkFileExistence() == 0)
 		{
 			// if file does exist, search again for correct location
-			findLocationBlock(handler); //should the root be taken into account when rechecking the location Block?
-			handler.file_path = handler.header.redirected_path;
-			handler.file_type = handler.file_path.substr(handler.file_path.find('.') + 1); // create a function for that in case it is not a file type
+			// findLocationBlock(handler); //should the root be taken into account when rechecking the location Block?
+			handler.findLocationBlock();
+			file_path = redirected_path;
+			file_type = file_path.substr(file_path.find('.') + 1); // create a function for that in case it is not a file type
 		}
 		else
 		{
-			if (handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].autoIndex)
-				handler.autoindex = 1;
+			if (handler.getLocationConfig().autoIndex)
+			{
+				printf("auto index found\n");
+				auto_index = 1;
+			}
 			else
 			{
-				handler.status = 404;
+				handler.setStatus(404);
 				throw CustomException("Not Found");
 			}
 		}
@@ -152,50 +174,56 @@ void	GETRequest::checkRedirects(RequestHandler& handler)
 	else
 	{
 		// file_type is already set by checkFileType
-		handler.file_path = handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].root + "/" + handler.header.getPath();
+		file_path = handler.getLocationConfig().root + "/" + handler.getHeaderInfo().getPath();
 	}
-	std::cout << "location selected: " << handler.selected_location << std::endl;
+	std::cout << "location selected: " << handler.getSelectedLocation() << std::endl;
 }
 
-Response	*GETRequest::createResponse(RequestHandler& handler)
+std::string	GETResponse::identifyMIME()
 {
-	Response *response = new Response; // needs to be delete somewhere
+	// also check against accept header? --> return 406 if the requirement cannot be satisfied
+	// how to best identifyMIME?
+	if (auto_index) // probably also rather going to be html
+		return ("text/plain");
+	else if (file_type == "html")
+		return ("text/html");
+	else if (file_type == "jpeg")
+		return ("image/jpeg");
+	else if (file_type == "png" || file_type == "ico")
+		return ("image/png");
+	else
+		return (""); // what should be the default return?
+}
 
+/////////// MAIN METHODS ///////////
+
+void	GETResponse::createResponse()
+{
 	// check for direct redirects and internal redirects
-	if (!handler.url_relocation)
-		checkRedirects(handler);
+	if (!handler.getLocationConfig().redirect.empty())
+		handler.setStatus(307);
+	else
+		checkInternalRedirects();
 
 	// check allowed methods for the selected location
-	// if (!handler.getServerConfig()[handler.selected_server].locations[handler.selected_location].getAllowed)
-		// throw exception
+	if (!handler.getLocationConfig().GET)
+	{
+		handler.setStatus(405);
+		throw CustomException("Method Not Allowed");
+	}
 
-	response->status_line = createStatusLine(handler);
-	if ((handler.status >= 100 && handler.status <= 103) || handler.status == 204 || handler.status == 304 || handler.status == 307)
-		response->body = ""; // or just initialize it like that // here no body should be created
+	status_line = createStatusLine();
+	if ((handler.getStatus() >= 100 && handler.getStatus() <= 103) || handler.getStatus() == 204 || handler.getStatus() == 304 || handler.getStatus() == 307)
+		body = ""; // or just initialize it like that // here no body should be created
 	else
-		response->body = createBody(handler);
+		body = createBody();
 	
-	response->header_fields = createHeaderFields(handler, response->body);
+	header_fields = createHeaderFields(body);
 
 	// The presence of a message body in a response depends on both the request method to which it is responding and the response status code. 
 	// e.g. POST 200 is different from GET 200
 
 	// A server MUST NOT send a Transfer-Encoding header field in any response with a status code of 1xx (Informational) or 204 (No Content)
 	// any response with a 1xx (Informational), 204 (No Content), or 304 (Not Modified) status code is always terminated by the first empty line after the header fields --> no body
-	return (response);
-}
-
-
-std::string	GETRequest::identifyMIME(RequestHandler& handler)
-{
-	// also check against accept header? --> return 406 if the requirement cannot be satisfied
-	// how to best identifyMIME?
-	if (handler.autoindex) // probably also rather going to be html
-		return ("text/plain");
-	else if (handler.file_type == "html")
-		return ("text/html");
-	else if (handler.file_type == "png" || handler.file_type == "ico")
-		return ("image/png");
-	else
-		return (""); // what should be the default return?
+	// return (response);
 }

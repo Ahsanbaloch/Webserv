@@ -35,6 +35,8 @@ private:
 	bool								path_encoded;
 	bool								query_encoded;
 	bool								dot_in_path;
+	bool								body_expected;
+	bool								expect_exists;
 	
 	// main methods
 	void								parseRequestLine();
@@ -48,7 +50,6 @@ private:
 	void								decode(std::string&);
 	void								checkBodyLength(std::string);
 	void								checkHttpVersion();
-	std::vector<std::string>			splitPath(std::string, char); // maybe move somewhere else as similar as in ARquest class
 
 	// constructors
 	Header();
@@ -67,9 +68,11 @@ public:
 	std::string							getHttpVersion() const;
 	std::map<std::string, std::string>	getHeaderFields() const;
 	bool								getHeaderStatus() const;
+	bool								getBodyStatus() const;
+	bool								getHeaderExpectedStatus() const;
 
-	// TBD: move to request class???
-	std::string							redirected_path;
+	// TBD: move to request class??? 
+	// std::string							redirected_path;
 
 	// method
 	void								parseHeader();

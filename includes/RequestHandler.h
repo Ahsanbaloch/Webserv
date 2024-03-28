@@ -6,64 +6,78 @@
 #include <map>
 #include <vector>
 #include <sstream>
-#include <cstdio> // remove later
+#include <cstdio>
 #include "CustomException.h"
 #include "Header.h"
-#include "ARequest.h"
+#include "AResponse.h"
+#include "GETResponse.h"
+#include "DELETEResponse.h"
+#include "ERRORResponse.h"
 #include "config/config_pars.hpp"
+#include "defines.h"
 
-#define BUFFER_SIZE 8192 // this basically presents the max header size (incl. the request line)
 
 class RequestHandler
 {
 private:
+	Header							header;
+
 	std::vector<t_server_config>	server_config;
+	int								status;
+	int								selected_location;
+	int								selected_server;
+	int								connection_fd;
+	int								bytes_read;
+
+	// flags
+	bool							response_ready;
+	
+	// constructors
+	RequestHandler(const RequestHandler&);
+
 public:
-
-	std::vector<t_server_config>	getServerConfig() const;
-
-	RequestHandler(int, std::vector<t_server_config>);
-	RequestHandler(/* args */);
+	// constructors & destructors
+	RequestHandler(int, std::vector<t_server_config>); // get ServerConfig as a reference? // might be able to remove int connection_fd as this is now part of the connection handler
+	RequestHandler();
 	~RequestHandler();
+	RequestHandler& operator=(const RequestHandler&);
 
-	ARequest*			request;
-	Response*			response;
-	Header				header;
+	// getters
+	std::vector<t_server_config>	getServerConfig() const;
+	s_location_config				getLocationConfig() const;
+	int								getSelectedLocation() const; // only for testing purposes
+	int								getStatus() const;
+	bool							getResponseStatus() const;
+	int								getBytesRead() const;
+	const Header&					getHeaderInfo();
+
+	// setters
+	void							setStatus(int);
+
+	AResponse*						response;
 	
-
-	int					selected_location; // should probably be in server_config struct
-	int					selected_server;
+	// tbd
+	int								body_parsing_done;
+	int								chunk_length;
+	int								request_length;
+	int								body_read;
+	int								body_beginning;
+	int								body_length; // set inside header class
+	std::stringstream				raw_buf;
+	std::stringstream				body;
+	unsigned char					buf[BUFFER_SIZE]; // use std::vector<unsigned char> buf(BUFFER_SIZE) or uint8_t instead? // don't use the string type for your buffer because for upload and binary file you can have some \0 in the middle of the content). + CRLF interpretation --> request smuggling
+	int								buf_pos;
+	void							parseEncodedBody();
+	void							parseBody();
 	
-	int					connection_fd;
-	
-	int					body_parsing_done;
-	int					chunk_length;
-	int					request_length;
-	int					status;
-	int					response_ready;
-	int					body_expected;
-	int					body_read;
-	int					body_length;
-	int					body_beginning;
-
-	int					expect_exists;
-	
-	std::string			file_path;
-	std::string			file_type;
-	int					url_relocation;
-
-	int					autoindex;
-
-	std::stringstream	raw_buf;
-	std::stringstream	body;
-	unsigned char		buf[BUFFER_SIZE]; // use std::vector<unsigned char> buf(BUFFER_SIZE) or uint8_t instead? // don't use the string type for your buffer because for upload and binary file you can have some \0 in the middle of the content). + CRLF interpretation --> request smuggling
-	int					buf_pos;
-	int					bytes_read;
-
-	void	processRequest();
-	void	sendResponse();
-	void	parseEncodedBody();
-	void	parseBody();
+	// methods
+	void							processRequest();
+	void							sendResponse();
+	void							findServerBlock();
+	void							findLocationBlock();
+	int								calcMatches(std::vector<std::string>&, std::vector<std::string>&); // make private?
+	std::vector<std::string>		splitPath(std::string input, char delim);
+	AResponse*						prepareResponse();
 
 	enum {
 		body_start = 0,
