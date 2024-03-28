@@ -1,11 +1,11 @@
 
-#include "Header.h"
+#include "RequestHeader.h"
 #include "RequestHandler.h"
 
 /////////////// CONSTRUCTORS & DESTRUCTORS //////////////////
 
-Header::Header()
-	: handler(*new RequestHandler()) // is there a better way to initialize the header reference?
+RequestHeader::RequestHeader()
+	: handler(*new RequestHandler()) // is there a better way to initialize the RequestHeader reference?
 {
 	// is there a better way to initialize the variables?
 	header_complete = 0;
@@ -21,7 +21,7 @@ Header::Header()
 	expect_exists = 0;
 }
 
-Header::Header(RequestHandler& src)
+RequestHeader::RequestHeader(RequestHandler& src)
 	: handler(src)
 {
 	// is there a better way to initialize the variables?
@@ -38,7 +38,7 @@ Header::Header(RequestHandler& src)
 	expect_exists = 0;
 }
 
-Header::Header(const Header& src)
+RequestHeader::RequestHeader(const RequestHeader& src)
 	: handler(src.handler)
 {
 	// is there a better way to initialize the variables?
@@ -60,7 +60,7 @@ Header::Header(const Header& src)
 	expect_exists = src.expect_exists;
 }
 
-Header& Header::operator=(const Header& src)
+RequestHeader& RequestHeader::operator=(const RequestHeader& src)
 {
 	if (this != &src)
 	{
@@ -84,55 +84,55 @@ Header& Header::operator=(const Header& src)
 	return (*this);
 }
 
-Header::~Header()
+RequestHeader::~RequestHeader()
 {
 }
 
 /////////////// GETTERS //////////////////
 
-std::string	Header::getMethod() const
+std::string	RequestHeader::getMethod() const
 {
 	return (method);
 }
 
-std::string Header::getHttpVersion() const
+std::string RequestHeader::getHttpVersion() const
 {
 	return (version);
 }
 
-std::string Header::getQuery() const
+std::string RequestHeader::getQuery() const
 {
 	return (query);
 }
 
-std::string Header::getPath() const
+std::string RequestHeader::getPath() const
 {
 	return (path);
 }
 
-bool	Header::getHeaderStatus() const
+bool	RequestHeader::getHeaderStatus() const
 {
 	return (header_complete);
 }
 
-std::map<std::string, std::string>	Header::getHeaderFields() const
+std::map<std::string, std::string>	RequestHeader::getHeaderFields() const
 {
 	return (header_fields);
 }
 
-bool	Header::getBodyStatus() const
+bool	RequestHeader::getBodyStatus() const
 {
 	return (body_expected);
 }
 
-bool	Header::getHeaderExpectedStatus() const
+bool	RequestHeader::getHeaderExpectedStatus() const
 {
 	return (expect_exists);
 }
 
 /////////////// MAIN METHODS //////////////////
 
-void	Header::parseHeader()
+void	RequestHeader::parseHeader()
 {
 	parseRequestLine();
 	parseHeaderFields();
@@ -148,10 +148,10 @@ void	Header::parseHeader()
 	// std::cout << "path after decoding: " << path << std::endl;
 	// std::cout << "query after decoding: " << query << std::endl;
 	checkFields();
-	std::cout << "Header parsing complete\n";
+	std::cout << "RequestHeader parsing complete\n";
 }
 
-void	Header::checkFields()
+void	RequestHeader::checkFields()
 {
 	// others check such as empty host field value, TE != chunked etc. is done in parsing
 	if (header_fields.find("host") == header_fields.end()) // is is even connecting without host field?
@@ -166,7 +166,7 @@ void	Header::checkFields()
 	}
 }
 
-void	Header::decode(std::string& sequence)
+void	RequestHeader::decode(std::string& sequence)
 {
 	for (std::string::iterator it = sequence.begin(); it != sequence.end(); it++)  // allowed values #01 - #FF (although ASCII only goes till #7F/7E)
 	{
@@ -202,7 +202,7 @@ void	Header::decode(std::string& sequence)
 	}
 }
 
-void	Header::removeDots()
+void	RequestHeader::removeDots()
 {
 	std::vector<std::string> updated_path;
 	std::vector<std::string> parts = handler.splitPath(path, '/');
@@ -230,7 +230,7 @@ void	Header::removeDots()
 }
 
 
-void	Header::checkBodyLength(std::string value)
+void	RequestHeader::checkBodyLength(std::string value)
 {
 	// elaborate check --> see RFC for what is an accepted format for providing the length of the body
 
@@ -261,7 +261,7 @@ void	Header::checkBodyLength(std::string value)
 	handler.body_length = std::atoi(value.c_str());
 }
 
-void	Header::parseHeaderFields()
+void	RequestHeader::parseHeaderFields()
 {
 	unsigned char	ch;
 	std::string		header_name = "";
@@ -468,7 +468,7 @@ void	Header::parseHeaderFields()
 }
 
 // void	Header::checkMethod(unsigned char* buf, int* buf_pos)
-void	Header::checkMethod()
+void	RequestHeader::checkMethod()
 {
 	switch (handler.buf[handler.buf_pos])
 	{
@@ -512,7 +512,7 @@ void	Header::checkMethod()
 }
 
 // void	Header::checkHttpVersion(unsigned char* buf, int* buf_pos)
-void	Header::checkHttpVersion()
+void	RequestHeader::checkHttpVersion()
 {
 	if (handler.buf[handler.buf_pos] == 'H' && handler.buf[++(handler.buf_pos)] == 'T' && handler.buf[++(handler.buf_pos)] == 'T' && handler.buf[++(handler.buf_pos)] == 'P' && handler.buf[++(handler.buf_pos)] == '/' && handler.buf[++(handler.buf_pos)] == '1'
 		&& handler.buf[++(handler.buf_pos)] == '.' && handler.buf[++(handler.buf_pos)] == '1')
@@ -527,14 +527,14 @@ void	Header::checkHttpVersion()
 	}
 }
 
-void	Header::handleMultipleSlashes() // could probably also be a created as a special state
+void	RequestHeader::handleMultipleSlashes() // could probably also be a created as a special state
 {
 	while(handler.buf[handler.buf_pos] == '/')
 		handler.buf_pos++;
 	handler.buf_pos--;
 }
 
-void	Header::parseRequestLine()
+void	RequestHeader::parseRequestLine()
 {
 	unsigned char	ch;
 

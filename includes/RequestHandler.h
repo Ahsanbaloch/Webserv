@@ -8,7 +8,7 @@
 #include <sstream>
 #include <cstdio>
 #include "CustomException.h"
-#include "Header.h"
+#include "RequestHeader.h"
 #include "AResponse.h"
 #include "GETResponse.h"
 #include "DELETEResponse.h"
@@ -20,7 +20,7 @@
 class RequestHandler
 {
 private:
-	Header							header;
+	RequestHeader							header;
 
 	std::vector<t_server_config>	server_config;
 	int								status;
@@ -49,7 +49,7 @@ public:
 	int								getStatus() const;
 	bool							getResponseStatus() const;
 	int								getBytesRead() const;
-	const Header&					getHeaderInfo();
+	const RequestHeader&			getHeaderInfo();
 
 	// setters
 	void							setStatus(int);

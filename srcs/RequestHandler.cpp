@@ -100,7 +100,7 @@ int		RequestHandler::getBytesRead() const
 	return (bytes_read);
 }
 
-const Header&	RequestHandler::getHeaderInfo()
+const RequestHeader&	RequestHandler::getHeaderInfo()
 {
 	return (header);
 }
