@@ -1,5 +1,5 @@
-#ifndef HEADER_H
-# define HEADER_H
+#ifndef REQUESTHEADER_H
+# define REQUESTHEADER_H
 
 # include <string>
 # include <map>
@@ -13,7 +13,7 @@ class RequestHandler;
 
 // rename class to RequestHeader
 
-class Header
+class RequestHeader
 {
 private:
 	RequestHandler&						handler;
@@ -52,14 +52,14 @@ private:
 	void								checkHttpVersion();
 
 	// constructors
-	Header();
-	Header(const Header&);
-	Header& operator=(const Header&);
+	RequestHeader();
+	RequestHeader(const RequestHeader&);
+	RequestHeader& operator=(const RequestHeader&);
 
 public:
 	// constructors & destructors
-	explicit Header(RequestHandler&);
-	~Header();
+	explicit RequestHeader(RequestHandler&);
+	~RequestHeader();
 	
 	// getters
 	std::string							getMethod() const;

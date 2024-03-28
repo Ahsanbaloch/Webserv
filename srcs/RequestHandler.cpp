@@ -4,7 +4,7 @@
 ///////// CONSTRUCTORS & DESTRUCTORS ///////////
 
 RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_config)
-	: header(*this)
+	: request_header(*this)
 {
 	this->server_config = server_config;
 	connection_fd = fd;
@@ -30,7 +30,7 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 }
 
 RequestHandler::RequestHandler(/* args */)
-	: header(*this)
+	: request_header(*this)
 {
 }
 
@@ -39,7 +39,7 @@ RequestHandler::~RequestHandler()
 }
 
 // RequestHandler::RequestHandler(const RequestHandler& src)
-// 	: header(src.header)
+// 	: request_header(src.request_header)
 // {
 // }
 
@@ -47,7 +47,7 @@ RequestHandler& RequestHandler::operator=(const RequestHandler& src)
 {
 	if (this != &src)
 	{
-		// header = src.header;
+		// request_header = src.request_header;
 		server_config = src.server_config;
 		status = src.status;
 		selected_location = src.selected_location;
@@ -100,9 +100,9 @@ int		RequestHandler::getBytesRead() const
 	return (bytes_read);
 }
 
-const Header&	RequestHandler::getHeaderInfo()
+const RequestHeader&	RequestHandler::getHeaderInfo()
 {
-	return (header);
+	return (request_header);
 }
 
 
@@ -153,26 +153,26 @@ void	RequestHandler::processRequest()
 	try
 	{
 		// check if headers have already been parsed
-		if (!header.getHeaderStatus())
+		if (!request_header.getHeaderStatus())
 		{
-			header.parseHeader();
+			request_header.parseHeader();
 			// How do the header fields in the request affect the response?
 		}
 		//for testing: print received headers
 		printf("\nheaders\n");
-		std::map<std::string, std::string> headers = header.getHeaderFields();
+		std::map<std::string, std::string> headers = request_header.getHeaderFields();
 		for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
 		{
 			std::cout << "key: " << it->first << " ";
 			std::cout << "value: " << it->second << std::endl;
 		}
 
-		std::cout << "identified method: " << header.getMethod() << '\n';
-		std::cout << "identified path: " << header.getPath() << '\n';
-		std::cout << "identified query: " << header.getQuery() << '\n';
-		std::cout << "identified version: " << header.getHttpVersion() << '\n';
+		std::cout << "identified method: " << request_header.getMethod() << '\n';
+		std::cout << "identified path: " << request_header.getPath() << '\n';
+		std::cout << "identified query: " << request_header.getQuery() << '\n';
+		std::cout << "identified version: " << request_header.getHttpVersion() << '\n';
 
-		if (header.getHeaderExpectedStatus()) // this is relevant for POST only, should this be done in another place? (e.g. POST request class)
+		if (request_header.getHeaderExpectedStatus()) // this is relevant for POST only, should this be done in another place? (e.g. POST request class)
 		{
 			// check value of expect field?
 			// check content-length field before accepting?
@@ -180,7 +180,7 @@ void	RequestHandler::processRequest()
 			// make reponse
 		}
 		// if body is expected
-		if (header.getBodyStatus())
+		if (request_header.getBodyStatus())
 		{
 			//here we need to account for max-body_size specified in config file
 			// if chunked
@@ -191,7 +191,7 @@ void	RequestHandler::processRequest()
 				// return to continue receiving
 		}
 		// if no body is expected OR end of body has been reached
-		if (!header.getBodyStatus() || body_read)
+		if (!request_header.getBodyStatus() || body_read)
 		{
 			// try/catch block?
 			response = prepareResponse();
@@ -239,11 +239,11 @@ AResponse* RequestHandler::prepareResponse()
 	if (server_config[selected_server].locations.size() > 1)
 		findLocationBlock();
 
-	if (header.getMethod() == "GET")
+	if (request_header.getMethod() == "GET")
 		return (new GETResponse(*this)); // need to free this somewhere
-	else if (header.getMethod() == "DELETE")
+	else if (request_header.getMethod() == "DELETE")
 		return (new DELETEResponse(*this)); // need to free this somewhere
-	else if (header.getMethod() == "POST")
+	else if (request_header.getMethod() == "POST")
 		;///
 	return (NULL);
 }
@@ -253,7 +253,7 @@ void	RequestHandler::findLocationBlock() // double check if this is entirely cor
 {
 	std::vector<std::string> uri_path_items;
 	if (response == NULL || response->getRedirectedPath().empty())
-		uri_path_items = splitPath(header.getPath(), '/');
+		uri_path_items = splitPath(request_header.getPath(), '/');
 	else
 	{
 		std::string temp = "/" + response->getRedirectedPath();
@@ -319,7 +319,7 @@ void	RequestHandler::findServerBlock()
 
 	for (int i = 0; i < size; i++)
 	{
-		if (server_config[i].serverName == header.getHeaderFields()["host"])
+		if (server_config[i].serverName == request_header.getHeaderFields()["host"])
 		{
 			selected_server = i;
 			break;
