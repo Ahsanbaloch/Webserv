@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 14:22:42 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/28 22:05:26 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/29 11:54:19 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,10 @@
 class config_pars
 {
 	private:
+		std::string	_server_root;
+		std::string _server_index;
+		std::string _error_string;
+
 		std::map<std::string, std::vector<t_server_config> > _server_configs_map; //getter is getServerConfigsMap()
 
 	
@@ -37,9 +41,9 @@ class config_pars
 		void		parse_server_configs(std::string &sever_config); //using this fucntion to parse everything
 		void		extractServer(std::vector<std::string> &server_block,const std::string &server_config);  //separating every server block
 		void		parse_server_block(t_server_config &server_config, const std::string &server_block); //parse inside server block
-		void		Location_block(t_server_config &server_config, const std::string &server_block,  std::string server_root, std::string server_index, std::string error_string); //parse location block
+		void		Location_block(t_server_config &server_config, const std::string &server_block); //parse location block
 		void		splitLocationBlocks(std::vector<std::string> &location_blocks, const std::string &server_block); //split location blocks
-		void		parseLocationBlock(t_location_config &location_config,const std::string &location_block, std::string server_root, std::string server_index, std::string error_string); //parse location block
+		void		parseLocationBlock(t_location_config &location_config,const std::string &location_block); //parse location block
 		std::string	extractPath(const std::string &location_block); //extract path
 		std::string extractVariables(const std::string &variable, const std::string &location_block); //extract variables
 		bool		extractAutoIndex(const std::string &location_block); //extract autoindex

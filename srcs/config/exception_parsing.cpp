@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   exception_parsing.cpp                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mamesser <mamesser@student.42wolfsburg.    +#+  +:+       +#+        */
+/*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/08 19:37:33 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/16 13:46:46 by mamesser         ###   ########.fr       */
+/*   Updated: 2024/03/29 16:11:12 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,13 +28,11 @@ const char *DuplicateServerException::what() const throw()
 }
 
 
-MissingValueException::MissingValueException(const std::string &missingValue) : _Value(missingValue) {}
+MissingValueException::MissingValueException(const std::string &missingValue) 
+    : _Value(RED "Missing value: " + missingValue + RESET) {}
 
-const char *MissingValueException::what() const throw()
-{
-	std::string	retString = RED "Missing value: " + _Value + RESET;
-	const char	*retStringC = retString.c_str();
-	return (retStringC);
+const char *MissingValueException::what() const throw() {
+    return _Value.c_str();
 }
 
 const char *InvalidbodySizeException::what() const throw()

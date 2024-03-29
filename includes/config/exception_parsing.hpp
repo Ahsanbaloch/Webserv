@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/08 18:11:04 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/14 19:54:40 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/03/29 16:09:58 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,8 +20,8 @@
 
 class MissingValueException : public std::exception {
 	public:
-		virtual const char *what() const throw();
 		MissingValueException(const std::string &missingValue);
+		virtual const char *what() const throw();
 		virtual ~MissingValueException() throw() {}
 	private:
 		std::string	_Value;
