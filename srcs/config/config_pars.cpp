@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/29 16:13:34 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/04/02 12:42:51 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -121,15 +121,22 @@ void	config_pars::parse_server_block(t_server_config &server_config, const std::
 
 void config_pars::extractErrorPage(int &status, std::string & page, std::string split_string)
 {
-	if (split_string.find(" ") != std::string::npos)
+	if (!split_string.empty())
 	{
-		std::istringstream iss(split_string);
-		iss >> status;
-		iss >> page;
+		if (split_string.find(" ") != std::string::npos)
+		{
+			std::istringstream iss(split_string);
+			if (!(iss >> status))
+				throw MissingValueException("Error Page Status...");
+			if (!(iss >> page))
+				throw MissingValueException("Error Page value...");
+		}
+		else
+			throw MissingValueException("InValid Error Page data");
 	}
 	else
 		status = -1;
-		page = "/index.html";
+		page = "";
 }
 
 std::string config_pars::extractServerVariable(const std::string variable, const std::string &server_block)
@@ -261,8 +268,7 @@ void	config_pars::parseLocationBlock(t_location_config &location_config, const s
 	std::string error_page_string = extractVariables("error_page", location_block);
 	if (error_page_string.empty() && _error_string.empty())
 	{
-		location_config.errorPage.error_page_status = -1;
-		location_config.errorPage.html_page = "/index.html";
+		extractErrorPage(location_config.errorPage.error_page_status, location_config.errorPage.html_page, "");
 	}
 	else if (!error_page_string.empty())
 		extractErrorPage(location_config.errorPage.error_page_status, location_config.errorPage.html_page, error_page_string);
