@@ -9,6 +9,7 @@
 #include <cstdio>
 #include "CustomException.h"
 #include "RequestHeader.h"
+#include "RequestBody.h"
 #include "AResponse.h"
 #include "GETResponse.h"
 #include "DELETEResponse.h"
@@ -21,6 +22,7 @@ class RequestHandler
 {
 private:
 	RequestHeader					request_header;
+	RequestBody						request_body;
 
 	std::vector<t_server_config>	server_config;
 	int								status;
@@ -57,8 +59,8 @@ public:
 	AResponse*						response;
 	
 	// tbd
-	int								body_parsing_done;
-	int								chunk_length;
+	
+	
 	int								request_length;
 	int								body_read;
 	int								body_beginning;
@@ -79,16 +81,6 @@ public:
 	std::vector<std::string>		splitPath(std::string input, char delim);
 	AResponse*						prepareResponse();
 
-	enum {
-		body_start = 0,
-		chunk_size,
-		chunk_size_cr,
-		chunk_extension,
-		chunk_data,
-		chunk_data_cr,
-		chunk_trailer,
-		body_end
-	} te_state;
 
 };
 

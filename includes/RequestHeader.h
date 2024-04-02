@@ -61,6 +61,7 @@ public:
 	explicit RequestHeader(RequestHandler&);
 	~RequestHeader();
 	
+
 	// getters
 	std::string							getMethod() const;
 	std::string 						getPath() const;
@@ -70,6 +71,7 @@ public:
 	bool								getHeaderStatus() const;
 	bool								getBodyStatus() const;
 	bool								getHeaderExpectedStatus() const;
+	bool								getTEStatus() const;
 
 	// TBD: move to request class??? 
 	// std::string							redirected_path;

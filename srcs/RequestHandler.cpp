@@ -4,7 +4,7 @@
 ///////// CONSTRUCTORS & DESTRUCTORS ///////////
 
 RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_config)
-	: request_header(*this)
+	: request_header(*this), request_body(*this)
 {
 	this->server_config = server_config;
 	connection_fd = fd;
@@ -14,8 +14,6 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	bytes_read = 0;
 	response_ready = 0;
 
-	body_parsing_done = 0;
-	chunk_length = 0;
 	request_length = 0;
 	body_read = 0;
 	body_beginning = 0;
@@ -30,7 +28,7 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 }
 
 RequestHandler::RequestHandler(/* args */)
-	: request_header(*this)
+	: request_header(*this), request_body(*this)
 {
 }
 
@@ -55,8 +53,6 @@ RequestHandler& RequestHandler::operator=(const RequestHandler& src)
 		connection_fd = src.connection_fd;
 		bytes_read = src.bytes_read;
 		response_ready = src.response_ready;
-		body_parsing_done = src.body_parsing_done;
-		chunk_length = src.chunk_length;
 		request_length = src.request_length;
 		body_read = src.body_read;
 		body_beginning = src.body_beginning;
@@ -106,6 +102,7 @@ const RequestHeader&	RequestHandler::getHeaderInfo()
 }
 
 
+
 ///////// SETTERS ///////////
 
 void	RequestHandler::setStatus(int status)
@@ -149,12 +146,14 @@ void	RequestHandler::processRequest()
 	request_length += bytes_read;
 
 	printf("read %i bytes\n", bytes_read);
+	printf("buf content: %s\n", buf);
 
 	try
 	{
 		// check if headers have already been parsed
 		if (!request_header.getHeaderStatus())
 		{
+			std::cout << "here" << std::endl;
 			request_header.parseHeader();
 			// How do the header fields in the request affect the response?
 		}
@@ -182,6 +181,7 @@ void	RequestHandler::processRequest()
 		// if body is expected
 		if (request_header.getBodyStatus())
 		{
+			request_body.readBody();
 			//here we need to account for max-body_size specified in config file
 			// if chunked
 				//store body chunks in file (already store in the appropriate object)
@@ -193,6 +193,7 @@ void	RequestHandler::processRequest()
 		// if no body is expected OR end of body has been reached
 		if (!request_header.getBodyStatus() || body_read)
 		{
+			std::cout << "body content: " << request_body.body << std::endl;
 			// try/catch block?
 			response = prepareResponse();
 			response->createResponse();
@@ -244,7 +245,7 @@ AResponse* RequestHandler::prepareResponse()
 	else if (request_header.getMethod() == "DELETE")
 		return (new DELETEResponse(*this)); // need to free this somewhere
 	else if (request_header.getMethod() == "POST")
-		;///
+		throw CustomException("test");///
 	return (NULL);
 }
 
@@ -343,239 +344,4 @@ void	RequestHandler::findServerBlock()
 
 
 
-void	RequestHandler::parseEncodedBody()
-{
-	// check somewhere that when the transfer encoding contains something different than "chunked" to return an error
-
-	te_state = body_start;
-
-	while (!body_parsing_done && buf_pos++ < bytes_read)
-	{
-		u_char ch = buf[buf_pos];
-
-		switch (te_state) 
-		{
-			case body_start:
-				if ((ch >= '0' && ch <= '9'))
-				{
-					chunk_length = ch - '0';
-					te_state = chunk_size;
-					break;
-				}
-				else if (ch >= 'a' && ch <= 'f')
-				{
-					chunk_length = ch - 'a' + 10;
-					te_state = chunk_size;
-					break;
-				}
-				else if (ch >= 'A' && ch <= 'F')
-				{
-					chunk_length = ch - 'A' + 10;
-					te_state = chunk_size;
-					break;
-				}
-				else
-				{
-					status = 400; // what is the correct error code?
-					throw CustomException("Bad request 1"); // other exception?
-				}
-
-			case chunk_size:
-				std::cout << "len: " << chunk_length << std::endl;
-				if (ch >= '0' && ch <= '9')
-				{
-					chunk_length = chunk_length * 16 + (ch - '0');
-					break;
-				}
-				else if (ch >= 'a' && ch <= 'f')
-				{
-					chunk_length = chunk_length * 16 + (ch - 'a' + 10);
-					break;
-				}
-				else if (ch >= 'A' && ch <= 'F')
-				{
-					chunk_length = chunk_length * 16 + (ch - 'A' + 10);
-					break;
-				}
-				else if (chunk_length == 0)
-				{
-					if (ch == CR)
-					{
-						te_state = chunk_size_cr;
-						break;
-					}
-					else if (ch == LF)
-					{
-						te_state = chunk_trailer;
-						break;
-					}
-					else if (ch == SP)
-					{
-						te_state = chunk_extension; // are there more seperators? // seperate state for last extension?
-						break;
-					}
-					else
-					{
-						status = 400; // what is the correct error code?
-						throw CustomException("Bad request 2"); // other exception?
-					}
-				}
-				else if (ch == CR)
-				{
-					te_state = chunk_size_cr;
-					break;
-				}
-				else if (ch == LF)
-				{
-					te_state = chunk_data;
-					break;
-				}
-				else if (ch == SP) // are there more seperators?
-				{
-					te_state = chunk_extension;
-					break;
-				}
-				else
-				{
-					status = 400; // what is the correct error code?
-					throw CustomException("Bad request 3"); // other exception?
-				}
-			
-			case chunk_size_cr:
-				if (ch == LF && chunk_length > 0)
-				{
-					te_state = chunk_data;
-					break;
-				}
-				else if (ch == LF && chunk_length == 0)
-				{
-					te_state = chunk_trailer;
-					break;
-				}
-				else
-				{
-					status = 400; // what is the correct error code?
-					throw CustomException("Bad request 4"); // other exception?
-				}
-
-			case chunk_extension:
-				// read extension
-				// go to chunk data reading or chung_size_cr
-				break;
-
-			case chunk_data:
-				for (int i = 0; i < chunk_length; i++)
-				{
-					ch = buf[buf_pos];
-					if (ch == CR)
-					{
-						te_state = chunk_data_cr;
-						break;
-					}
-					// else if (ch == LF) // remove here?
-					// {
-					// 	te_state = body_start;
-					// 	break;
-					// }
-					else
-					{
-						body << ch;
-						buf_pos++;
-					}
-				}
-				ch = buf[buf_pos];
-				// calc content-length
-				if (ch == CR)
-				{
-					te_state = chunk_data_cr;
-					break;
-				}
-				else if (ch == LF)
-				{
-					te_state = body_start;
-					break;
-				}
-				else
-				{
-					status = 400; // what is the correct error code?
-					throw CustomException("Bad request 5"); // other exception?
-				}
-
-			
-			case chunk_data_cr:
-				if (ch == LF)
-				{
-					te_state = body_start;
-					break;
-				}
-				else
-				{
-					status = 400; // what is the correct error code?
-					throw CustomException("Bad request 6"); // other exception?
-				}
-			
-			// is the existence of trailers indicated in the headers
-			case chunk_trailer:
-				body_parsing_done = 1;
-				te_state = body_end;
-				break;
-				// check if trailer is existing
-				// read trailer
-
-			case body_end:
-				break;
-				// termination
-
-		}		
-
-	}
-
-	buf_pos++;
-
-		// check chunk-size (first part of body) and translate from hex to integer; followed by CRLF if chunk extension is not provided
-			// if chunk-size is 0 and followd by CRLF, the end of the transmission has been reached
-
-		// check for chunk extension, this is followed by CRLF
-			// A recipient MUST ignore unrecognized chunk extensions // how to recognize an invalid one?
-			// Where to store that extension?
-
-		// run through the chunk data using chunk-size as a delimiter
-			// add content to stream until CRLF is reached
-			// count data length
-			// check again for chunk size and chunk extension
-
-		// if end of data transimission (chunk size 0), check for trailer (finally terminated by empty line --> CRLFCRLF??)
-			// store somewhere
-			// what info does trailer entail?
-
-	// empty line termination --> always? or only when chunk size == 0?
-	
-	// set content-length in headers to counted data length --> for what purpose?
-	
-	
-
-
-	// The chunked coding does not define any parameters. Their presence SHOULD be treated as an error. --> what is meant by that?
-
-
-	// A server that receives a request message with a transfer coding it does not understand SHOULD respond with 501 (Not Implemented)
-	// This is why Transfer-Encoding is defined as overriding Content-Length, as opposed to them being mutually incompatible.
-	// A server MAY reject a request that contains both Content-Length and Transfer-Encoding or process such a request in accordance with the 
-	// Transfer-Encoding alone. Regardless, the server MUST close the connection after responding to such a request to avoid the potential attacks.
-
-	// If a valid Content-Length header field is present without Transfer-Encoding, its decimal value defines the expected message body length in octets. 
-	//If the sender closes the connection or the recipient times out before the indicated number of octets are received, the recipient MUST 
-	// consider the message to be incomplete and close the connection.
-
-	// A recipient MUST ignore unrecognized chunk extensions. A server ought to limit the total length of chunk extensions received in a request 
-	// to an amount reasonable for the services provided, in the same way that it applies length limitations and timeouts for other parts of a 
-	// message, and generate an appropriate 4xx (Client Error) response if that amount is exceeded
-
-	// use ostringstream to store body?
-	
-	// chunked-body   = *chunk
-                   //last-chunk
-                   //trailer-section
-                   //CRLF
-}
 

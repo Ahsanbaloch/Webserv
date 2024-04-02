@@ -130,6 +130,11 @@ bool	RequestHeader::getHeaderExpectedStatus() const
 	return (expect_exists);
 }
 
+bool	RequestHeader::getTEStatus() const
+{
+	return (transfer_encoding_exists);
+}
+
 /////////////// MAIN METHODS //////////////////
 
 void	RequestHeader::parseHeader()
@@ -384,12 +389,12 @@ void	RequestHeader::parseHeaderFields()
 				// check if there is a body in the message
 				if (header_name == "content-length")
 				{
-					if (content_length_exists || transfer_encoding_exists) // for security: when content_length is specified, TE shouldn't be
-					{
-						// to reduce attack vectors for request smuggling, we don't allow multiple content_length headers
-						handler.setStatus(400); // correct error value
-						throw CustomException("Bad request");
-					}
+					// if (content_length_exists || transfer_encoding_exists) // for security: when content_length is specified, TE shouldn't be
+					// {
+					// 	// to reduce attack vectors for request smuggling, we don't allow multiple content_length headers
+					// 	handler.setStatus(400); // correct error value
+					// 	throw CustomException("Bad request");
+					// }
 					content_length_exists = 1;
 					checkBodyLength(header_value);
 					if (handler.body_length > 0)
@@ -397,12 +402,12 @@ void	RequestHeader::parseHeaderFields()
 				}
 				if (header_name == "transfer-encoding")
 				{
-					if (transfer_encoding_exists || content_length_exists) // // for security: when content_length is specified, TE shouldn't be
-					{
-						// to reduce attack vectors for request smuggling, we don't allow multiple TE headers
-						handler.setStatus(400); // correct error value
-						throw CustomException("Bad request");
-					}
+					// if (transfer_encoding_exists || content_length_exists) // // for security: when content_length is specified, TE shouldn't be
+					// {
+					// 	// to reduce attack vectors for request smuggling, we don't allow multiple TE headers
+					// 	handler.setStatus(400); // correct error value
+					// 	throw CustomException("Bad request");
+					// }
 					if (header_value != "chunked")
 					{
 						handler.setStatus(400);
