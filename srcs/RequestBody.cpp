@@ -184,6 +184,8 @@ void	RequestBody::parseChunkedBody()
 			
 			// is the existence of trailers indicated in the headers
 			case chunk_trailer:
+				// trailer fields can be useful for supplying message integrity checks, digital signatures, delivery metrics, or post-processing status information
+				// probably can just discard this section --> how to identify end?
 				body_parsing_done = 1; // for testing
 				handler.body_read = 1; // for testing
 				te_state = body_end;
