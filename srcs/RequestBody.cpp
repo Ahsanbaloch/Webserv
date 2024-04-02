@@ -21,7 +21,7 @@ RequestBody::~RequestBody()
 
 void	RequestBody::parseChunkedBody()
 {
-	te_state = body_start;
+	te_state = body_start; // move to constructor
 
 	while (!body_parsing_done && handler.buf_pos++ < handler.getBytesRead())
 	{
