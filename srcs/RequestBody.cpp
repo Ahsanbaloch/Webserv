@@ -7,12 +7,17 @@ RequestBody::RequestBody(/* args */)
 {
 	body_parsing_done = 0;
 	chunk_length = 0;
+	trailer_exists = 0;
+	te_state = body_start; // move to constructor
 }
 
 RequestBody::RequestBody(RequestHandler& src)
 	: handler(src)
 {
 	body_parsing_done = 0;
+	chunk_length = 0;
+	trailer_exists = 0;
+	te_state = body_start; // move to constructor
 }
 
 RequestBody::~RequestBody()
@@ -21,7 +26,7 @@ RequestBody::~RequestBody()
 
 void	RequestBody::parseChunkedBody()
 {
-	te_state = body_start; // move to constructor
+	// te_state = body_start; // move to constructor
 
 	while (!body_parsing_done && handler.buf_pos++ < handler.getBytesRead())
 	{
@@ -138,9 +143,14 @@ void	RequestBody::parseChunkedBody()
 					te_state = chunk_size_cr;
 					break;
 				}
-				else if (ch == LF)
+				else if (ch == LF && chunk_length > 0)
 				{
 					te_state = chunk_data;
+					break;
+				}
+				else if (ch == LF && chunk_length == 0)
+				{
+					te_state = chunk_trailer;
 					break;
 				}
 				else
@@ -184,26 +194,69 @@ void	RequestBody::parseChunkedBody()
 			
 			// is the existence of trailers indicated in the headers
 			case chunk_trailer:
+				if (ch == CR)
+				{
+					te_state = chunk_trailer_cr;
+					break;
+				}
+				else if (ch == LF)
+				{
+					te_state = body_end;
+					break;
+				}
+				else // maybe skip trailer in a for loop? // limit size of trailer?
+				{
+					trailer_exists = 1; // create loop so that this is not set every time
+					break;
+				}
 				// trailer fields can be useful for supplying message integrity checks, digital signatures, delivery metrics, or post-processing status information
 				// probably can just discard this section --> how to identify end?
-				body_parsing_done = 1; // for testing
-				handler.body_read = 1; // for testing
-				te_state = body_end;
-				break;
-				// check if trailer is existing
-				// read trailer
+
+			case chunk_trailer_cr:
+				if (ch == LF)
+				{
+					te_state = body_end;
+					break;
+				}
+				else
+				{
+					handler.setStatus(400); // what is the correct error code?
+					throw CustomException("Bad request 7"); // other exception?
+				}
+
+			case body_end_cr:
+				if (ch == LF)
+				{
+					body_parsing_done = 1;
+					handler.body_read = 1;
+					break;
+				}
+				else
+				{
+					handler.setStatus(400); // what is the correct error code?
+					throw CustomException("Bad request 8"); // other exception?
+				}
 
 			case body_end:
-				body_parsing_done = 1;
-				handler.body_read = 1;
-				break;
-				// termination
-
-		}		
-
+				if (ch == CR)
+				{
+					te_state = body_end_cr;
+					break;
+				}
+				else if (ch == LF || !trailer_exists)
+				{
+					body_parsing_done = 1;
+					handler.body_read = 1;
+					break;
+				}
+				else
+				{
+					handler.setStatus(400); // what is the correct error code?
+					throw CustomException("Bad request 9"); // other exception?
+				}
+		}
 	}
-
-	handler.buf_pos++;
+	//handler.buf_pos++; // correct?
 
 		// check chunk-size (first part of body) and translate from hex to integer; followed by CRLF if chunk extension is not provided
 			// if chunk-size is 0 and followd by CRLF, the end of the transmission has been reached
