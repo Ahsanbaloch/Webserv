@@ -70,7 +70,7 @@ void	RequestBody::parseChunkedBody()
 					chunk_length = chunk_length * 16 + (ch - 'A' + 10);
 					break;
 				}
-				else if (chunk_length == 0)
+				else if (chunk_length == 0) // how to end if body is distributed over multiple requests?
 				{
 					if (ch == CR)
 					{
