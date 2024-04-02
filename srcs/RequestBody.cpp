@@ -6,6 +6,7 @@ RequestBody::RequestBody(/* args */)
 	: handler(*new RequestHandler())
 {
 	body_parsing_done = 0;
+	chunk_length = 0;
 }
 
 RequestBody::RequestBody(RequestHandler& src)
@@ -18,7 +19,7 @@ RequestBody::~RequestBody()
 {
 }
 
-void	RequestBody::processChunkedBody()
+void	RequestBody::parseChunkedBody()
 {
 	te_state = body_start;
 
@@ -81,7 +82,7 @@ void	RequestBody::processChunkedBody()
 						te_state = chunk_trailer;
 						break;
 					}
-					else if (ch == SP)
+					else if (ch == ';')
 					{
 						te_state = chunk_extension; // are there more seperators? // seperate state for last extension?
 						break;
@@ -102,7 +103,7 @@ void	RequestBody::processChunkedBody()
 					te_state = chunk_data;
 					break;
 				}
-				else if (ch == SP) // are there more seperators?
+				else if (ch == ';')
 				{
 					te_state = chunk_extension;
 					break;
@@ -130,19 +131,29 @@ void	RequestBody::processChunkedBody()
 					throw CustomException("Bad request 4"); // other exception?
 				}
 
-			case chunk_extension:
-				// read extension
-				// go to chunk data reading or chung_size_cr
-				break;
+			case chunk_extension: // skip over chunk_extension // could also be done in a for loop // limit max size of chunk extension -- vulnerabilities
+			// A server ought to limit the total length of chunk extensions received in a request to an amount reasonable for the services provided, in the same way that it applies length limitations and timeouts for other parts of a message, and generate an appropriate 4xx (Client Error) response if that amount is exceeded
+				if (ch == CR)
+				{
+					te_state = chunk_size_cr;
+					break;
+				}
+				else if (ch == LF)
+				{
+					te_state = chunk_data;
+					break;
+				}
+				else
+					break;
 
-			case chunk_data:
+			case chunk_data: // Limit for chunk length?
 				for (int i = 0; i < chunk_length; i++) // probably want to store it in something else than a string already? May also depend on content-type header field
 				{
 					body.append(1, handler.buf[handler.buf_pos]);
 					handler.buf_pos++;
 				}
 				ch = handler.buf[handler.buf_pos];
-				// calc content-length
+				// calc content-length???
 				if (ch == CR)
 				{
 					te_state = chunk_data_cr;
@@ -276,7 +287,7 @@ void	RequestBody::processChunkedBody()
 void	RequestBody::readBody()
 {
 	// if (handler.getHeaderInfo().getTEStatus())
-	processChunkedBody();
+	parseChunkedBody();
 	// if chunked
 		//store body chunks in file (already store in the appropriate object)
 	// if not chunked

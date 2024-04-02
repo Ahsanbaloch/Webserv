@@ -410,8 +410,8 @@ void	RequestHeader::parseHeaderFields()
 					// }
 					if (header_value != "chunked")
 					{
-						handler.setStatus(400);
-						throw CustomException("Bad request");
+						handler.setStatus(501);
+						throw CustomException("Not implemented");
 					}
 					transfer_encoding_exists = 1;
 					body_expected = 1;

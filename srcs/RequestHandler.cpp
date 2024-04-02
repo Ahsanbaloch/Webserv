@@ -224,9 +224,6 @@ void	RequestHandler::processRequest()
 	// notes
 		// video: 2h mark --> set stringstream flags
 		// use uint8_t or unsigned char for storing the incoming data
-		// if there are any endoded characters in the header, they need to be decoded
-			// Some characters are utilized by URLs for special use in defining their syntax. When these characters are not used in their special role inside a URL, they must be encoded.
-			// characters such as {} are getting encoded by the client(?) and being transmitted e.g. with %7B%7D
 }
 
 

@@ -16,7 +16,7 @@ public:
 	~RequestBody();
 
 	void	readBody();
-	void	processChunkedBody();
+	void	parseChunkedBody();
 
 	int								body_parsing_done;
 	int								chunk_length;
