@@ -168,7 +168,7 @@ void	RequestHandler::processRequest()
 			// if no body is expected OR end of body has been reached
 			if (!request_header.getBodyStatus() || body_read)
 			{
-				std::cout << "body content: " << request_body.body << std::endl;
+				// std::cout << "body content: " << request_body.body << std::endl;
 				response = prepareResponse(); // how to handle errors in here?
 				response->createResponse(); // how to handle errors in here?
 				response_ready = 1;
@@ -200,7 +200,7 @@ AResponse* RequestHandler::prepareResponse()
 	else if (request_header.getMethod() == "DELETE")
 		return (new DELETEResponse(*this)); // need to free this somewhere
 	else if (request_header.getMethod() == "POST")
-		throw CustomException("test");///
+		throw CustomException("POST not implemented yet");///
 	return (NULL);
 }
 

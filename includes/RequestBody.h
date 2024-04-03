@@ -24,7 +24,6 @@ public:
 	bool							trailer_exists; // maybe there is another solution
 	std::string						body;
 
-
 	enum {
 		body_start = 0,
 		chunk_size,

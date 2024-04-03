@@ -9,6 +9,7 @@ RequestBody::RequestBody(/* args */)
 	chunk_length = 0;
 	trailer_exists = 0;
 	te_state = body_start;
+	// outFile.setf(std::ios::app | std::ios::binary);
 }
 
 RequestBody::RequestBody(RequestHandler& src)
@@ -18,6 +19,7 @@ RequestBody::RequestBody(RequestHandler& src)
 	chunk_length = 0;
 	trailer_exists = 0;
 	te_state = body_start;
+	// outFile.setf(std::ios::app | std::ios::binary);
 }
 
 RequestBody::~RequestBody()
@@ -254,7 +256,6 @@ void	RequestBody::parseChunkedBody()
 				}
 		}
 	}
-	//handler.buf_pos++; // correct?
 
 	// The chunked coding does not define any parameters. Their presence SHOULD be treated as an error. --> what is meant by that?
 
@@ -307,26 +308,56 @@ void	RequestBody::parseChunkedBody()
 // 	// inFile.close();
 // }
 
+
 void	RequestBody::parsePlainBody()
 {
-	while (handler.buf_pos++ < handler.getBytesRead() && handler.body_length > 0)
-	{
-		body.append(1, handler.buf[handler.buf_pos]);
-		handler.body_length--;
-	}
+	std::ofstream	temp("temp.png", std::ios::app | std::ios::binary);
+	temp.write(reinterpret_cast<const char*>(&handler.buf[handler.buf_pos + 1]), handler.getBytesRead() - (handler.buf_pos + 1));
+	
+	// while (handler.buf_pos++ < handler.getBytesRead() && handler.body_length > 0)
+	// {
+	// 	body.append(1, handler.buf[handler.buf_pos]);
+	// 	handler.body_length--;
+	// }
 	printf("Body len: %i\n", handler.body_length);
-	if (handler.body_length == 0)
+	temp.close();
+
+	std::ifstream tempFile("temp.png", std::ios::binary);
+	tempFile.seekg(0, std::ios::end);
+	std::streampos fileSize = tempFile.tellg();
+	tempFile.close();
+	std::cout << "Size of temp file: " << fileSize << std::endl;
+	printf("body len: %i\n", handler.body_length);
+	temp.close();
+
+	if (handler.body_length == fileSize)
 		handler.body_read = 1;
+
+	if (handler.body_read)
+	{
+		std::string line;
+		std::string boundary1 = handler.getHeaderInfo().getHeaderFields()["content-type"];
+		std::string boundary2 = boundary1.substr(boundary1.find('=') + 1);
+		std::cout << "Boundary ident: " << boundary2 << std::endl;
+		bool inBoundary = false;
+		std::ifstream	temp("temp.png", std::ios::binary);
+		std::ofstream	outputFile("test.png", std::ios::app | std::ios::binary);
+
+	
+		
+
+		temp.close();
+		outputFile.close();
+	}
+
+	// if (handler.body_length == 0)
+	// 	handler.body_read = 1;
 }
 
 void	RequestBody::readBody()
 {
 	if (handler.getHeaderInfo().getTEStatus())
-		parseChunkedBody();
+		parseChunkedBody(); // //store body chunks in file (already store in the appropriate object)
 	else
-		parsePlainBody();
-	// if chunked
-		//store body chunks in file (already store in the appropriate object)
-	// if not chunked
-		// store body in stringstream or vector (already store in the appropriate object)
+		parsePlainBody(); // store body in stringstream or vector / could also be a file (already store in the appropriate object)
 }
