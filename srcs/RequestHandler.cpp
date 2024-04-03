@@ -124,17 +124,6 @@ void	RequestHandler::sendResponse()
 // read request handler
 void	RequestHandler::processRequest()
 {
-	// for testing if correct configuration info reaches RequestHandler
-	// for (std::vector<t_server_config>::iterator it = server_config.begin(); it != server_config.end(); it++)
-	// {
-	// 	std::cout << "port and server name: " << it->port << " " << it->serverName << std::endl;
-	// 	for (std::vector<t_location_config>::iterator it2 = it->locations.begin(); it2 != it->locations.end(); it2++)
-	// 	{
-	// 		std::cout << "location: " << it2->path << std::endl;
-	// 	}
-	// }
-	
-	//how to handle cases in which the header is not recv in one go? (do those cases exist?)
 	buf_pos = -1;
 	bytes_read = recv(connection_fd, buf, BUFFER_SIZE, 0);
 	if (bytes_read == -1)
@@ -143,23 +132,19 @@ void	RequestHandler::processRequest()
 		return ; // also throw exception. Need to check the exception exactly // also close connection?
 	// close fd in case bytes_read == 0 ???
 	
-	buf[bytes_read] = '\0'; // correct? BUFFER_SIZE + 1?
+	buf[bytes_read] = '\0';
 	request_length += bytes_read;
 
 	printf("read %i bytes\n", bytes_read);
-	// printf("buf content: %s\n", buf);
 
 	try
 	{
-		// check if headers have already been parsed
+		// check if headers have already been read
 		if (!request_header.getHeaderStatus())
-		{
 			request_header.parseHeader();
-			// How do the header fields in the request affect the response?
-		}
 		if (request_header.getHeaderStatus())
 		{
-			request_header.checkFields();
+			request_header.checkHeader();
 			//for testing: print received headers
 			printf("\nheaders\n");
 			std::map<std::string, std::string> headers = request_header.getHeaderFields();
@@ -169,45 +154,26 @@ void	RequestHandler::processRequest()
 				std::cout << "value: " << it->second << std::endl;
 			}
 
-			std::cout << "identified method: " << request_header.getMethod() << '\n';
-			std::cout << "identified path: " << request_header.getPath() << '\n';
-			std::cout << "identified query: " << request_header.getQuery() << '\n';
-			std::cout << "identified version: " << request_header.getHttpVersion() << '\n';
-
 			if (request_header.getHeaderExpectedStatus()) // this is relevant for POST only, should this be done in another place? (e.g. POST request class)
 			{
 				// check value of expect field?
 				// check content-length field before accepting?
 				// create response signalling the client that the body can be send
 				// make reponse
+				// in this case we don't want to destroy the requesthandler object
 			}
-			// if body is expected
+			// if body is expected, read the body
 			if (request_header.getBodyStatus())
-			{
-				printf("Hey\n");
 				request_body.readBody();
-				//here we need to account for max-body_size specified in config file
-				// if chunked
-					//store body chunks in file (already store in the appropriate object)
-				// if not chunked
-					// store body in stringstream or vector (already store in the appropriate object)
-				// if end of body has not been reached
-					// return to continue receiving
-			}
 			// if no body is expected OR end of body has been reached
 			if (!request_header.getBodyStatus() || body_read)
 			{
 				std::cout << "body content: " << request_body.body << std::endl;
-				// try/catch block?
-				response = prepareResponse();
-				response->createResponse();
-				// response = request->createResponse();
-				// set Response to be ready
+				response = prepareResponse(); // how to handle errors in here?
+				response->createResponse(); // how to handle errors in here?
 				response_ready = 1;
 			}
 		}
-		
-
 	}
 	catch(const std::exception& e)
 	{
@@ -216,20 +182,6 @@ void	RequestHandler::processRequest()
 		response_ready = 1;
 		std::cerr << e.what() << '\n';
 	}
-
-	// The presence of a message body in a request is signaled by a Content-Length or Transfer-Encoding header field. Request message framing is independent of method semantics.
-	// GET requests can have a body but that has no semantic meaning --> so no need to check --> still need to recv the whole body before responding?
-	
-	// if we expect a body (only if POST?) // parse the body based on whether the request is a GET, POST or DELETE request? --> create specific objects for those requests?
-		// does the transmission format play a role here?
-		// if we read max number of bytes we continue receiving bytes and always append the incoming data to a stringfile
-		// for that we need to know an offset (where the header ends)
-		// receive chunks?
-		// for each iteration: each call of this event, you will add an oneshot event for the TIMEOUT event (EVFILT_TIMER), --> see slack bookmark
-
-	// notes
-		// video: 2h mark --> set stringstream flags
-		// use uint8_t or unsigned char for storing the incoming data
 }
 
 
@@ -347,4 +299,35 @@ void	RequestHandler::findServerBlock()
 
 
 
+
+// std::cout << "identified method: " << request_header.getMethod() << '\n';
+// std::cout << "identified path: " << request_header.getPath() << '\n';
+// std::cout << "identified query: " << request_header.getQuery() << '\n';
+// std::cout << "identified version: " << request_header.getHttpVersion() << '\n';
+
+// for testing if correct configuration info reaches RequestHandler
+	// for (std::vector<t_server_config>::iterator it = server_config.begin(); it != server_config.end(); it++)
+	// {
+	// 	std::cout << "port and server name: " << it->port << " " << it->serverName << std::endl;
+	// 	for (std::vector<t_location_config>::iterator it2 = it->locations.begin(); it2 != it->locations.end(); it2++)
+	// 	{
+	// 		std::cout << "location: " << it2->path << std::endl;
+	// 	}
+	// }
+
+
+
+	// The presence of a message body in a request is signaled by a Content-Length or Transfer-Encoding header field. Request message framing is independent of method semantics.
+	// GET requests can have a body but that has no semantic meaning --> so no need to check --> still need to recv the whole body before responding?
+	
+	// if we expect a body (only if POST?) // parse the body based on whether the request is a GET, POST or DELETE request? --> create specific objects for those requests?
+		// does the transmission format play a role here?
+		// if we read max number of bytes we continue receiving bytes and always append the incoming data to a stringfile
+		// for that we need to know an offset (where the header ends)
+		// receive chunks?
+		// for each iteration: each call of this event, you will add an oneshot event for the TIMEOUT event (EVFILT_TIMER), --> see slack bookmark
+
+	// notes
+		// video: 2h mark --> set stringstream flags
+		// use uint8_t or unsigned char for storing the incoming data
 

@@ -19,8 +19,8 @@ RequestHeader::RequestHeader()
 	dot_in_path = 0;
 	body_expected = 0;
 	expect_exists = 0;
-	headers_state = he_start; // move to constructor?
-	rl_state = rl_start; // move to constructor?
+	headers_state = he_start;
+	rl_state = rl_start;
 }
 
 RequestHeader::RequestHeader(RequestHandler& src)
@@ -38,8 +38,8 @@ RequestHeader::RequestHeader(RequestHandler& src)
 	dot_in_path = 0;
 	body_expected = 0;
 	expect_exists = 0;
-	headers_state = he_start; // move to constructor?
-	rl_state = rl_start; // move to constructor?
+	headers_state = he_start;
+	rl_state = rl_start;
 }
 
 RequestHeader::RequestHeader(const RequestHeader& src)
@@ -62,6 +62,8 @@ RequestHeader::RequestHeader(const RequestHeader& src)
 	dot_in_path = src.dot_in_path;
 	body_expected = src.body_expected;
 	expect_exists = src.expect_exists;
+	headers_state = src.headers_state;
+	rl_state = src.rl_state;
 }
 
 RequestHeader& RequestHeader::operator=(const RequestHeader& src)
@@ -84,6 +86,8 @@ RequestHeader& RequestHeader::operator=(const RequestHeader& src)
 		dot_in_path = src.dot_in_path;
 		body_expected = src.body_expected;
 		expect_exists = src.expect_exists;
+		headers_state = src.headers_state;
+		rl_state = src.rl_state;
 	}
 	return (*this);
 }
@@ -147,20 +151,18 @@ void	RequestHeader::parseHeader()
 		parseRequestLine();
 	if (rl_parsing_done)
 		parseHeaderFields();
+}
 
-	// move everything from here out and check if header have been completely parsed before
+void	RequestHeader::checkHeader()
+{
 	if (dot_in_path)
 		removeDots();
 	// Decoding to do?: A common defense against response splitting is to filter requests for data that looks like encoded CR and LF (e.g., "%0D" and "%0A") --> What to do then?
-	// std::cout << "path before decoding: " << path << std::endl;
-	// std::cout << "query: " << query << std::endl;
 	if (path_encoded)
-		decode(path); 
+		decode(path);
 	if (query_encoded)
 		decode(query);
-	// std::cout << "path after decoding: " << path << std::endl;
-	// std::cout << "query after decoding: " << query << std::endl;
-	// checkFields(); 
+	checkFields();
 	std::cout << "RequestHeader parsing complete\n";
 }
 
@@ -457,13 +459,11 @@ void	RequestHeader::parseHeaderFields()
 		}
 	}
 
-	// if (!headers_parsing_done) // is this the correct location to check?
-	// {
-	// 	handler.setStatus(413); // correct error code when header is too large for buffer OR 431 Request Header Fields Too Large
-	// 	throw CustomException("Payload Too Large");  // correct error code when header is too large for buffer
-	// }
-	// header_complete = 1;
-	handler.body_beginning = handler.buf_pos; // this is the last ch of the empty line at the end of the headers. Next ch is the first of the body
+	if (!headers_parsing_done) // is this the correct location to check?
+	{
+		handler.setStatus(413); // correct error code when header is too large for buffer OR 431 Request Header Fields Too Large
+		throw CustomException("Content Too Large");  // correct error code when header is too large for buffer
+	}
 
 	// A sender MUST NOT send whitespace between the start-line and the first header field.
 	// A recipient that receives whitespace between the start-line and the first header field MUST either reject the message as invalid 

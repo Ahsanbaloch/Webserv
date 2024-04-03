@@ -42,7 +42,7 @@ private:
 	void								parseRequestLine();
 	void								parseHeaderFields();
 	void								removeDots();
-	// void								checkFields();
+	void								checkFields();
 
 	// helper methods
 	void								handleMultipleSlashes();
@@ -75,7 +75,7 @@ public:
 
 	// method
 	void								parseHeader();
-	void								checkFields();
+	void								checkHeader();
 
 	// parsing states
 	enum {
