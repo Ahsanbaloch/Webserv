@@ -42,7 +42,7 @@ private:
 	void								parseRequestLine();
 	void								parseHeaderFields();
 	void								removeDots();
-	void								checkFields();
+	// void								checkFields();
 
 	// helper methods
 	void								handleMultipleSlashes();
@@ -73,11 +73,9 @@ public:
 	bool								getHeaderExpectedStatus() const;
 	bool								getTEStatus() const;
 
-	// TBD: move to request class??? 
-	// std::string							redirected_path;
-
 	// method
 	void								parseHeader();
+	void								checkFields();
 
 	// parsing states
 	enum {

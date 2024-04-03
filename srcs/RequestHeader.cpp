@@ -19,6 +19,8 @@ RequestHeader::RequestHeader()
 	dot_in_path = 0;
 	body_expected = 0;
 	expect_exists = 0;
+	headers_state = he_start; // move to constructor?
+	rl_state = rl_start; // move to constructor?
 }
 
 RequestHeader::RequestHeader(RequestHandler& src)
@@ -36,6 +38,8 @@ RequestHeader::RequestHeader(RequestHandler& src)
 	dot_in_path = 0;
 	body_expected = 0;
 	expect_exists = 0;
+	headers_state = he_start; // move to constructor?
+	rl_state = rl_start; // move to constructor?
 }
 
 RequestHeader::RequestHeader(const RequestHeader& src)
@@ -139,8 +143,12 @@ bool	RequestHeader::getTEStatus() const
 
 void	RequestHeader::parseHeader()
 {
-	parseRequestLine();
-	parseHeaderFields();
+	if (!rl_parsing_done)
+		parseRequestLine();
+	if (rl_parsing_done)
+		parseHeaderFields();
+
+	// move everything from here out and check if header have been completely parsed before
 	if (dot_in_path)
 		removeDots();
 	// Decoding to do?: A common defense against response splitting is to filter requests for data that looks like encoded CR and LF (e.g., "%0D" and "%0A") --> What to do then?
@@ -152,7 +160,7 @@ void	RequestHeader::parseHeader()
 		decode(query);
 	// std::cout << "path after decoding: " << path << std::endl;
 	// std::cout << "query after decoding: " << query << std::endl;
-	checkFields();
+	// checkFields(); 
 	std::cout << "RequestHeader parsing complete\n";
 }
 
@@ -162,7 +170,7 @@ void	RequestHeader::checkFields()
 	if (header_fields.find("host") == header_fields.end()) // is is even connecting without host field?
 	{
 		handler.setStatus(410);
-		throw CustomException("Bad request");
+		throw CustomException("Bad request 1");
 	}
 	if (!transfer_encoding_exists && !content_length_exists && method == "POST") // if both exist at the same time is check when parsing
 	{
@@ -253,14 +261,14 @@ void	RequestHeader::checkBodyLength(std::string value)
 				else
 				{
 					handler.setStatus(400);
-					throw CustomException("Bad request"); // other error code?
+					throw CustomException("Bad request 2"); // other error code?
 				}
 			}
 		}
 		else if (!isdigit(*it))
 		{
 			handler.setStatus(400);
-			throw CustomException("Bad request"); // other error code?
+			throw CustomException("Bad request 3"); // other error code?
 		}
 	}
 	handler.body_length = std::atoi(value.c_str());
@@ -271,8 +279,6 @@ void	RequestHeader::parseHeaderFields()
 	unsigned char	ch;
 	std::string		header_name = "";
 	std::string		header_value = "";
-
-	headers_state = he_start; // move to constructor?
 
 	while (!headers_parsing_done && (handler.buf_pos)++ < handler.getBytesRead())
 	{
@@ -311,7 +317,7 @@ void	RequestHeader::parseHeaderFields()
 				else
 				{
 					handler.setStatus(400);
-					throw CustomException("Bad request");
+					throw CustomException("Bad request 4");
 				}
 				break;
 
@@ -350,7 +356,7 @@ void	RequestHeader::parseHeaderFields()
 				else
 				{
 					handler.setStatus(400);
-					throw CustomException("Bad request");
+					throw CustomException("Bad request 5");
 				}
 				break;
 			
@@ -381,7 +387,7 @@ void	RequestHeader::parseHeaderFields()
 				else 
 				{
 					handler.setStatus(400);
-					throw CustomException("Bad request");
+					throw CustomException("Bad request 6");
 				}
 			
 			case he_done:
@@ -411,7 +417,7 @@ void	RequestHeader::parseHeaderFields()
 					if (header_value != "chunked")
 					{
 						handler.setStatus(501);
-						throw CustomException("Not implemented");
+						throw CustomException("Not implemented 1");
 					}
 					transfer_encoding_exists = 1;
 					body_expected = 1;
@@ -421,12 +427,12 @@ void	RequestHeader::parseHeaderFields()
 					if (host_exists)
 					{
 						handler.setStatus(400);
-						throw CustomException("Bad request");
+						throw CustomException("Bad request 7");
 					}
 					if (header_value.empty())
 					{
 						handler.setStatus(400);
-						throw CustomException("Bad request");
+						throw CustomException("Bad request 8");
 					}
 					host_exists = 1;
 				}
@@ -442,20 +448,21 @@ void	RequestHeader::parseHeaderFields()
 				if (ch == LF)
 				{
 					headers_parsing_done = 1;
+					header_complete = 1;
 					// std::cout << "headers fully parsed\n";
 					break;
 				}
 				handler.setStatus(400);
-				throw CustomException("Bad request");
+				throw CustomException("Bad request 9");
 		}
 	}
 
-	if (!headers_parsing_done) // is this the correct location to check?
-	{
-		handler.setStatus(413); // correct error code when header is too large for buffer OR 431 Request Header Fields Too Large
-		throw CustomException("Payload Too Large");  // correct error code when header is too large for buffer
-	}
-	header_complete = 1;
+	// if (!headers_parsing_done) // is this the correct location to check?
+	// {
+	// 	handler.setStatus(413); // correct error code when header is too large for buffer OR 431 Request Header Fields Too Large
+	// 	throw CustomException("Payload Too Large");  // correct error code when header is too large for buffer
+	// }
+	// header_complete = 1;
 	handler.body_beginning = handler.buf_pos; // this is the last ch of the empty line at the end of the headers. Next ch is the first of the body
 
 	// A sender MUST NOT send whitespace between the start-line and the first header field.
@@ -484,7 +491,7 @@ void	RequestHeader::checkMethod()
 			else
 			{
 				handler.setStatus(501);
-				throw CustomException("Not implemented");
+				throw CustomException("Not implemented 2");
 			}
 			break;
 		
@@ -495,7 +502,7 @@ void	RequestHeader::checkMethod()
 			else
 			{
 				handler.setStatus(501);
-				throw CustomException("Not implemented");
+				throw CustomException("Not implemented 3");
 			}
 			break;
 
@@ -506,12 +513,12 @@ void	RequestHeader::checkMethod()
 			else
 			{
 				handler.setStatus(501);
-				throw CustomException("Not implemented");
+				throw CustomException("Not implemented 4");
 			}
 			break;
 		default:
 			handler.setStatus(501);
-			throw CustomException("Not implemented");
+			throw CustomException("Not implemented 5");
 			break;
 		}
 }
@@ -551,8 +558,6 @@ void	RequestHeader::parseRequestLine()
 	// unreseved:  - _ . ~
 	// alphanumeric
 
-	rl_state = rl_start; // move to constructor?
-
 	while (!rl_parsing_done && (handler.buf_pos)++ < handler.getBytesRead())
 	{
 		ch = handler.buf[handler.buf_pos];
@@ -584,7 +589,7 @@ void	RequestHeader::parseRequestLine()
 					break;
 				}
 				handler.setStatus(400);
-				throw CustomException("Bad request");
+				throw CustomException("Bad request 10");
 				
 			case rl_path:
 				// do we have to handle authority request lines?
@@ -622,7 +627,7 @@ void	RequestHeader::parseRequestLine()
 						if (ch < 32 || ch == 127)
 						{
 							handler.setStatus(400);
-							throw CustomException("Bad request");
+							throw CustomException("Bad request 11");
 						}
 						break;
 
@@ -655,7 +660,7 @@ void	RequestHeader::parseRequestLine()
 						if (ch < 32 || ch == 127)
 						{
 							handler.setStatus(400);
-							throw CustomException("Bad request");
+							throw CustomException("Bad request 12");
 						}
 						break;
 				}
@@ -687,7 +692,7 @@ void	RequestHeader::parseRequestLine()
 				else 
 				{
 					handler.setStatus(400);
-					throw CustomException("Bad request");
+					throw CustomException("Bad request 13");
 				}
 			
 			case rl_done:

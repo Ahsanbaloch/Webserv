@@ -66,7 +66,7 @@ public:
 	int								body_length; // set inside header class
 	std::stringstream				raw_buf;
 	std::stringstream				body;
-	unsigned char					buf[BUFFER_SIZE]; // use std::vector<unsigned char> buf(BUFFER_SIZE) or uint8_t instead? // don't use the string type for your buffer because for upload and binary file you can have some \0 in the middle of the content). + CRLF interpretation --> request smuggling
+	unsigned char					buf[BUFFER_SIZE + 1]; // use std::vector<unsigned char> buf(BUFFER_SIZE) or uint8_t instead? // don't use the string type for your buffer because for upload and binary file you can have some \0 in the middle of the content). + CRLF interpretation --> request smuggling
 	int								buf_pos;
 	void							parseEncodedBody();
 	void							parseBody();

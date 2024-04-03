@@ -133,9 +133,10 @@ void	RequestHandler::processRequest()
 	// 		std::cout << "location: " << it2->path << std::endl;
 	// 	}
 	// }
-
+	
 	//how to handle cases in which the header is not recv in one go? (do those cases exist?)
-	bytes_read = recv(connection_fd, buf, sizeof(buf), 0);
+	buf_pos = -1;
+	bytes_read = recv(connection_fd, buf, BUFFER_SIZE, 0);
 	if (bytes_read == -1)
 		throw CustomException("Failed when processing read request\n");
 	if (bytes_read == 0)
@@ -146,61 +147,66 @@ void	RequestHandler::processRequest()
 	request_length += bytes_read;
 
 	printf("read %i bytes\n", bytes_read);
-	printf("buf content: %s\n", buf);
+	// printf("buf content: %s\n", buf);
 
 	try
 	{
 		// check if headers have already been parsed
 		if (!request_header.getHeaderStatus())
 		{
-			std::cout << "here" << std::endl;
 			request_header.parseHeader();
 			// How do the header fields in the request affect the response?
 		}
-		//for testing: print received headers
-		printf("\nheaders\n");
-		std::map<std::string, std::string> headers = request_header.getHeaderFields();
-		for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
+		if (request_header.getHeaderStatus())
 		{
-			std::cout << "key: " << it->first << " ";
-			std::cout << "value: " << it->second << std::endl;
-		}
+			request_header.checkFields();
+			//for testing: print received headers
+			printf("\nheaders\n");
+			std::map<std::string, std::string> headers = request_header.getHeaderFields();
+			for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
+			{
+				std::cout << "key: " << it->first << " ";
+				std::cout << "value: " << it->second << std::endl;
+			}
 
-		std::cout << "identified method: " << request_header.getMethod() << '\n';
-		std::cout << "identified path: " << request_header.getPath() << '\n';
-		std::cout << "identified query: " << request_header.getQuery() << '\n';
-		std::cout << "identified version: " << request_header.getHttpVersion() << '\n';
+			std::cout << "identified method: " << request_header.getMethod() << '\n';
+			std::cout << "identified path: " << request_header.getPath() << '\n';
+			std::cout << "identified query: " << request_header.getQuery() << '\n';
+			std::cout << "identified version: " << request_header.getHttpVersion() << '\n';
 
-		if (request_header.getHeaderExpectedStatus()) // this is relevant for POST only, should this be done in another place? (e.g. POST request class)
-		{
-			// check value of expect field?
-			// check content-length field before accepting?
-			// create response signalling the client that the body can be send
-			// make reponse
+			if (request_header.getHeaderExpectedStatus()) // this is relevant for POST only, should this be done in another place? (e.g. POST request class)
+			{
+				// check value of expect field?
+				// check content-length field before accepting?
+				// create response signalling the client that the body can be send
+				// make reponse
+			}
+			// if body is expected
+			if (request_header.getBodyStatus())
+			{
+				printf("Hey\n");
+				request_body.readBody();
+				//here we need to account for max-body_size specified in config file
+				// if chunked
+					//store body chunks in file (already store in the appropriate object)
+				// if not chunked
+					// store body in stringstream or vector (already store in the appropriate object)
+				// if end of body has not been reached
+					// return to continue receiving
+			}
+			// if no body is expected OR end of body has been reached
+			if (!request_header.getBodyStatus() || body_read)
+			{
+				std::cout << "body content: " << request_body.body << std::endl;
+				// try/catch block?
+				response = prepareResponse();
+				response->createResponse();
+				// response = request->createResponse();
+				// set Response to be ready
+				response_ready = 1;
+			}
 		}
-		// if body is expected
-		if (request_header.getBodyStatus())
-		{
-			request_body.readBody();
-			//here we need to account for max-body_size specified in config file
-			// if chunked
-				//store body chunks in file (already store in the appropriate object)
-			// if not chunked
-				// store body in stringstream or vector (already store in the appropriate object)
-			// if end of body has not been reached
-				// return to continue receiving
-		}
-		// if no body is expected OR end of body has been reached
-		if (!request_header.getBodyStatus() || body_read)
-		{
-			std::cout << "body content: " << request_body.body << std::endl;
-			// try/catch block?
-			response = prepareResponse();
-			response->createResponse();
-			// response = request->createResponse();
-			// set Response to be ready
-		}
-		response_ready = 1;
+		
 
 	}
 	catch(const std::exception& e)

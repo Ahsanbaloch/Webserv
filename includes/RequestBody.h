@@ -17,6 +17,7 @@ public:
 
 	void	readBody();
 	void	parseChunkedBody();
+	void	parsePlainBody();
 
 	int								body_parsing_done;
 	int								chunk_length;

@@ -8,7 +8,7 @@ RequestBody::RequestBody(/* args */)
 	body_parsing_done = 0;
 	chunk_length = 0;
 	trailer_exists = 0;
-	te_state = body_start; // move to constructor
+	te_state = body_start;
 }
 
 RequestBody::RequestBody(RequestHandler& src)
@@ -17,7 +17,7 @@ RequestBody::RequestBody(RequestHandler& src)
 	body_parsing_done = 0;
 	chunk_length = 0;
 	trailer_exists = 0;
-	te_state = body_start; // move to constructor
+	te_state = body_start;
 }
 
 RequestBody::~RequestBody()
@@ -26,13 +26,11 @@ RequestBody::~RequestBody()
 
 void	RequestBody::parseChunkedBody()
 {
-	// te_state = body_start; // move to constructor
-
 	while (!body_parsing_done && handler.buf_pos++ < handler.getBytesRead())
 	{
 		unsigned char ch = handler.buf[handler.buf_pos];
 
-		switch (te_state) 
+		switch (te_state)
 		{
 			case body_start:
 				if ((ch >= '0' && ch <= '9'))
@@ -258,29 +256,6 @@ void	RequestBody::parseChunkedBody()
 	}
 	//handler.buf_pos++; // correct?
 
-		// check chunk-size (first part of body) and translate from hex to integer; followed by CRLF if chunk extension is not provided
-			// if chunk-size is 0 and followd by CRLF, the end of the transmission has been reached
-
-		// check for chunk extension, this is followed by CRLF
-			// A recipient MUST ignore unrecognized chunk extensions // how to recognize an invalid one?
-			// Where to store that extension?
-
-		// run through the chunk data using chunk-size as a delimiter
-			// add content to stream until CRLF is reached
-			// count data length
-			// check again for chunk size and chunk extension
-
-		// if end of data transimission (chunk size 0), check for trailer (finally terminated by empty line --> CRLFCRLF??)
-			// store somewhere
-			// what info does trailer entail?
-
-	// empty line termination --> always? or only when chunk size == 0?
-	
-	// set content-length in headers to counted data length --> for what purpose?
-	
-	
-
-
 	// The chunked coding does not define any parameters. Their presence SHOULD be treated as an error. --> what is meant by that?
 
 
@@ -296,13 +271,6 @@ void	RequestBody::parseChunkedBody()
 	// A recipient MUST ignore unrecognized chunk extensions. A server ought to limit the total length of chunk extensions received in a request 
 	// to an amount reasonable for the services provided, in the same way that it applies length limitations and timeouts for other parts of a 
 	// message, and generate an appropriate 4xx (Client Error) response if that amount is exceeded
-
-	// use ostringstream to store body?
-	
-	// chunked-body   = *chunk
-                   //last-chunk
-                   //trailer-section
-                   //CRLF
 }
 
 
@@ -339,10 +307,24 @@ void	RequestBody::parseChunkedBody()
 // 	// inFile.close();
 // }
 
+void	RequestBody::parsePlainBody()
+{
+	while (handler.buf_pos++ < handler.getBytesRead() && handler.body_length > 0)
+	{
+		body.append(1, handler.buf[handler.buf_pos]);
+		handler.body_length--;
+	}
+	printf("Body len: %i\n", handler.body_length);
+	if (handler.body_length == 0)
+		handler.body_read = 1;
+}
+
 void	RequestBody::readBody()
 {
-	// if (handler.getHeaderInfo().getTEStatus())
-	parseChunkedBody();
+	if (handler.getHeaderInfo().getTEStatus())
+		parseChunkedBody();
+	else
+		parsePlainBody();
 	// if chunked
 		//store body chunks in file (already store in the appropriate object)
 	// if not chunked
