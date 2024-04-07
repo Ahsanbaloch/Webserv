@@ -2,6 +2,7 @@
 # define REQUESTBODY_H
 
 #include <string>
+#include <fstream>
 
 class RequestHandler;
 
@@ -18,11 +19,16 @@ public:
 	void	readBody();
 	void	parseChunkedBody();
 	void	parsePlainBody();
+	void	checkBoundaryID();
+	void	saveContentDispo();
+	void	saveContentType();
 
 	int								body_parsing_done;
 	int								chunk_length;
+	int								loop;
 	bool							trailer_exists; // maybe there is another solution
 	std::string						body;
+	std::ofstream					temp;
 
 	enum {
 		body_start = 0,
@@ -36,6 +42,16 @@ public:
 		body_end_cr,
 		body_end
 	} te_state;
+
+	enum {
+		mp_start = 0,
+		mp_boundary_id,
+		mp_content_dispo,
+		mp_content_type,
+		mp_empty_line,
+		mp_content,
+		mp_boundary_end
+	} mp_state;
 
 };
 

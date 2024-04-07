@@ -8,8 +8,11 @@ RequestBody::RequestBody(/* args */)
 	body_parsing_done = 0;
 	chunk_length = 0;
 	trailer_exists = 0;
+	loop = 0;
 	te_state = body_start;
+	mp_state = mp_start;
 	// outFile.setf(std::ios::app | std::ios::binary);
+	// temp.setf(std::ios::app | std::ios::binary);
 }
 
 RequestBody::RequestBody(RequestHandler& src)
@@ -17,9 +20,12 @@ RequestBody::RequestBody(RequestHandler& src)
 {
 	body_parsing_done = 0;
 	chunk_length = 0;
+	loop = 0;
 	trailer_exists = 0;
 	te_state = body_start;
+	mp_state = mp_start;
 	// outFile.setf(std::ios::app | std::ios::binary);
+	// temp.setf(std::ios::app | std::ios::binary);
 }
 
 RequestBody::~RequestBody()
@@ -308,56 +314,189 @@ void	RequestBody::parseChunkedBody()
 // 	// inFile.close();
 // }
 
+void	RequestBody::checkBoundaryID()
+{
+	std::string boundary1 = handler.getHeaderInfo().getHeaderFields()["content-type"];
+	std::string boundary2 = boundary1.substr(boundary1.find('=') + 1);
+	std::cout << "Boundary ident: " << boundary2 << std::endl;
+	handler.buf_pos++;
+
+	for (std::string::iterator it = boundary2.begin(); it != boundary2.end(); it++)
+	{
+		handler.buf_pos++;
+		if (*it != handler.buf[handler.buf_pos])
+		{
+			handler.setStatus(400); // what is the correct error code?
+			throw CustomException("Issue with boundary ID 1"); // other exception?
+		}
+	}
+	handler.buf_pos++;
+	if (handler.buf[handler.buf_pos] == CR)
+	{
+		handler.buf_pos++;
+		if (handler.buf[handler.buf_pos] != LF)
+		{
+			handler.setStatus(400); // what is the correct error code?
+			throw CustomException("Issue with boundary ID 2"); // other exception?
+		}
+	}
+	else if (handler.buf[handler.buf_pos] != LF)
+	{
+		handler.setStatus(400); // what is the correct error code?
+		throw CustomException("Issue with boundary ID 3"); // other exception?
+	}
+}
+
+
+void	RequestBody::saveContentDispo()
+{
+	while (handler.buf_pos < handler.getBytesRead() && (handler.buf[handler.buf_pos] != CR && handler.buf[handler.buf_pos] != LF))
+	{
+		// save Dispo
+		// printf("char: %i, %c\n", handler.buf[handler.buf_pos], handler.buf[handler.buf_pos]);
+		handler.buf_pos++;
+	}
+	if (handler.buf_pos >= handler.getBytesRead())
+	{
+		printf("stuck in content dispo?\n");
+		return ;
+	}
+	else if (handler.buf[handler.buf_pos] == CR)
+	{
+		handler.buf_pos++;
+		if (handler.buf[handler.buf_pos] != LF)
+		{
+			handler.setStatus(400); // what is the correct error code?
+			throw CustomException("Issue with content dispo 1"); // other exception?
+		}
+	}
+	else if (handler.buf[handler.buf_pos] != LF)
+	{
+		handler.setStatus(400); // what is the correct error code?
+		throw CustomException("Issue with content dispo 2"); // other exception?
+	}
+	mp_state = mp_content_type;
+}
+
+void	RequestBody::saveContentType()
+{
+	while (handler.buf_pos < handler.getBytesRead() && (handler.buf[handler.buf_pos] != CR && handler.buf[handler.buf_pos] != LF))
+	{
+		// save Content Type
+		// printf("char: %i, %c\n", handler.buf[handler.buf_pos], handler.buf[handler.buf_pos]);
+		handler.buf_pos++;
+	}
+	if (handler.buf_pos >= handler.getBytesRead())
+	{
+		printf("stuck in content type?\n");
+		return ;
+	}
+	else if (handler.buf[handler.buf_pos] == CR)
+	{
+		handler.buf_pos++;
+		if (handler.buf[handler.buf_pos] != LF)
+		{
+			handler.setStatus(400); // what is the correct error code?
+			throw CustomException("Issue with content dispo"); // other exception?
+		}
+	}
+	else if (handler.buf[handler.buf_pos] != LF)
+	{
+		handler.setStatus(400); // what is the correct error code?
+		throw CustomException("Issue with content dispo"); // other exception?
+	}
+	mp_state = mp_empty_line;
+}
 
 void	RequestBody::parsePlainBody()
 {
-	std::ofstream	temp("temp.png", std::ios::app | std::ios::binary);
-	temp.write(reinterpret_cast<const char*>(&handler.buf[handler.buf_pos + 1]), handler.getBytesRead() - (handler.buf_pos + 1));
-	
-	// while (handler.buf_pos++ < handler.getBytesRead() && handler.body_length > 0)
-	// {
-	// 	body.append(1, handler.buf[handler.buf_pos]);
-	// 	handler.body_length--;
-	// }
-	printf("Body len: %i\n", handler.body_length);
-	temp.close();
-
-	std::ifstream tempFile("temp.png", std::ios::binary);
-	tempFile.seekg(0, std::ios::end);
-	std::streampos fileSize = tempFile.tellg();
-	tempFile.close();
-	std::cout << "Size of temp file: " << fileSize << std::endl;
-	printf("body len: %i\n", handler.body_length);
-	temp.close();
-
-	if (handler.body_length == fileSize)
-		handler.body_read = 1;
-
-	if (handler.body_read)
+	while (!body_parsing_done && handler.buf_pos++ < handler.getBytesRead() - 1) // not entirely sure why to add "-1" here, though ...
 	{
-		std::string line;
-		std::string boundary1 = handler.getHeaderInfo().getHeaderFields()["content-type"];
-		std::string boundary2 = boundary1.substr(boundary1.find('=') + 1);
-		std::cout << "Boundary ident: " << boundary2 << std::endl;
-		bool inBoundary = false;
-		std::ifstream	temp("temp.png", std::ios::binary);
-		std::ofstream	outputFile("test.png", std::ios::app | std::ios::binary);
+		unsigned char ch = handler.buf[handler.buf_pos];
 
-	
-		
+		switch (mp_state)
+		{
+			case mp_start:
+				if (ch == '-')
+					mp_state = mp_boundary_id;
+				else
+				{
+					handler.setStatus(400); // what is the correct error code?
+					throw CustomException("Bad request 20"); // other exception?
+				}
 
-		temp.close();
-		outputFile.close();
+			case mp_boundary_id:
+				checkBoundaryID();
+				mp_state = mp_content_dispo;
+				break;
+			
+			case mp_content_dispo:
+				saveContentDispo();
+				break;
+
+			case mp_content_type:
+				if (ch == CR)
+					break;
+				else if (ch == LF)
+				{
+					mp_state = mp_content;
+					break;
+				}
+				else if (ch == 'C')
+				{
+					saveContentType();
+					break;
+				}
+				else
+				{
+					handler.setStatus(400); // what is the correct error code?
+					throw CustomException("Issue with content type"); // other exception?
+				}
+
+			case mp_empty_line:
+				if (ch == CR)
+					break;
+				else if (ch == LF)
+				{
+					mp_state = mp_content;
+					break;
+				}
+
+			case mp_content:
+				if (ch == CR)
+				{
+					if (handler.buf[handler.buf_pos + 1] == LF && handler.buf[handler.buf_pos + 2] == '-' && handler.buf[handler.buf_pos + 3] == '-')
+					{
+						mp_state = mp_boundary_end;
+						break;
+					}
+				}
+				else if (ch == LF)
+				{
+					if (handler.buf[handler.buf_pos + 1] == '-' && handler.buf[handler.buf_pos + 2] == '-')
+					{
+						mp_state = mp_boundary_end;
+						break;
+					}
+				}
+				temp.write(reinterpret_cast<const char*>(&handler.buf[handler.buf_pos]), 1);
+				break;
+				
+			case mp_boundary_end:
+				handler.body_read = 1;
+				body_parsing_done = 1;
+				break;
+		}
 	}
-
-	// if (handler.body_length == 0)
-	// 	handler.body_read = 1;
 }
 
 void	RequestBody::readBody()
 {
+	temp.open("temp.png", std::ios::app | std::ios::binary);
 	if (handler.getHeaderInfo().getTEStatus())
 		parseChunkedBody(); // //store body chunks in file (already store in the appropriate object)
 	else
 		parsePlainBody(); // store body in stringstream or vector / could also be a file (already store in the appropriate object)
+	temp.close();
+	loop++;
 }
