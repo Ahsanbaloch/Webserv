@@ -22,13 +22,20 @@ public:
 	void	checkBoundaryID();
 	void	saveContentDispo();
 	void	saveContentType();
+	void	checkContentType();
 
 	int								body_parsing_done;
 	int								chunk_length;
-	int								loop;
 	bool							trailer_exists; // maybe there is another solution
 	std::string						body;
 	std::ofstream					temp;
+
+	std::string 					boundary;
+
+	enum {
+		unknown = 0,
+		multipart_form
+	} content_type;
 
 	enum {
 		body_start = 0,

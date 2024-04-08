@@ -8,7 +8,6 @@ RequestBody::RequestBody(/* args */)
 	body_parsing_done = 0;
 	chunk_length = 0;
 	trailer_exists = 0;
-	loop = 0;
 	te_state = body_start;
 	mp_state = mp_start;
 	// outFile.setf(std::ios::app | std::ios::binary);
@@ -20,7 +19,6 @@ RequestBody::RequestBody(RequestHandler& src)
 {
 	body_parsing_done = 0;
 	chunk_length = 0;
-	loop = 0;
 	trailer_exists = 0;
 	te_state = body_start;
 	mp_state = mp_start;
@@ -281,47 +279,14 @@ void	RequestBody::parseChunkedBody()
 }
 
 
-// void	RequestBody::processChunkedBody()
-// {
-
-
-// 	// std::ofstream outFile("output.bin", std::ios::binary);
-// 	// outFile.write(reinterpret_cast<char*>(handler.buf), BUFFER_SIZE - handler.body_beginning);
-// 	// outFile.close();
-
-// 	// std::ifstream inFile("output.bin", std::ios::binary);
-
-// 	// // Get the size of the file
-// 	// inFile.seekg(0, std::ios::end);
-// 	// std::streamsize size = inFile.tellg();
-// 	// inFile.seekg(0, std::ios::beg);
-
-// 	// // Create a buffer to hold the data
-// 	// std::vector<unsigned char> buffer(size);
-
-// 	// // Read the data into the buffer
-// 	// if (inFile.read(reinterpret_cast<char*>(buffer.data()), size))
-// 	// {
-// 	// 	// Parse the data
-// 	// 	std::cout << "body test: " << std::endl;
-// 	// 	for (long i = 0; i < size; ++i)
-// 	// 	{
-// 	// 		printf("%c", buffer[i]);
-// 	// 	}
-// 	// }
-// 	// printf("\n");
-
-// 	// inFile.close();
-// }
-
 void	RequestBody::checkBoundaryID()
 {
-	std::string boundary1 = handler.getHeaderInfo().getHeaderFields()["content-type"];
-	std::string boundary2 = boundary1.substr(boundary1.find('=') + 1);
-	std::cout << "Boundary ident: " << boundary2 << std::endl;
+	// std::string boundary1 = handler.getHeaderInfo().getHeaderFields()["content-type"];
+	// std::string boundary2 = boundary1.substr(boundary1.find('=') + 1);
+	// std::cout << "Boundary ident: " << boundary2 << std::endl;
 	handler.buf_pos++;
 
-	for (std::string::iterator it = boundary2.begin(); it != boundary2.end(); it++)
+	for (std::string::iterator it = boundary.begin(); it != boundary.end(); it++)
 	{
 		handler.buf_pos++;
 		if (*it != handler.buf[handler.buf_pos])
@@ -490,13 +455,49 @@ void	RequestBody::parsePlainBody()
 	}
 }
 
+void	RequestBody::checkContentType()
+{
+	std::string value = handler.getHeaderInfo().getHeaderFields()["content-type"];
+	std::string type;
+	
+	// identify content type
+	std::size_t delim_pos = value.find(';');
+	if (delim_pos != std::string::npos)
+		type = value.substr(0, delim_pos);
+	else
+		type = value;
+	
+	if (type == "multipart/form-data")
+		content_type = multipart_form;
+	
+	// identify boundary
+	if (content_type == multipart_form)
+	{
+		std::size_t boundary_value_pos = value.find("=");
+		if (boundary_value_pos != std::string::npos)
+			boundary = value.substr(boundary_value_pos + 1);
+		else
+		{
+			handler.setStatus(400); // what is the correct error code?
+			throw CustomException("Could not identify boundary"); // other exception?
+		}
+	}
+}
+
 void	RequestBody::readBody()
 {
-	temp.open("temp.png", std::ios::app | std::ios::binary);
-	if (handler.getHeaderInfo().getTEStatus())
-		parseChunkedBody(); // //store body chunks in file (already store in the appropriate object)
+	checkContentType();
+	// depending on the answer either store the body as a string or in a file
+	if (content_type == multipart_form)
+	{
+		temp.open("temp.png", std::ios::app | std::ios::binary); // file should only be opened later when storing the content. At that point the filename is known
+		if (handler.getHeaderInfo().getTEStatus())
+			parseChunkedBody();
+		else
+			parsePlainBody();
+		temp.close(); // also close it inside the multipart-form parsing
+	}
 	else
-		parsePlainBody(); // store body in stringstream or vector / could also be a file (already store in the appropriate object)
-	temp.close();
-	loop++;
+		// how does other data need to be parsed/stored?;
+	
 }
