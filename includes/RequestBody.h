@@ -2,7 +2,9 @@
 # define REQUESTBODY_H
 
 #include <string>
+#include <map>
 #include <fstream>
+#include "defines.h"
 
 class RequestHandler;
 
@@ -23,6 +25,7 @@ public:
 	void	saveContentDispo();
 	void	saveContentType();
 	void	checkContentType();
+	void	storeContent();
 
 	int								body_parsing_done;
 	int								chunk_length;
@@ -31,6 +34,8 @@ public:
 	std::ofstream					temp;
 
 	std::string 					boundary;
+	std::map<std::string, std::string>	content_disposition;
+	std::string						multipart_content_type;
 
 	enum {
 		unknown = 0,
@@ -59,6 +64,18 @@ public:
 		mp_content,
 		mp_boundary_end
 	} mp_state;
+
+	enum {
+		begin = 0,
+		type,
+		var_key,
+		var_value
+	} content_dispo_state;
+
+	enum {
+		begin2 = 0,
+		type_name
+	} content_type_state;
 
 };
 
