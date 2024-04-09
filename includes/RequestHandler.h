@@ -59,7 +59,6 @@ public:
 	AResponse*						response;
 	
 	// tbd
-	
 	int								request_length;
 	int								body_read;
 	int								body_beginning;

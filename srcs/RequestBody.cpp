@@ -8,6 +8,12 @@ RequestBody::RequestBody(/* args */)
 	body_parsing_done = 0;
 	chunk_length = 0;
 	trailer_exists = 0;
+	num_body_reads = 0;
+	write_size = 0;
+	meta_data_size = 0;
+	file_data_size = 0;
+	saved_file_data = 0;
+	// bytes_written = 0;
 	te_state = body_start;
 	mp_state = mp_start;
 	content_dispo_state = begin;
@@ -23,6 +29,12 @@ RequestBody::RequestBody(RequestHandler& src)
 	body_parsing_done = 0;
 	chunk_length = 0;
 	trailer_exists = 0;
+	num_body_reads = 0;
+	write_size = 0;
+	meta_data_size = 0;
+	file_data_size = 0;
+	saved_file_data = 0;
+	// bytes_written = 0;
 	te_state = body_start;
 	mp_state = mp_start;
 	content_dispo_state = begin;
@@ -457,30 +469,67 @@ void	RequestBody::saveContentType()
 
 void	RequestBody::storeContent()
 {
-	handler.buf_pos--;
-	temp.open(content_disposition["filename"], std::ios::app | std::ios::binary); 
-	while (handler.buf_pos++ < handler.getBytesRead() - 1) // not entirely sure why to add "-1" here, though ...
+	// may have to adjust the extra padding of 4 (CRLFCRLF) based on client
+	if (handler.request_length < handler.body_beginning + handler.body_length - static_cast<int>(boundary.size()) - 4)
 	{
-		unsigned char ch = handler.buf[handler.buf_pos];
-
-		if (ch == CR)
-		{
-			if (handler.buf[handler.buf_pos + 1] == LF && handler.buf[handler.buf_pos + 2] == '-' && handler.buf[handler.buf_pos + 3] == '-')
-			{
-				mp_state = mp_boundary_end;
-				break;
-			}
-		}
-		else if (ch == LF)
-		{
-			if (handler.buf[handler.buf_pos + 1] == '-' && handler.buf[handler.buf_pos + 2] == '-')
-			{
-				mp_state = mp_boundary_end;
-				break;
-			}
-		}
-		temp.write(reinterpret_cast<const char*>(&handler.buf[handler.buf_pos]), 1); // how to read larger part at a time instead of byte per byte
+		write_size = handler.getBytesRead() - handler.buf_pos;
+		saved_file_data += write_size;
 	}
+	else
+	{
+		write_size = file_data_size - saved_file_data;
+		mp_state = mp_boundary_end;
+	}
+
+	// handler.buf_pos--;
+	temp.open(content_disposition["filename"], std::ios::app | std::ios::binary);
+
+	std::cout << "body_beginning: " << handler.body_beginning << std::endl;
+	std::cout << "total_read " << handler.request_length << std::endl;
+	std::cout << "meta_data: " << meta_data_size << std::endl;
+	std::cout << "file size: " << file_data_size << std::endl;
+	std::cout << "Boundary size: " << boundary.size() << std::endl;
+	std::cout << "write size: " << write_size << std::endl;
+
+	// body_beginning = 340 
+	// boundary = 50
+	// total_read = 8192 / 11644
+	// body_len = 11303
+	// meta_data = 149
+	// file_size = 11104
+	// writes: 7702 + 3401
+	// bytes_written: 7702 + 3394 = 11096
+
+	temp.write(reinterpret_cast<const char*>(&handler.buf[handler.buf_pos]), write_size);
+	handler.buf_pos += write_size; // +/- 1?
+
+	// printf("handler pos: %i, %c\n", handler.buf[handler.buf_pos], handler.buf[handler.buf_pos]);
+	// printf("handler pos - 1: %i, %c\n", handler.buf[handler.buf_pos - 1], handler.buf[handler.buf_pos - 1]);
+
+	// while (handler.buf_pos++ < handler.getBytesRead() - 1) // not entirely sure why to add "-1" here, though ...
+	// {
+	// 	unsigned char ch = handler.buf[handler.buf_pos];
+
+	// 	if (ch == CR)
+	// 	{
+	// 		if (handler.buf[handler.buf_pos + 1] == LF && handler.buf[handler.buf_pos + 2] == '-' && handler.buf[handler.buf_pos + 3] == '-')
+	// 		{
+	// 			mp_state = mp_boundary_end;
+	// 			break;
+	// 		}
+	// 	}
+	// 	else if (ch == LF)
+	// 	{
+	// 		if (handler.buf[handler.buf_pos + 1] == '-' && handler.buf[handler.buf_pos + 2] == '-')
+	// 		{
+	// 			mp_state = mp_boundary_end;
+	// 			break;
+	// 		}
+	// 	}
+	// 	temp.write(reinterpret_cast<const char*>(&handler.buf[handler.buf_pos]), 1); // how to read larger part at a time instead of byte per byte
+	// 	bytes_written++;
+	// }
+	// std::cout << "bytes written: " << bytes_written << std::endl;
 	temp.close();
 }
 
@@ -518,6 +567,9 @@ void	RequestBody::parsePlainBody()
 					break;
 				else if (ch == LF)
 				{
+					meta_data_size = handler.buf_pos - handler.body_beginning;
+					// may have to adjust the extra padding of 8 (2x CRLFCRLF) based on client
+					file_data_size = handler.body_length - meta_data_size - boundary.size() - 8;
 					mp_state = mp_content;
 					break;
 				}
@@ -538,11 +590,15 @@ void	RequestBody::parsePlainBody()
 					break;
 				else if (ch == LF)
 				{
+					meta_data_size = handler.buf_pos - handler.body_beginning;
+					// may have to adjust the extra padding of 8 (2x CRLFCRLF) based on client
+					file_data_size = handler.body_length - meta_data_size - boundary.size() - 8;
 					mp_state = mp_content;
 					break;
 				}
 
 			case mp_content:
+				num_body_reads++;
 				storeContent();
 				break;
 				

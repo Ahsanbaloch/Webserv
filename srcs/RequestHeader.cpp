@@ -450,6 +450,7 @@ void	RequestHeader::parseHeaderFields()
 				if (ch == LF)
 				{
 					headers_parsing_done = 1;
+					handler.body_beginning = handler.buf_pos;
 					header_complete = 1;
 					// std::cout << "headers fully parsed\n";
 					break;

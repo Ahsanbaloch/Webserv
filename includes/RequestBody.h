@@ -27,6 +27,12 @@ public:
 	void	checkContentType();
 	void	storeContent();
 
+	// int								bytes_written;
+	int								meta_data_size;
+	int								file_data_size;
+	int								saved_file_data;
+	int								num_body_reads;
+	int								write_size;
 	int								body_parsing_done;
 	int								chunk_length;
 	bool							trailer_exists; // maybe there is another solution
