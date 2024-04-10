@@ -28,6 +28,7 @@ public:
 	void	saveContentDispo();
 	void	saveContentType();
 	void	checkBoundaryID();
+	void	parseUnchunkedBody();
 
 	enum {
 		mp_start = 0,

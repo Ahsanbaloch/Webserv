@@ -25,6 +25,7 @@ public:
 	int								num_body_reads;
 	int								body_parsing_done;
 	int								chunk_length;
+	int								total_chunk_size;
 	bool							trailer_exists; // maybe there is another solution
 	std::string						filename;
 	std::string						body;

@@ -8,8 +8,7 @@ ARequestBody::ARequestBody(/* args */)
 	body_parsing_done = 0;
 	chunk_length = 0;
 	trailer_exists = 0;
-	num_body_reads = 0;
-
+	total_chunk_size = 0;
 	// bytes_written = 0;
 	te_state = body_start;
 	// content_type = unknown;
@@ -23,7 +22,7 @@ ARequestBody::ARequestBody(RequestHandler& src)
 	body_parsing_done = 0;
 	chunk_length = 0;
 	trailer_exists = 0;
-	num_body_reads = 0;
+	total_chunk_size = 0;
 	// bytes_written = 0;
 	te_state = body_start;
 	// content_type = unknown;
@@ -188,7 +187,7 @@ void	ARequestBody::unchunkBody()
 			case chunk_data: // Limit for chunk length?
 				storeChunkedData();
 				ch = handler.buf[handler.buf_pos];
-				// calc content-length??? --> use seekp etc.
+				total_chunk_size += chunk_length;
 				if (ch == CR)
 				{
 					te_state = chunk_data_cr;
