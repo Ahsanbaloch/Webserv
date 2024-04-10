@@ -8,7 +8,14 @@
 class MULTIPARTBody: public ARequestBody
 {
 private:
-	std::string		boundary;
+	std::string							boundary;
+	int									meta_data_size;
+	int									file_data_size;
+	int									saved_file_data;
+	int									write_size;
+	std::ofstream						temp;
+	std::map<std::string, std::string>	content_disposition;
+	std::string							multipart_content_type;
 
 public:
 	explicit MULTIPARTBody(RequestHandler&);

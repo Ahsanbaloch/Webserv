@@ -5,6 +5,10 @@ MULTIPARTBody::MULTIPARTBody(RequestHandler& src)
 	: ARequestBody(src)
 {
 	identifyBoundary();
+	write_size = 0;
+	meta_data_size = 0;
+	file_data_size = 0;
+	saved_file_data = 0;
 	mp_state = mp_start;
 	content_dispo_state = begin;
 	content_type_state = begin2;

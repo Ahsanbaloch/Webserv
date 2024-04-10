@@ -19,32 +19,16 @@ public:
 	virtual ~ARequestBody();
 
 	virtual void	readBody() = 0;
-	void	unchunkBody();
-	// void	parsePlainBody();
-	// void	checkBoundaryID();
-	// void	saveContentDispo();
-	// void	saveContentType();
-	// void	checkContentType();
-	// void	storeContent();
-	void	storeChunkedData();
-	// void	parseUnchunkedBody();
+	void			unchunkBody();
+	void			storeChunkedData();
 
-	// int								bytes_written;
-	int								meta_data_size;
-	int								file_data_size;
-	int								saved_file_data;
 	int								num_body_reads;
-	int								write_size;
 	int								body_parsing_done;
 	int								chunk_length;
 	bool							trailer_exists; // maybe there is another solution
 	std::string						filename;
 	std::string						body;
-	std::ofstream					temp;
 	std::ofstream					temp2;
-
-	std::map<std::string, std::string>	content_disposition;
-	std::string						multipart_content_type;
 
 	enum {
 		body_start = 0,
