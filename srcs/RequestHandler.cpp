@@ -134,7 +134,7 @@ void	RequestHandler::processRequest()
 	request_length += bytes_read;
 
 	printf("read %i bytes\n", bytes_read);
-	// printf("buffer content: \n%s\n", buf);
+	printf("buffer content: \n%s\n", buf);
 
 	try
 	{

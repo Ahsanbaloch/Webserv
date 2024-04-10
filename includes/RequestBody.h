@@ -19,13 +19,15 @@ public:
 	~RequestBody();
 
 	void	readBody();
-	void	parseChunkedBody();
+	void	unchunkBody();
 	void	parsePlainBody();
 	void	checkBoundaryID();
 	void	saveContentDispo();
 	void	saveContentType();
 	void	checkContentType();
 	void	storeContent();
+	void	storeChunkedData();
+	void	parseUnchunkedBody();
 
 	// int								bytes_written;
 	int								meta_data_size;
@@ -36,8 +38,10 @@ public:
 	int								body_parsing_done;
 	int								chunk_length;
 	bool							trailer_exists; // maybe there is another solution
+	std::string						filename;
 	std::string						body;
 	std::ofstream					temp;
+	std::ofstream					temp2;
 
 	std::string 					boundary;
 	std::map<std::string, std::string>	content_disposition;
@@ -45,7 +49,9 @@ public:
 
 	enum {
 		unknown = 0,
-		multipart_form
+		multipart_form,
+		text_plain,
+		urlencoded
 	} content_type;
 
 	enum {

@@ -48,7 +48,27 @@ RequestBody::~RequestBody()
 {
 }
 
-void	RequestBody::parseChunkedBody()
+void	RequestBody::storeChunkedData()
+{
+	// if content-type plain text use file name from header path (also check for existence, if not existing, create file)
+	if (content_type == text_plain)
+	{
+		// header should probably also provide file name? --> needed somewhere else? (in GET?)
+		// should be done somewhere else so that this is check is not done over and over again.
+		filename = "testing.txt";
+		
+	}
+	else if (content_type == multipart_form || content_type == urlencoded)
+		filename = "temp.bin";
+
+	temp2.open(filename, std::ios::app | std::ios::binary);
+	temp2.write(reinterpret_cast<const char*>(&handler.buf[handler.buf_pos]), chunk_length);
+	handler.buf_pos += chunk_length;
+	temp2.close();
+
+}
+
+void	RequestBody::unchunkBody()
 {
 	while (!body_parsing_done && handler.buf_pos++ < handler.getBytesRead())
 	{
@@ -179,13 +199,9 @@ void	RequestBody::parseChunkedBody()
 					break;
 
 			case chunk_data: // Limit for chunk length?
-				for (int i = 0; i < chunk_length; i++) // probably want to store it in something else than a string already? May also depend on content-type header field
-				{
-					body.append(1, handler.buf[handler.buf_pos]);
-					handler.buf_pos++;
-				}
+				storeChunkedData();
 				ch = handler.buf[handler.buf_pos];
-				// calc content-length???
+				// calc content-length??? --> use seekp etc.
 				if (ch == CR)
 				{
 					te_state = chunk_data_cr;
@@ -624,6 +640,8 @@ void	RequestBody::checkContentType()
 	
 	if (type == "multipart/form-data")
 		content_type = multipart_form;
+	else if (type == "text/plain")
+		content_type = text_plain;
 	
 	// identify boundary
 	if (content_type == multipart_form)
@@ -641,11 +659,15 @@ void	RequestBody::checkContentType()
 
 void	RequestBody::readBody()
 {
+	// need to check somewhere whether it is allowed to POST in the location identified
+	// check whether file is already existing
 	checkContentType();
 	if (handler.getHeaderInfo().getTEStatus())
-		parseChunkedBody(); // inside content type needs to be checked
+	{
+		unchunkBody(); // inside content type needs to be checked
+		if (handler.body_read && (content_type == multipart_form || content_type == urlencoded))
+			parseUnchunkedBody(); // what this does depends on the type of body
+	}
 	else
 		parsePlainBody(); // inside content type needs to be checked
-
-	// how do other types than multiform look like?
 }
