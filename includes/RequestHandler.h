@@ -10,6 +10,9 @@
 #include "CustomException.h"
 #include "RequestHeader.h"
 #include "RequestBody.h"
+#include "MULTIPARTBody.h"
+#include "PLAINBody.h"
+#include "URLENCODEDBody.h"
 #include "AResponse.h"
 #include "GETResponse.h"
 #include "DELETEResponse.h"
@@ -22,7 +25,7 @@ class RequestHandler
 {
 private:
 	RequestHeader					request_header;
-	RequestBody						request_body;
+	ARequestBody*					request_body;
 
 	std::vector<t_server_config>	server_config;
 	int								status;
@@ -76,7 +79,14 @@ public:
 	int								calcMatches(std::vector<std::string>&, std::vector<std::string>&); // make private?
 	std::vector<std::string>		splitPath(std::string input, char delim);
 	AResponse*						prepareResponse();
+	ARequestBody*					checkContentType();
 
+	enum {
+		unknown = 0,
+		multipart_form,
+		text_plain,
+		urlencoded
+	} content_type;
 
 };
 

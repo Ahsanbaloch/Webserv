@@ -4,7 +4,7 @@
 ///////// CONSTRUCTORS & DESTRUCTORS ///////////
 
 RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_config)
-	: request_header(*this), request_body(*this)
+	: request_header(*this)
 {
 	this->server_config = server_config;
 	connection_fd = fd;
@@ -22,11 +22,12 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	buf_pos = -1;
 	
 	response = NULL;
+	request_body = NULL;
 	memset(&buf, 0, sizeof(buf));
 }
 
 RequestHandler::RequestHandler(/* args */)
-	: request_header(*this), request_body(*this)
+	: request_header(*this)
 {
 }
 
@@ -57,6 +58,7 @@ RequestHandler& RequestHandler::operator=(const RequestHandler& src)
 		body_length = src.body_length;
 		buf_pos = src.buf_pos;
 		response = src.response;
+		request_body = src.request_body;
 	}
 	return (*this);
 }
@@ -163,7 +165,11 @@ void	RequestHandler::processRequest()
 			}
 			// if body is expected, read the body
 			if (request_header.getBodyStatus())
-				request_body.readBody();
+			{
+				if (request_body == NULL)
+					request_body = checkContentType(); // needs to be deleted/freed somewhere
+				request_body->readBody();
+			}
 			// if no body is expected OR end of body has been reached
 			if (!request_header.getBodyStatus() || body_read)
 			{
@@ -201,6 +207,37 @@ AResponse* RequestHandler::prepareResponse()
 	else if (request_header.getMethod() == "POST")
 		throw CustomException("POST not implemented yet");///
 	return (NULL);
+}
+
+
+ARequestBody*	RequestHandler::checkContentType()
+{
+	std::string value = getHeaderInfo().getHeaderFields()["content-type"];
+	std::string type;
+	
+	// identify content type
+	std::size_t delim_pos = value.find(';');
+	if (delim_pos != std::string::npos)
+		type = value.substr(0, delim_pos);
+	else
+		type = value;
+	
+	if (type == "multipart/form-data")
+	{
+		content_type = multipart_form;
+		return (new MULTIPARTBody(*this));
+	}
+	else if (type == "application/x-www-form-urlencoded")
+	{
+		content_type = urlencoded;
+		return (new URLENCODEDBody(*this));
+	}
+	else
+	{
+		// or throwException if type is not supported?
+		content_type = text_plain;
+		return (new PLAINBody(*this));
+	}
 }
 
 

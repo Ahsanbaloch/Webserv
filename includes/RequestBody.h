@@ -8,26 +8,26 @@
 
 class RequestHandler;
 
-class RequestBody
+class ARequestBody
 {
-private:
+protected:
 	RequestHandler&				handler;
 
 public:
-	RequestBody(/* args */);
-	explicit RequestBody(RequestHandler&);
-	~RequestBody();
+	ARequestBody(/* args */);
+	explicit ARequestBody(RequestHandler&);
+	virtual ~ARequestBody();
 
-	void	readBody();
+	virtual void	readBody() = 0;
 	void	unchunkBody();
-	void	parsePlainBody();
-	void	checkBoundaryID();
-	void	saveContentDispo();
-	void	saveContentType();
-	void	checkContentType();
-	void	storeContent();
+	// void	parsePlainBody();
+	// void	checkBoundaryID();
+	// void	saveContentDispo();
+	// void	saveContentType();
+	// void	checkContentType();
+	// void	storeContent();
 	void	storeChunkedData();
-	void	parseUnchunkedBody();
+	// void	parseUnchunkedBody();
 
 	// int								bytes_written;
 	int								meta_data_size;
@@ -43,16 +43,8 @@ public:
 	std::ofstream					temp;
 	std::ofstream					temp2;
 
-	std::string 					boundary;
 	std::map<std::string, std::string>	content_disposition;
 	std::string						multipart_content_type;
-
-	enum {
-		unknown = 0,
-		multipart_form,
-		text_plain,
-		urlencoded
-	} content_type;
 
 	enum {
 		body_start = 0,
@@ -66,28 +58,6 @@ public:
 		body_end_cr,
 		body_end
 	} te_state;
-
-	enum {
-		mp_start = 0,
-		mp_boundary_id,
-		mp_content_dispo,
-		mp_content_type,
-		mp_empty_line,
-		mp_content,
-		mp_boundary_end
-	} mp_state;
-
-	enum {
-		begin = 0,
-		type,
-		var_key,
-		var_value
-	} content_dispo_state;
-
-	enum {
-		begin2 = 0,
-		type_name
-	} content_type_state;
 
 };
 
