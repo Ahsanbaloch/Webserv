@@ -1,7 +1,7 @@
 #ifndef PLAINBODY_H
 # define PLAINBODY_H
 
-#include "RequestBody.h"
+#include "ARequestBody.h"
 #include "RequestHandler.h"
 
 class PLAINBody: public ARequestBody

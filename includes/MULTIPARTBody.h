@@ -2,7 +2,7 @@
 # define MULTIPARTBODY_H
 
 #include <string>
-#include "RequestBody.h"
+#include "ARequestBody.h"
 #include "RequestHandler.h"
 
 class MULTIPARTBody: public ARequestBody
@@ -43,7 +43,7 @@ public:
 		begin2 = 0,
 		type_name
 	} content_type_state;
-	
+
 };
 
 

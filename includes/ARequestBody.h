@@ -1,5 +1,5 @@
-#ifndef REQUESTBODY_H
-# define REQUESTBODY_H
+#ifndef AREQUESTBODY_H
+# define AREQUESTBODY_H
 
 #include <string>
 #include <map>

@@ -9,7 +9,7 @@
 #include <cstdio>
 #include "CustomException.h"
 #include "RequestHeader.h"
-#include "RequestBody.h"
+#include "ARequestBody.h"
 #include "MULTIPARTBody.h"
 #include "PLAINBody.h"
 #include "URLENCODEDBody.h"

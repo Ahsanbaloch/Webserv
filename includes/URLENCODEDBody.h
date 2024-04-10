@@ -1,7 +1,7 @@
 #ifndef URLENCODEDBODY_H
 # define URLENCODEDBODY_H
 
-#include "RequestBody.h"
+#include "ARequestBody.h"
 #include "RequestHandler.h"
 
 class URLENCODEDBody: public ARequestBody
