@@ -26,16 +26,17 @@ public:
 
 	void	readBody();
 	void	identifyBoundary();
-	void	parseBody();
+	void	parseBody(char);
 	void	storeFileData();
+	void	storeUnchunkedFileData();
 	void	saveContentDispo(char);
 	void	saveContentType(char);
 	void	checkBoundaryID();
-	void	parseUnchunkedBody();
 	void	checkCleanTermination(char);
 	void	checkContentDispoChar(char);
 	void	checkContentTypeChar(char);
 	char	advanceChar();
+	void	calcFileSize();
 
 	enum {
 		mp_start = 0,

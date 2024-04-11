@@ -222,6 +222,25 @@ void	MULTIPARTBody::saveContentType(char ch)
 	mp_state = mp_empty_line;
 }
 
+void	MULTIPARTBody::calcFileSize()
+{
+	if (handler.getHeaderInfo().getTEStatus())
+	{
+		file_data_size = total_chunk_size - meta_data_size - boundary.size() - 10;
+		// meta_data_size = handler.buf_pos - handler.body_beginning;
+		// may have to adjust the extra padding of 8 (2x CRLFCRLF) based on client
+		// file_data_size = handler.body_length - meta_data_size - boundary.size() - 8;
+		// mp_state = mp_content;
+		printf("file size: %i\n", file_data_size);
+	}
+	else
+	{
+		meta_data_size = handler.buf_pos - handler.body_beginning;
+		// may have to adjust the extra padding of 8 (2x CRLFCRLF) based on client
+		file_data_size = handler.body_length - meta_data_size - boundary.size() - 8;
+	}
+}
+
 void	MULTIPARTBody::storeFileData()
 {
 	// may have to adjust the extra padding of 4 (CRLFCRLF) based on client
@@ -262,194 +281,95 @@ void	MULTIPARTBody::storeFileData()
 	temp.close();
 }
 
-void	MULTIPARTBody::parseBody()
+void	MULTIPARTBody::storeUnchunkedFileData()
 {
-	while (!body_parsing_done && handler.buf_pos++ < handler.getBytesRead() - 1) // not entirely sure why to add "-1" here, though ...
+	temp.open(content_disposition["filename"], std::ios::app | std::ios::binary);
+	char buffer[BUFFER_SIZE];
+
+	while (file_data_size > 0)
 	{
-		unsigned char ch = handler.buf[handler.buf_pos];
-
-		switch (mp_state)
-		{
-			case mp_start:
-				if (ch == '-')
-					mp_state = mp_boundary_id;
-				else
-				{
-					handler.setStatus(400); // what is the correct error code?
-					throw CustomException("Bad request 20"); // other exception?
-				}
-
-			case mp_boundary_id:
-				checkBoundaryID();
-				break;
-			
-			case mp_content_dispo:
-				saveContentDispo(ch);
-				for (std::map<std::string, std::string>::iterator it = content_disposition.begin(); it != content_disposition.end(); it++)
-				{
-					std::cout << "key: " << it->first << " value: " << it->second << std::endl;
-				}
-				break;
-
-			case mp_content_type:
-				if (ch == CR)
-					break;
-				else if (ch == LF)
-				{
-					meta_data_size = handler.buf_pos - handler.body_beginning;
-					// may have to adjust the extra padding of 8 (2x CRLFCRLF) based on client
-					file_data_size = handler.body_length - meta_data_size - boundary.size() - 8;
-					mp_state = mp_content;
-					break;
-				}
-				else if (ch == 'C')
-				{
-					saveContentType(ch);
-					std::cout << "content type: " << multipart_content_type << std::endl;
-					break;
-				}
-				else
-				{
-					handler.setStatus(400); // what is the correct error code?
-					throw CustomException("Issue with content type"); // other exception?
-				}
-
-			case mp_empty_line:
-				if (ch == CR)
-					break;
-				else if (ch == LF)
-				{
-					meta_data_size = handler.buf_pos - handler.body_beginning;
-					// may have to adjust the extra padding of 8 (2x CRLFCRLF) based on client
-					file_data_size = handler.body_length - meta_data_size - boundary.size() - 8;
-					mp_state = mp_content;
-					break;
-				}
-				else
-				{
-					handler.setStatus(400); // what is the correct error code?
-					throw CustomException("Issue with content type"); // other exception?
-				}
-
-			case mp_content:
-				storeFileData();
-				break;
-				
-			case mp_boundary_end:
-				handler.body_read = 1;
-				body_parsing_done = 1;
-				break;
-		}
+		write_size = std::min(BUFFER_SIZE, static_cast<int>(file_data_size));
+		input.read(buffer, write_size);
+		temp.write(buffer, input.gcount());
+		file_data_size -= input.gcount();
 	}
+	temp.close();
+	mp_state = mp_boundary_end;
 }
 
-void	MULTIPARTBody::parseUnchunkedBody()
+void	MULTIPARTBody::parseBody(char ch)
 {
-	input.open(filename, std::ios::binary);
-	char ch;
-
-	while (!body_parsing_done)
+	switch (mp_state)
 	{
-		input.read(&ch, 1);
-		meta_data_size++;
+		case mp_start:
+			if (ch == '-')
+				mp_state = mp_boundary_id;
+			else
+			{
+				handler.setStatus(400); // what is the correct error code?
+				throw CustomException("Bad request 20"); // other exception?
+			}
+
+		case mp_boundary_id:
+			checkBoundaryID();
+			break;
 		
-		switch (mp_state)
-		{
-			case mp_start:
-				if (ch == '-')
-					mp_state = mp_boundary_id;
-				else
-				{
-					handler.setStatus(400); // what is the correct error code?
-					throw CustomException("Bad request 20"); // other exception?
-				}
+		case mp_content_dispo:
+			saveContentDispo(ch);
+			for (std::map<std::string, std::string>::iterator it = content_disposition.begin(); it != content_disposition.end(); it++)
+			{
+				std::cout << "key: " << it->first << " value: " << it->second << std::endl;
+			}
+			break;
 
-			case mp_boundary_id:
-				checkBoundaryID();
+		case mp_content_type:
+			if (ch == CR)
 				break;
+			else if (ch == LF)
+			{
+				calcFileSize();
+				mp_state = mp_content;
+				break;
+			}
+			else if (ch == 'C')
+			{
+				saveContentType(ch);
+				std::cout << "content type: " << multipart_content_type << std::endl;
+				break;
+			}
+			else
+			{
+				handler.setStatus(400); // what is the correct error code?
+				throw CustomException("Issue with content type"); // other exception?
+			}
+
+		case mp_empty_line:
+			if (ch == CR)
+				break;
+			else if (ch == LF)
+			{
+				calcFileSize();
+				mp_state = mp_content;
+				if (!handler.getHeaderInfo().getTEStatus())
+					break;
+			}
+			else
+			{
+				handler.setStatus(400); // what is the correct error code?
+				throw CustomException("Issue with content type"); // other exception?
+			}
+
+		case mp_content:
+			if (handler.getHeaderInfo().getTEStatus())
+				storeUnchunkedFileData();
+			else
+				storeFileData();
+			break;
 			
-			case mp_content_dispo:
-				saveContentDispo(ch);
-				for (std::map<std::string, std::string>::iterator it = content_disposition.begin(); it != content_disposition.end(); it++)
-				{
-					std::cout << "key: " << it->first << " value: " << it->second << std::endl;
-				}
-				break;
-
-			case mp_content_type:
-				if (ch == CR)
-					break;
-				else if (ch == LF)
-				{
-					file_data_size = total_chunk_size - meta_data_size - boundary.size() - 10;
-					// meta_data_size = handler.buf_pos - handler.body_beginning;
-					// may have to adjust the extra padding of 8 (2x CRLFCRLF) based on client
-					// file_data_size = handler.body_length - meta_data_size - boundary.size() - 8;
-					// mp_state = mp_content;
-					printf("file size: %i\n", file_data_size);
-					mp_state = mp_content;
-					break;
-				}
-				else if (ch == 'C')
-				{
-					saveContentType(ch);
-					std::cout << "content type: " << multipart_content_type << std::endl;
-					break;
-				}
-				else
-				{
-					handler.setStatus(400); // what is the correct error code?
-					throw CustomException("Issue with content type"); // other exception?
-				}
-
-			case mp_empty_line:
-				if (ch == CR)
-					break;
-				else if (ch == LF)
-				{
-					file_data_size = total_chunk_size - meta_data_size - boundary.size() - 10;
-					// meta_data_size = handler.buf_pos - handler.body_beginning;
-					// may have to adjust the extra padding of 8 (2x CRLFCRLF) based on client
-					// file_data_size = handler.body_length - meta_data_size - boundary.size() - 8;
-					// mp_state = mp_content;
-					printf("file size: %i\n", file_data_size);
-					mp_state = mp_content;
-				}
-				else
-				{
-					handler.setStatus(400); // what is the correct error code?
-					throw CustomException("Issue with content type"); // other exception?
-				}
-
-			case mp_content:
-				// storeFileData();
-				printf("reached content start with file size: %i\n", file_data_size);
-				temp.open("yolo.png", std::ios::app | std::ios::binary);
-				char buffer[BUFFER_SIZE];
-
-				while (file_data_size > 0)
-				{
-					write_size = std::min(BUFFER_SIZE, static_cast<int>(file_data_size));
-					input.read(buffer, write_size);
-					temp.write(buffer, input.gcount());
-					file_data_size -= input.gcount();
-				}
-				// for (int i = 0; i < file_data_size; i++)
-				// {
-				// 	input.read(&ch, 1);
-				// 	temp.write(reinterpret_cast<const char*>(&ch), 1);
-				// }
-				temp.close();
-				mp_state = mp_boundary_end;
-				break;
-				
-			case mp_boundary_end:
-				handler.body_read = 1;
-				body_parsing_done = 1;
-				input.close();
-				break;
-		}
-
+		case mp_boundary_end:
+			handler.body_read = 1;
+			body_parsing_done = 1;
+			break;
 	}
 }
 
@@ -461,9 +381,25 @@ void	MULTIPARTBody::readBody()
 		if (handler.body_read)
 		{
 			body_parsing_done = 0;
-			parseUnchunkedBody();
+			input.open(filename, std::ios::binary);
+			char ch;
+			while (!body_parsing_done)
+			{
+				input.read(&ch, 1);
+				meta_data_size++;
+				parseBody(ch);
+			}
+			input.close();
+			remove(filename.c_str()); // check if file was removed
 		}
 	}
 	else
-		parseBody();
+	{
+		while (!body_parsing_done && handler.buf_pos < handler.getBytesRead())
+		{
+			handler.buf_pos++;
+			unsigned char ch = handler.buf[handler.buf_pos];
+			parseBody(ch);
+		}
+	}
 }
