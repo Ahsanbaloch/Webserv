@@ -63,88 +63,116 @@ void	MULTIPARTBody::checkBoundaryID()
 	mp_state = mp_content_dispo;
 }
 
-void	MULTIPARTBody::saveContentDispo()
+void	MULTIPARTBody::checkCleanTermination(char ch)
 {
-	std::string temp_value;
-	std::string temp_key;
-
-	// integrate check for CR and LF into Switch statement
-	while (handler.buf_pos < handler.getBytesRead() && (handler.buf[handler.buf_pos] != CR && handler.buf[handler.buf_pos] != LF))
+	if (ch == CR)
 	{
-		unsigned char ch = handler.buf[handler.buf_pos];
-
-		switch (content_dispo_state)
+		if (handler.getHeaderInfo().getTEStatus())
 		{
-		case begin:
-			if (ch == ':')
-				content_dispo_state = type;
-			break;
-		
-		case type:
-			if (ch == ';')
-			{
-				content_disposition.insert(std::pair<std::string, std::string>("type", temp_value));
-				temp_value.erase();
-				content_dispo_state = var_key;
-				break;
-			}
-			else if (ch == SP)
-				break;
-			else
-			{
-				temp_value.append(1, ch);
-				break;
-			}
-
-		case var_key:
-			if (ch == '=')
-			{
-				content_dispo_state = var_value;
-				break;
-			}
-			else if (ch == SP)
-				break;
-			else
-			{
-				temp_key.append(1, ch);
-				break;
-			}
-
-		case var_value:
-			if (ch == ';')
-			{
-				content_disposition.insert(std::pair<std::string, std::string>(temp_key, temp_value));
-				temp_key.erase();
-				temp_value.erase();
-				content_dispo_state = var_key;
-				break;
-			}
-			else if (ch == '"')
-				break;
-			else
-			{
-				temp_value.append(1, ch);
-				break;
-			}
+			input.read(&ch, 1);
+			meta_data_size++;
 		}
-		handler.buf_pos++;
-	}
-	if (handler.buf_pos >= handler.getBytesRead())
-		return ;
-	else if (handler.buf[handler.buf_pos] == CR)
-	{
-		handler.buf_pos++;
-		if (handler.buf[handler.buf_pos] != LF)
+		else
+		{
+			handler.buf_pos++;
+			ch = handler.buf[handler.buf_pos];
+		}
+		if (ch != LF)
 		{
 			handler.setStatus(400); // what is the correct error code?
-			throw CustomException("Issue with content dispo 1"); // other exception?
+			throw CustomException("Bad request"); // other exception?
 		}
 	}
-	else if (handler.buf[handler.buf_pos] != LF)
+	else if (ch != LF)
 	{
 		handler.setStatus(400); // what is the correct error code?
-		throw CustomException("Issue with content dispo 2"); // other exception?
+		throw CustomException("Bad request"); // other exception?
 	}
+}
+
+
+void	MULTIPARTBody::checkContentDispoChar(char ch)
+{
+	switch (content_dispo_state)
+	{
+	case begin:
+		if (ch == ':')
+			content_dispo_state = type;
+		break;
+	
+	case type:
+		if (ch == ';')
+		{
+			content_disposition.insert(std::pair<std::string, std::string>("type", temp_value));
+			temp_value.erase();
+			content_dispo_state = var_key;
+			break;
+		}
+		else if (ch == SP)
+			break;
+		else
+		{
+			temp_value.append(1, ch);
+			break;
+		}
+
+	case var_key:
+		if (ch == '=')
+		{
+			content_dispo_state = var_value;
+			break;
+		}
+		else if (ch == SP)
+			break;
+		else
+		{
+			temp_key.append(1, ch);
+			break;
+		}
+
+	case var_value:
+		if (ch == ';')
+		{
+			content_disposition.insert(std::pair<std::string, std::string>(temp_key, temp_value));
+			temp_key.erase();
+			temp_value.erase();
+			content_dispo_state = var_key;
+			break;
+		}
+		else if (ch == '"')
+			break;
+		else
+		{
+			temp_value.append(1, ch);
+			break;
+		}
+	}
+}
+
+void	MULTIPARTBody::saveContentDispo(char ch)
+{
+	if (handler.getHeaderInfo().getTEStatus())
+	{
+		while (ch != CR && ch != LF)
+		{
+			checkContentDispoChar(ch);
+			input.read(&ch, 1);
+			meta_data_size++;
+		}
+	}
+	else
+	{
+		while (handler.buf_pos < handler.getBytesRead() && (handler.buf[handler.buf_pos] != CR && handler.buf[handler.buf_pos] != LF))
+		{
+			unsigned char ch = handler.buf[handler.buf_pos];
+			checkContentDispoChar(ch);
+			handler.buf_pos++;
+		}
+		if (handler.buf_pos >= handler.getBytesRead())
+			return ;
+		ch = handler.buf[handler.buf_pos];
+	}
+	checkCleanTermination(ch);
 	content_disposition.insert(std::pair<std::string, std::string>(temp_key, temp_value));
 	temp_key.erase();
 	temp_value.erase();
@@ -153,7 +181,6 @@ void	MULTIPARTBody::saveContentDispo()
 
 void	MULTIPARTBody::saveContentType()
 {
-	// integrate check for CR and LF into Switch statement
 	while (handler.buf_pos < handler.getBytesRead() && (handler.buf[handler.buf_pos] != CR && handler.buf[handler.buf_pos] != LF))
 	{
 		unsigned char ch = handler.buf[handler.buf_pos];
@@ -181,24 +208,8 @@ void	MULTIPARTBody::saveContentType()
 		handler.buf_pos++;
 	}
 	if (handler.buf_pos >= handler.getBytesRead())
-	{
-		printf("stuck in content type?\n");
 		return ;
-	}
-	else if (handler.buf[handler.buf_pos] == CR)
-	{
-		handler.buf_pos++;
-		if (handler.buf[handler.buf_pos] != LF)
-		{
-			handler.setStatus(400); // what is the correct error code?
-			throw CustomException("Issue with content dispo"); // other exception?
-		}
-	}
-	else if (handler.buf[handler.buf_pos] != LF)
-	{
-		handler.setStatus(400); // what is the correct error code?
-		throw CustomException("Issue with content dispo"); // other exception?
-	}
+	checkCleanTermination((handler.buf[handler.buf_pos]));
 	mp_state = mp_empty_line;
 }
 
@@ -290,7 +301,7 @@ void	MULTIPARTBody::parseBody()
 				break;
 			
 			case mp_content_dispo:
-				saveContentDispo();
+				saveContentDispo(ch);
 				for (std::map<std::string, std::string>::iterator it = content_disposition.begin(); it != content_disposition.end(); it++)
 				{
 					std::cout << "key: " << it->first << " value: " << it->second << std::endl;
@@ -346,7 +357,7 @@ void	MULTIPARTBody::parseBody()
 
 void	MULTIPARTBody::parseUnchunkedBody()
 {
-	std::ifstream input (filename, std::ios::binary);
+	input.open(filename, std::ios::binary);
 	char ch;
 
 	while (!body_parsing_done)
@@ -391,28 +402,11 @@ void	MULTIPARTBody::parseUnchunkedBody()
 				break;
 			
 			case mp_content_dispo:
-				if (ch == CR)
+				saveContentDispo(ch);
+				for (std::map<std::string, std::string>::iterator it = content_disposition.begin(); it != content_disposition.end(); it++)
 				{
-					input.read(&ch, 1);
-					meta_data_size++;
-					if (ch != LF)
-					{
-						handler.setStatus(400); // what is the correct error code?
-						throw CustomException("Issue with boundary ID 2"); // other exception?
-					}
-					else
-					{
-						mp_state = mp_content_type;
-						break;
-					}
+					std::cout << "key: " << it->first << " value: " << it->second << std::endl;
 				}
-				else if (ch == LF)
-				{
-					mp_state = mp_content_type;
-					break;
-				}
-				else
-					printf("ch: %c\n", ch);
 				break;
 
 			case mp_content_type:
@@ -482,6 +476,7 @@ void	MULTIPARTBody::parseUnchunkedBody()
 			case mp_boundary_end:
 				handler.body_read = 1;
 				body_parsing_done = 1;
+				input.close();
 				break;
 		}
 

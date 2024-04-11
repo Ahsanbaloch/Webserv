@@ -9,6 +9,8 @@ class MULTIPARTBody: public ARequestBody
 {
 private:
 	std::string							boundary;
+	std::string 						temp_value;
+	std::string 						temp_key;
 	int									meta_data_size;
 	int									file_data_size;
 	int									saved_file_data;
@@ -16,6 +18,7 @@ private:
 	std::ofstream						temp;
 	std::map<std::string, std::string>	content_disposition;
 	std::string							multipart_content_type;
+	std::ifstream 						input;
 
 public:
 	explicit MULTIPARTBody(RequestHandler&);
@@ -25,10 +28,12 @@ public:
 	void	identifyBoundary();
 	void	parseBody();
 	void	storeFileData();
-	void	saveContentDispo();
+	void	saveContentDispo(char);
 	void	saveContentType();
 	void	checkBoundaryID();
 	void	parseUnchunkedBody();
+	void	checkCleanTermination(char);
+	void	checkContentDispoChar(char);
 
 	enum {
 		mp_start = 0,
