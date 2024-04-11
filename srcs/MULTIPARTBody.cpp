@@ -226,7 +226,7 @@ void	MULTIPARTBody::calcFileSize()
 {
 	if (handler.getHeaderInfo().getTEStatus())
 	{
-		file_data_size = total_chunk_size - meta_data_size - boundary.size() - 10;
+		file_data_size = total_chunk_size - meta_data_size - boundary.size() - 8;
 		// meta_data_size = handler.buf_pos - handler.body_beginning;
 		// may have to adjust the extra padding of 8 (2x CRLFCRLF) based on client
 		// file_data_size = handler.body_length - meta_data_size - boundary.size() - 8;
@@ -390,7 +390,7 @@ void	MULTIPARTBody::readBody()
 				parseBody(ch);
 			}
 			input.close();
-			remove(filename.c_str()); // check if file was removed
+			// remove(filename.c_str()); // check if file was removed
 		}
 	}
 	else
