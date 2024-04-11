@@ -48,8 +48,11 @@ void	ARequestBody::storeChunkedData()
 		filename = "temp.bin";
 
 	temp2.open(filename, std::ios::app | std::ios::binary);
-	temp2.write(reinterpret_cast<const char*>(&handler.buf[handler.buf_pos]), chunk_length);
-	handler.buf_pos += chunk_length;
+
+	int to_write = std::min(handler.getBytesRead() - handler.buf_pos, chunk_length);
+	temp2.write(reinterpret_cast<const char*>(&handler.buf[handler.buf_pos]), to_write);
+	handler.buf_pos += to_write;
+	chunk_length -= to_write;
 	temp2.close();
 
 }
@@ -198,11 +201,12 @@ void	ARequestBody::unchunkBody()
 					te_state = body_start;
 					break;
 				}
-				else
-				{
-					handler.setStatus(400); // what is the correct error code?
-					throw CustomException("Bad request 5"); // other exception?
-				}
+				break;
+				// else
+				// {
+				// 	handler.setStatus(400); // what is the correct error code?
+				// 	throw CustomException("Bad request 5"); // other exception?
+				// }
 
 			case chunk_data_cr:
 				if (ch == LF)
