@@ -29,11 +29,13 @@ public:
 	void	parseBody();
 	void	storeFileData();
 	void	saveContentDispo(char);
-	void	saveContentType();
+	void	saveContentType(char);
 	void	checkBoundaryID();
 	void	parseUnchunkedBody();
 	void	checkCleanTermination(char);
 	void	checkContentDispoChar(char);
+	void	checkContentTypeChar(char);
+	char	advanceChar();
 
 	enum {
 		mp_start = 0,

@@ -32,34 +32,39 @@ void	MULTIPARTBody::identifyBoundary()
 	}
 }
 
+char	MULTIPARTBody::advanceChar()
+{
+	char ch;
+
+	if (handler.getHeaderInfo().getTEStatus())
+	{
+		input.read(&ch, 1);
+		meta_data_size++;
+	}
+	else
+	{
+		handler.buf_pos++;
+		ch = handler.buf[handler.buf_pos];
+	}
+	return (ch);
+}
+
 void	MULTIPARTBody::checkBoundaryID()
 {
-	handler.buf_pos++; // why necessary?
+	// why necessary?
+	char ch = advanceChar();
 
 	for (std::string::iterator it = boundary.begin(); it != boundary.end(); it++) // also check handler.buf_pos < handler.getBytesRead()
 	{
-		handler.buf_pos++;
-		if (*it != handler.buf[handler.buf_pos])
+		ch = advanceChar();
+		if (*it != ch)
 		{
 			handler.setStatus(400); // what is the correct error code?
 			throw CustomException("Issue with boundary ID 1"); // other exception?
 		}
 	}
-	handler.buf_pos++;
-	if (handler.buf[handler.buf_pos] == CR)
-	{
-		handler.buf_pos++;
-		if (handler.buf[handler.buf_pos] != LF)
-		{
-			handler.setStatus(400); // what is the correct error code?
-			throw CustomException("Issue with boundary ID 2"); // other exception?
-		}
-	}
-	else if (handler.buf[handler.buf_pos] != LF)
-	{
-		handler.setStatus(400); // what is the correct error code?
-		throw CustomException("Issue with boundary ID 3"); // other exception?
-	}
+	ch = advanceChar();
+	checkCleanTermination(ch);
 	mp_state = mp_content_dispo;
 }
 
@@ -67,16 +72,7 @@ void	MULTIPARTBody::checkCleanTermination(char ch)
 {
 	if (ch == CR)
 	{
-		if (handler.getHeaderInfo().getTEStatus())
-		{
-			input.read(&ch, 1);
-			meta_data_size++;
-		}
-		else
-		{
-			handler.buf_pos++;
-			ch = handler.buf[handler.buf_pos];
-		}
+		ch = advanceChar();
 		if (ch != LF)
 		{
 			handler.setStatus(400); // what is the correct error code?
@@ -179,37 +175,50 @@ void	MULTIPARTBody::saveContentDispo(char ch)
 	mp_state = mp_content_type;
 }
 
-void	MULTIPARTBody::saveContentType()
+void	MULTIPARTBody::checkContentTypeChar(char ch)
 {
-	while (handler.buf_pos < handler.getBytesRead() && (handler.buf[handler.buf_pos] != CR && handler.buf[handler.buf_pos] != LF))
+	switch (content_type_state)
 	{
-		unsigned char ch = handler.buf[handler.buf_pos];
-
-		switch (content_type_state)
-		{
-			case begin2:
-				if (ch == ':')
-				{
-					content_type_state = type_name;
-					break;
-				}
-				else
-					break;
-			
-			case type_name:
-				if (ch == SP)
-					break;
-				else
-				{
-					multipart_content_type.append(1, ch);
-					break;
-				}
-		}
-		handler.buf_pos++;
+		case begin2:
+			if (ch == ':')
+				content_type_state = type_name;
+			break;
+		
+		case type_name:
+			if (ch == SP)
+				break;
+			else
+			{
+				multipart_content_type.append(1, ch);
+				break;
+			}
 	}
-	if (handler.buf_pos >= handler.getBytesRead())
-		return ;
-	checkCleanTermination((handler.buf[handler.buf_pos]));
+}
+
+void	MULTIPARTBody::saveContentType(char ch)
+{
+	if (handler.getHeaderInfo().getTEStatus())
+	{
+		while (ch != CR && ch != LF)
+		{
+			checkContentTypeChar(ch);
+			input.read(&ch, 1);
+			meta_data_size++;
+		}
+	}
+	else
+	{
+		while (handler.buf_pos < handler.getBytesRead() && (handler.buf[handler.buf_pos] != CR && handler.buf[handler.buf_pos] != LF))
+		{
+			unsigned char ch = handler.buf[handler.buf_pos];
+			checkContentTypeChar(ch);
+			handler.buf_pos++;
+		}
+		if (handler.buf_pos >= handler.getBytesRead())
+			return ;
+		ch = handler.buf[handler.buf_pos];
+	}
+	checkCleanTermination(ch);
 	mp_state = mp_empty_line;
 }
 
@@ -227,7 +236,6 @@ void	MULTIPARTBody::storeFileData()
 		mp_state = mp_boundary_end;
 	}
 
-	// handler.buf_pos--;
 	temp.open(content_disposition["filename"], std::ios::app | std::ios::binary);
 
 	std::cout << "body_beginning: " << handler.body_beginning << std::endl;
@@ -251,31 +259,6 @@ void	MULTIPARTBody::storeFileData()
 
 	// printf("handler pos: %i, %c\n", handler.buf[handler.buf_pos], handler.buf[handler.buf_pos]);
 	// printf("handler pos - 1: %i, %c\n", handler.buf[handler.buf_pos - 1], handler.buf[handler.buf_pos - 1]);
-
-	// while (handler.buf_pos++ < handler.getBytesRead() - 1) // not entirely sure why to add "-1" here, though ...
-	// {
-	// 	unsigned char ch = handler.buf[handler.buf_pos];
-
-	// 	if (ch == CR)
-	// 	{
-	// 		if (handler.buf[handler.buf_pos + 1] == LF && handler.buf[handler.buf_pos + 2] == '-' && handler.buf[handler.buf_pos + 3] == '-')
-	// 		{
-	// 			mp_state = mp_boundary_end;
-	// 			break;
-	// 		}
-	// 	}
-	// 	else if (ch == LF)
-	// 	{
-	// 		if (handler.buf[handler.buf_pos + 1] == '-' && handler.buf[handler.buf_pos + 2] == '-')
-	// 		{
-	// 			mp_state = mp_boundary_end;
-	// 			break;
-	// 		}
-	// 	}
-	// 	temp.write(reinterpret_cast<const char*>(&handler.buf[handler.buf_pos]), 1); // how to read larger part at a time instead of byte per byte
-	// 	bytes_written++;
-	// }
-	// std::cout << "bytes written: " << bytes_written << std::endl;
 	temp.close();
 }
 
@@ -321,7 +304,7 @@ void	MULTIPARTBody::parseBody()
 				}
 				else if (ch == 'C')
 				{
-					saveContentType();
+					saveContentType(ch);
 					std::cout << "content type: " << multipart_content_type << std::endl;
 					break;
 				}
@@ -341,6 +324,11 @@ void	MULTIPARTBody::parseBody()
 					file_data_size = handler.body_length - meta_data_size - boundary.size() - 8;
 					mp_state = mp_content;
 					break;
+				}
+				else
+				{
+					handler.setStatus(400); // what is the correct error code?
+					throw CustomException("Issue with content type"); // other exception?
 				}
 
 			case mp_content:
@@ -377,28 +365,7 @@ void	MULTIPARTBody::parseUnchunkedBody()
 				}
 
 			case mp_boundary_id:
-				if (ch == CR)
-				{
-					input.read(&ch, 1);
-					meta_data_size++;
-					if (ch != LF)
-					{
-						handler.setStatus(400); // what is the correct error code?
-						throw CustomException("Issue with boundary ID 2"); // other exception?
-					}
-					else
-					{
-						mp_state = mp_content_dispo;
-						break;
-					}
-				}
-				else if (ch == LF)
-				{
-					mp_state = mp_content_dispo;
-					break;
-				}
-				else
-					printf("ch: %c\n", ch);
+				checkBoundaryID();
 				break;
 			
 			case mp_content_dispo:
@@ -423,39 +390,42 @@ void	MULTIPARTBody::parseUnchunkedBody()
 					mp_state = mp_content;
 					break;
 				}
+				else if (ch == 'C')
+				{
+					saveContentType(ch);
+					std::cout << "content type: " << multipart_content_type << std::endl;
+					break;
+				}
 				else
-					printf("ch: %c\n", ch);
-				break;
-				
-				// else if (ch == 'C')
-				// {
-				// 	saveContentType();
-				// 	std::cout << "content type: " << multipart_content_type << std::endl;
-				// 	break;
-				// }
-				// else
-				// {
-				// 	handler.setStatus(400); // what is the correct error code?
-				// 	throw CustomException("Issue with content type"); // other exception?
-				// }
+				{
+					handler.setStatus(400); // what is the correct error code?
+					throw CustomException("Issue with content type"); // other exception?
+				}
 
 			case mp_empty_line:
 				if (ch == CR)
 					break;
 				else if (ch == LF)
 				{
-					meta_data_size = handler.buf_pos - handler.body_beginning;
+					file_data_size = total_chunk_size - meta_data_size - boundary.size() - 10;
+					// meta_data_size = handler.buf_pos - handler.body_beginning;
 					// may have to adjust the extra padding of 8 (2x CRLFCRLF) based on client
-					file_data_size = handler.body_length - meta_data_size - boundary.size() - 8;
+					// file_data_size = handler.body_length - meta_data_size - boundary.size() - 8;
+					// mp_state = mp_content;
+					printf("file size: %i\n", file_data_size);
 					mp_state = mp_content;
-					break;
+				}
+				else
+				{
+					handler.setStatus(400); // what is the correct error code?
+					throw CustomException("Issue with content type"); // other exception?
 				}
 
 			case mp_content:
 				// storeFileData();
-				input.read(&ch, 1);
+				printf("reached content start with file size: %i\n", file_data_size);
 				temp.open("yolo.png", std::ios::app | std::ios::binary);
-				char buffer[BUFFER_SIZE]; // Adjust buffer size as needed
+				char buffer[BUFFER_SIZE];
 
 				while (file_data_size > 0)
 				{
