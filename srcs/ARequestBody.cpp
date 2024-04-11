@@ -131,16 +131,19 @@ void	ARequestBody::unchunkBody()
 				}
 				else if (ch == CR)
 				{
+					total_chunk_size += chunk_length;
 					te_state = chunk_size_cr;
 					break;
 				}
 				else if (ch == LF)
 				{
+					total_chunk_size += chunk_length;
 					te_state = chunk_data;
 					break;
 				}
 				else if (ch == ';')
 				{
+					total_chunk_size += chunk_length;
 					te_state = chunk_extension;
 					break;
 				}
@@ -190,7 +193,6 @@ void	ARequestBody::unchunkBody()
 			case chunk_data: // Limit for chunk length?
 				storeChunkedData();
 				ch = handler.buf[handler.buf_pos];
-				total_chunk_size += chunk_length;
 				if (ch == CR)
 				{
 					te_state = chunk_data_cr;
