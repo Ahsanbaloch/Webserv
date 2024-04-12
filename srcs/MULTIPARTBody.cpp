@@ -390,7 +390,7 @@ void	MULTIPARTBody::readBody()
 				parseBody(ch);
 			}
 			input.close();
-			// remove(filename.c_str()); // check if file was removed
+			remove(filename.c_str()); // check if file was removed
 		}
 	}
 	else

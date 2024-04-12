@@ -17,7 +17,11 @@ PLAINBody::~PLAINBody()
 void	PLAINBody::readBody()
 {
 	if (handler.getHeaderInfo().getTEStatus())
-		unchunkBody(); // inside content type needs to be checked
+	{
+		unchunkBody();
+		// if (handler.body_read)
+		// 	parseUnchunkedBody();
+	}
 	else
 		; // simply read content into file
 		// parseBody();
