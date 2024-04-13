@@ -7,7 +7,8 @@
 class PLAINBody: public ARequestBody
 {
 private:
-	/* data */
+	std::ifstream				input;
+	std::ofstream				temp;
 public:
 	// PLAINBody(/* args */);
 	explicit PLAINBody(RequestHandler&);
