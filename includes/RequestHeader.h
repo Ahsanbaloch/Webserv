@@ -47,9 +47,9 @@ private:
 	// helper methods
 	void								handleMultipleSlashes();
 	void								checkMethod();
-	void								decode(std::string&);
 	void								checkBodyLength(std::string);
 	void								checkHttpVersion();
+	void								decode(std::string&);
 
 	// constructors
 	RequestHeader();
