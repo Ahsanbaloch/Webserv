@@ -4,9 +4,9 @@
 URLENCODEDBody::URLENCODEDBody(RequestHandler& src)
 	: ARequestBody(src)
 {
-	body_state = key;
 	encoded_key = 0;
 	encoded_value = 0;
+	body_state = key;
 }
 
 URLENCODEDBody::~URLENCODEDBody()

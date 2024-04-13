@@ -14,6 +14,11 @@ PLAINBody::~PLAINBody()
 {
 }
 
+std::map<std::string, std::string>	URLENCODEDBody::getDatabase() const
+{
+	return (database);
+}
+
 void	PLAINBody::readBody()
 {
 	if (handler.getHeaderInfo().getTEStatus())
@@ -46,13 +51,13 @@ void	PLAINBody::readBody()
 		// identify filename // how to?
 		handler.buf_pos++;
 		int to_write = std::min(handler.getBytesRead() - handler.buf_pos, handler.body_length);
-		temp.open("plain.txt", std::ios::app);
-		temp.write(reinterpret_cast<const char*>(&handler.buf[handler.buf_pos]), to_write);
+		outfile.open("plain.txt", std::ios::app);
+		outfile.write(reinterpret_cast<const char*>(&handler.buf[handler.buf_pos]), to_write);
 		handler.buf_pos += to_write;
 		handler.body_length -= to_write;
 		printf("body length remaining: %i\n", handler.body_length);
 		if (handler.body_length <= 0)
 			handler.body_read = 1;
-		temp.close();
+		outfile.close();
 	}
 }

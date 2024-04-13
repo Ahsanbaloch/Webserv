@@ -5,10 +5,10 @@ MULTIPARTBody::MULTIPARTBody(RequestHandler& src)
 	: ARequestBody(src)
 {
 	identifyBoundary();
-	write_size = 0;
 	meta_data_size = 0;
 	file_data_size = 0;
 	saved_file_data = 0;
+	write_size = 0;
 	mp_state = mp_start;
 	content_dispo_state = begin;
 	content_type_state = begin2;
@@ -255,7 +255,7 @@ void	MULTIPARTBody::storeFileData()
 		mp_state = mp_boundary_end;
 	}
 
-	temp.open(content_disposition["filename"], std::ios::app | std::ios::binary);
+	outfile.open(content_disposition["filename"], std::ios::app | std::ios::binary);
 
 	std::cout << "body_beginning: " << handler.body_beginning << std::endl;
 	std::cout << "total_read " << handler.request_length << std::endl;
@@ -273,27 +273,27 @@ void	MULTIPARTBody::storeFileData()
 	// writes: 7702 + 3401
 	// bytes_written: 7702 + 3394 = 11096
 
-	temp.write(reinterpret_cast<const char*>(&handler.buf[handler.buf_pos]), write_size);
+	outfile.write(reinterpret_cast<const char*>(&handler.buf[handler.buf_pos]), write_size);
 	handler.buf_pos += write_size; // +/- 1?
 
 	// printf("handler pos: %i, %c\n", handler.buf[handler.buf_pos], handler.buf[handler.buf_pos]);
 	// printf("handler pos - 1: %i, %c\n", handler.buf[handler.buf_pos - 1], handler.buf[handler.buf_pos - 1]);
-	temp.close();
+	outfile.close();
 }
 
 void	MULTIPARTBody::storeUnchunkedFileData()
 {
-	temp.open(content_disposition["filename"], std::ios::app | std::ios::binary);
+	outfile.open(content_disposition["filename"], std::ios::app | std::ios::binary);
 	char buffer[BUFFER_SIZE];
 
 	while (file_data_size > 0)
 	{
 		write_size = std::min(BUFFER_SIZE, static_cast<int>(file_data_size));
 		input.read(buffer, write_size);
-		temp.write(buffer, input.gcount());
+		outfile.write(buffer, input.gcount());
 		file_data_size -= input.gcount();
 	}
-	temp.close();
+	outfile.close();
 	mp_state = mp_boundary_end;
 }
 

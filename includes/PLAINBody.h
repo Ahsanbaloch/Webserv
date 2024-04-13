@@ -7,13 +7,17 @@
 class PLAINBody: public ARequestBody
 {
 private:
-	std::ifstream				input;
-	std::ofstream				temp;
+	// input
+	std::ifstream				input; // needed?
+
+	// output
+	std::ofstream				outfile;
 public:
-	// PLAINBody(/* args */);
+	// constructors and desctructors
 	explicit PLAINBody(RequestHandler&);
 	~PLAINBody();
 
+	// main method
 	void	readBody();
 };
 

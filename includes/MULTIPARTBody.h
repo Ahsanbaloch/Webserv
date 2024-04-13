@@ -8,36 +8,49 @@
 class MULTIPARTBody: public ARequestBody
 {
 private:
-	std::string							boundary;
+	// input
+	std::ifstream 						input;
+
+	// output
+	std::ofstream						outfile;
+
+	// temp vars
 	std::string 						temp_value;
 	std::string 						temp_key;
+
+	// vars
+	std::string							boundary;
+	std::map<std::string, std::string>	content_disposition;
+	std::string							multipart_content_type;
 	int									meta_data_size;
 	int									file_data_size;
 	int									saved_file_data;
 	int									write_size;
-	std::ofstream						temp;
-	std::map<std::string, std::string>	content_disposition;
-	std::string							multipart_content_type;
-	std::ifstream 						input;
 
-public:
-	explicit MULTIPARTBody(RequestHandler&);
-	~MULTIPARTBody();
-
-	void	readBody();
-	void	identifyBoundary();
+	// helper methods
 	void	parseBody(char);
+	void	identifyBoundary();
+	void	checkBoundaryID();
+	void	saveContentDispo(char);
+	void	checkContentDispoChar(char);
+	void	saveContentType(char);
+	void	checkContentTypeChar(char);
 	void	storeFileData();
 	void	storeUnchunkedFileData();
-	void	saveContentDispo(char);
-	void	saveContentType(char);
-	void	checkBoundaryID();
 	void	checkCleanTermination(char);
-	void	checkContentDispoChar(char);
-	void	checkContentTypeChar(char);
 	char	advanceChar();
 	void	calcFileSize();
 
+public:
+	// constructors and destructors
+	explicit MULTIPARTBody(RequestHandler&);
+	~MULTIPARTBody();
+
+	// main method
+	void	readBody();
+	
+
+	// states
 	enum {
 		mp_start = 0,
 		mp_boundary_id,
@@ -59,8 +72,6 @@ public:
 		begin2 = 0,
 		type_name
 	} content_type_state;
-
 };
-
 
 #endif
