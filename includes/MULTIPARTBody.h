@@ -42,15 +42,6 @@ private:
 	char	advanceChar();
 	void	calcFileSize();
 
-public:
-	// constructors and destructors
-	explicit MULTIPARTBody(RequestHandler&);
-	~MULTIPARTBody();
-
-	// main method
-	void	readBody();
-	
-
 	// states
 	enum {
 		mp_start = 0,
@@ -73,6 +64,15 @@ public:
 		begin2 = 0,
 		type_name
 	} content_type_state;
+
+public:
+	// constructors and destructors
+	explicit MULTIPARTBody(RequestHandler&);
+	~MULTIPARTBody();
+
+	// main method
+	void	readBody();
+
 };
 
 #endif

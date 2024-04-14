@@ -53,34 +53,6 @@ private:
 	void								checkHttpVersion();
 	void								decode(std::string&);
 
-	// constructors
-	RequestHeader();
-	RequestHeader(const RequestHeader&);
-	RequestHeader& operator=(const RequestHeader&);
-
-public:
-	// constructors & destructors
-	explicit RequestHeader(RequestHandler&);
-	~RequestHeader();
-	
-
-	// getters
-	std::string							getMethod() const;
-	std::string 						getPath() const;
-	std::string							getQuery() const;
-	std::string							getHttpVersion() const;
-	std::map<std::string, std::string>	getHeaderFields() const;
-	bool								getHeaderStatus() const;
-	bool								getBodyStatus() const;
-	bool								getHeaderExpectedStatus() const;
-	bool								getTEStatus() const;
-	int									getBodyBeginning() const;
-	int									getBodyLength() const;
-
-	// method
-	void								parseHeader();
-	void								checkHeader();
-
 	// parsing states
 	enum {
 		rl_start = 0,
@@ -103,6 +75,33 @@ public:
 		he_done,
 		hes_end
 	} headers_state;
+
+	// constructors
+	RequestHeader();
+	RequestHeader(const RequestHeader&);
+	RequestHeader& operator=(const RequestHeader&);
+
+public:
+	// constructors & destructors
+	explicit RequestHeader(RequestHandler&);
+	~RequestHeader();
+	
+	// getters
+	std::string							getMethod() const;
+	std::string 						getPath() const;
+	std::string							getQuery() const;
+	std::string							getHttpVersion() const;
+	std::map<std::string, std::string>	getHeaderFields() const;
+	bool								getHeaderStatus() const;
+	bool								getBodyStatus() const;
+	bool								getHeaderExpectedStatus() const;
+	bool								getTEStatus() const;
+	int									getBodyBeginning() const;
+	int									getBodyLength() const;
+
+	// methods
+	void								parseHeader();
+	void								checkHeader();
 
 };
 

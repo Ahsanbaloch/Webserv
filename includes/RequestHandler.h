@@ -27,6 +27,7 @@ class RequestHandler
 private:
 	RequestHeader					request_header;
 	ARequestBody*					request_body;
+	AResponse*						response;
 
 	// vars
 	std::vector<t_server_config>	server_config;
@@ -62,8 +63,6 @@ public:
 
 	// setters
 	void							setStatus(int);
-
-	AResponse*						response;
 	
 	// buffer TBD
 	unsigned char					buf[BUFFER_SIZE + 1];
@@ -79,13 +78,13 @@ public:
 	AResponse*						prepareResponse();
 	ARequestBody*					checkContentType();
 
+	// make private?
 	enum {
 		unknown = 0,
 		multipart_form,
 		text_plain,
 		urlencoded
 	} content_type;
-
 };
 
 #endif

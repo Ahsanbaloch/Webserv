@@ -15,6 +15,19 @@ protected:
 
 	RequestHandler&				handler;
 
+	enum {
+		body_start = 0,
+		chunk_size,
+		chunk_size_cr,
+		chunk_extension,
+		chunk_data,
+		chunk_data_cr,
+		chunk_trailer,
+		chunk_trailer_cr,
+		body_end_cr,
+		body_end
+	} te_state;
+
 public:
 	ARequestBody(/* args */);
 	explicit ARequestBody(RequestHandler&);
@@ -33,20 +46,7 @@ public:
 	std::string						body;
 	std::ofstream					temp2;
 
-	bool							getBodyProcessed() const;			
-
-	enum {
-		body_start = 0,
-		chunk_size,
-		chunk_size_cr,
-		chunk_extension,
-		chunk_data,
-		chunk_data_cr,
-		chunk_trailer,
-		chunk_trailer_cr,
-		body_end_cr,
-		body_end
-	} te_state;
+	bool							getBodyProcessed() const;
 
 };
 

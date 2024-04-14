@@ -30,6 +30,14 @@ private:
 	void								storeInDatabase();
 	void								decode(std::string&);
 	void								parseBody(char);
+
+	// states
+	enum {
+		key = 0,
+		value,
+		end_pair
+	} body_state;
+
 public:
 	// constructors and desctructors
 	explicit URLENCODEDBody(RequestHandler&);
@@ -41,12 +49,6 @@ public:
 	// main method
 	void	readBody();
 
-	// states
-	enum {
-		key = 0,
-		value,
-		end_pair
-	} body_state;
 };
 
 
