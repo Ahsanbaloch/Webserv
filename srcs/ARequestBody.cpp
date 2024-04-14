@@ -9,6 +9,7 @@ ARequestBody::ARequestBody(/* args */)
 	chunk_length = 0;
 	trailer_exists = 0;
 	total_chunk_size = 0;
+	body_read = 0;
 	// bytes_written = 0;
 	te_state = body_start;
 	// content_type = unknown;
@@ -23,6 +24,7 @@ ARequestBody::ARequestBody(RequestHandler& src)
 	chunk_length = 0;
 	trailer_exists = 0;
 	total_chunk_size = 0;
+	body_read = 0;
 	// bytes_written = 0;
 	te_state = body_start;
 	// content_type = unknown;
@@ -32,6 +34,11 @@ ARequestBody::ARequestBody(RequestHandler& src)
 
 ARequestBody::~ARequestBody()
 {
+}
+
+bool	ARequestBody::getBodyProcessed() const
+{
+	return (body_read);
 }
 
 void	ARequestBody::storeChunkedData()
@@ -258,7 +265,7 @@ void	ARequestBody::unchunkBody()
 				if (ch == LF)
 				{
 					body_parsing_done = 1;
-					handler.body_read = 1;
+					body_read = 1;
 					break;
 				}
 				else
@@ -276,7 +283,7 @@ void	ARequestBody::unchunkBody()
 				else if (ch == LF || !trailer_exists)
 				{
 					body_parsing_done = 1;
-					handler.body_read = 1;
+					body_read = 1;
 					break;
 				}
 				else

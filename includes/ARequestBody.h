@@ -11,6 +11,8 @@ class RequestHandler;
 class ARequestBody
 {
 protected:
+	bool						body_read;
+
 	RequestHandler&				handler;
 
 public:
@@ -30,6 +32,8 @@ public:
 	std::string						filename;
 	std::string						body;
 	std::ofstream					temp2;
+
+	bool							getBodyProcessed() const;			
 
 	enum {
 		body_start = 0,

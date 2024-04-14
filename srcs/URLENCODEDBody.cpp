@@ -6,6 +6,7 @@ URLENCODEDBody::URLENCODEDBody(RequestHandler& src)
 {
 	encoded_key = 0;
 	encoded_value = 0;
+	body_bytes_consumed = 0;
 	body_state = key;
 }
 
@@ -125,7 +126,7 @@ void	URLENCODEDBody::readBody()
 	if (handler.getHeaderInfo().getTEStatus())
 	{
 		unchunkBody();
-		if (handler.body_read)
+		if (body_read)
 		{
 			input.open(filename, std::ios::ate);
 			std::streamsize file_size = input.tellg();
@@ -143,16 +144,23 @@ void	URLENCODEDBody::readBody()
 	}
 	else
 	{
-		while (handler.body_length-- && handler.buf_pos < handler.getBytesRead())
+		while (body_bytes_consumed < handler.getHeaderInfo().getBodyLength() && handler.buf_pos < handler.getBytesRead())
 		{
 			handler.buf_pos++;
+			body_bytes_consumed++;
 			unsigned char ch = handler.buf[handler.buf_pos];
 			parseBody(ch);
 		}
-		if (handler.body_length <= 0)
+		if (body_bytes_consumed >= handler.getHeaderInfo().getBodyLength())
 		{
 			storeInDatabase();
-			handler.body_read = 1;
+			body_read = 1;
+		}
+
+		//testing
+		for (std::map<std::string, std::string>::iterator it = database.begin(); it != database.end(); it++)
+		{
+			std::cout << "key: " << it->first << " value: " << it->second << std::endl;
 		}
 	}
 }

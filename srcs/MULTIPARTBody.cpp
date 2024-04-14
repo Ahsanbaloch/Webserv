@@ -235,16 +235,16 @@ void	MULTIPARTBody::calcFileSize()
 	}
 	else
 	{
-		meta_data_size = handler.buf_pos - handler.body_beginning;
+		meta_data_size = handler.buf_pos - handler.getHeaderInfo().getBodyBeginning();
 		// may have to adjust the extra padding of 8 (2x CRLFCRLF) based on client
-		file_data_size = handler.body_length - meta_data_size - boundary.size() - 8;
+		file_data_size = handler.getHeaderInfo().getBodyLength() - meta_data_size - boundary.size() - 8;
 	}
 }
 
 void	MULTIPARTBody::storeFileData()
 {
 	// may have to adjust the extra padding of 4 (CRLFCRLF) based on client
-	if (handler.request_length < handler.body_beginning + handler.body_length - static_cast<int>(boundary.size()) - 4)
+	if (handler.getRequestLength() < handler.getHeaderInfo().getBodyBeginning() + handler.getHeaderInfo().getBodyLength() - static_cast<int>(boundary.size()) - 4)
 	{
 		write_size = handler.getBytesRead() - handler.buf_pos;
 		saved_file_data += write_size;
@@ -257,8 +257,8 @@ void	MULTIPARTBody::storeFileData()
 
 	outfile.open(content_disposition["filename"], std::ios::app | std::ios::binary);
 
-	std::cout << "body_beginning: " << handler.body_beginning << std::endl;
-	std::cout << "total_read " << handler.request_length << std::endl;
+	std::cout << "body_beginning: " << handler.getHeaderInfo().getBodyBeginning() << std::endl;
+	std::cout << "total_read " << handler.getRequestLength() << std::endl;
 	std::cout << "meta_data: " << meta_data_size << std::endl;
 	std::cout << "file size: " << file_data_size << std::endl;
 	std::cout << "Boundary size: " << boundary.size() << std::endl;
@@ -367,7 +367,7 @@ void	MULTIPARTBody::parseBody(char ch)
 			break;
 			
 		case mp_boundary_end:
-			handler.body_read = 1;
+			body_read = 1;
 			body_parsing_done = 1;
 			break;
 	}
@@ -378,7 +378,7 @@ void	MULTIPARTBody::readBody()
 	if (handler.getHeaderInfo().getTEStatus())
 	{
 		unchunkBody();
-		if (handler.body_read)
+		if (body_read)
 		{
 			body_parsing_done = 0;
 			input.open(filename, std::ios::binary);

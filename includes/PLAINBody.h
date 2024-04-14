@@ -12,6 +12,10 @@ private:
 
 	// output
 	std::ofstream				outfile;
+
+	// vars
+	int							body_bytes_consumed;
+
 public:
 	// constructors and desctructors
 	explicit PLAINBody(RequestHandler&);

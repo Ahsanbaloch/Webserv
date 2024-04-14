@@ -8,6 +8,7 @@
 PLAINBody::PLAINBody(RequestHandler& src)
 	: ARequestBody(src)
 {
+	body_bytes_consumed = 0;
 }
 
 PLAINBody::~PLAINBody()
@@ -50,14 +51,13 @@ void	PLAINBody::readBody()
 	{
 		// identify filename // how to?
 		handler.buf_pos++;
-		int to_write = std::min(handler.getBytesRead() - handler.buf_pos, handler.body_length);
+		int to_write = std::min(handler.getBytesRead() - handler.buf_pos, handler.getHeaderInfo().getBodyLength());
 		outfile.open("plain.txt", std::ios::app);
 		outfile.write(reinterpret_cast<const char*>(&handler.buf[handler.buf_pos]), to_write);
 		handler.buf_pos += to_write;
-		handler.body_length -= to_write;
-		printf("body length remaining: %i\n", handler.body_length);
-		if (handler.body_length <= 0)
-			handler.body_read = 1;
+		body_bytes_consumed += to_write;
+		if (body_bytes_consumed >= handler.getHeaderInfo().getBodyLength())
+			body_read = 1;
 		outfile.close();
 	}
 }

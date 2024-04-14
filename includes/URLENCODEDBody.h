@@ -15,6 +15,9 @@ private:
 	// output
 	std::map<std::string, std::string>	database;
 	
+	// vars
+	int									body_bytes_consumed;
+
 	// temp vars
 	std::string 						temp_value;
 	std::string 						temp_key;

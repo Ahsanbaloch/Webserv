@@ -28,12 +28,14 @@ private:
 	RequestHeader					request_header;
 	ARequestBody*					request_body;
 
+	// vars
 	std::vector<t_server_config>	server_config;
 	int								status;
 	int								selected_location;
 	int								selected_server;
 	int								connection_fd;
 	int								bytes_read;
+	int								request_length;
 
 	// flags
 	bool							response_ready;
@@ -55,6 +57,7 @@ public:
 	int								getStatus() const;
 	bool							getResponseStatus() const;
 	int								getBytesRead() const;
+	int								getRequestLength() const;
 	const RequestHeader&			getHeaderInfo();
 
 	// setters
@@ -62,15 +65,9 @@ public:
 
 	AResponse*						response;
 	
-	// tbd
-	int								request_length;
-	int								body_read;
-	int								body_beginning;
-	int								body_length; // set inside header class
-	unsigned char					buf[BUFFER_SIZE + 1]; // use std::vector<unsigned char> buf(BUFFER_SIZE) or uint8_t instead? // don't use the string type for your buffer because for upload and binary file you can have some \0 in the middle of the content). + CRLF interpretation --> request smuggling
+	// buffer TBD
+	unsigned char					buf[BUFFER_SIZE + 1];
 	int								buf_pos;
-	void							parseEncodedBody();
-	void							parseBody();
 	
 	// methods
 	void							processRequest();

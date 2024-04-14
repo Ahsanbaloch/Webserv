@@ -24,6 +24,8 @@ private:
 	std::string							query;
 	std::string							version;
 	std::map<std::string, std::string>	header_fields;
+	int									body_beginning;
+	int									body_length;
 
 	// flags
 	bool								header_complete;
@@ -72,6 +74,8 @@ public:
 	bool								getBodyStatus() const;
 	bool								getHeaderExpectedStatus() const;
 	bool								getTEStatus() const;
+	int									getBodyBeginning() const;
+	int									getBodyLength() const;
 
 	// method
 	void								parseHeader();

@@ -2,6 +2,7 @@
 # define MULTIPARTBODY_H
 
 #include <string>
+#include <map>
 #include "ARequestBody.h"
 #include "RequestHandler.h"
 

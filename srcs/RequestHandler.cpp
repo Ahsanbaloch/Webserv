@@ -13,11 +13,7 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	selected_server = 0;
 	bytes_read = 0;
 	response_ready = 0;
-
 	request_length = 0;
-	body_read = 0;
-	body_beginning = 0;
-	body_length = 0;
 
 	buf_pos = -1;
 	
@@ -53,9 +49,6 @@ RequestHandler& RequestHandler::operator=(const RequestHandler& src)
 		bytes_read = src.bytes_read;
 		response_ready = src.response_ready;
 		request_length = src.request_length;
-		body_read = src.body_read;
-		body_beginning = src.body_beginning;
-		body_length = src.body_length;
 		buf_pos = src.buf_pos;
 		response = src.response;
 		request_body = src.request_body;
@@ -96,11 +89,15 @@ int		RequestHandler::getBytesRead() const
 	return (bytes_read);
 }
 
+int		RequestHandler::getRequestLength() const
+{
+	return (request_length);
+}
+
 const RequestHeader&	RequestHandler::getHeaderInfo()
 {
 	return (request_header);
 }
-
 
 
 ///////// SETTERS ///////////
@@ -171,7 +168,7 @@ void	RequestHandler::processRequest()
 				request_body->readBody();
 			}
 			// if no body is expected OR end of body has been reached
-			if (!request_header.getBodyStatus() || body_read)
+			if (!request_header.getBodyStatus() || (request_body != NULL && request_body->getBodyProcessed()))
 			{
 				// std::cout << "body content: " << request_body.body << std::endl;
 				response = prepareResponse(); // how to handle errors in here?

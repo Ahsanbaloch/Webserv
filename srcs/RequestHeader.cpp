@@ -19,6 +19,8 @@ RequestHeader::RequestHeader()
 	dot_in_path = 0;
 	body_expected = 0;
 	expect_exists = 0;
+	body_beginning = 0;
+	body_length = 0;
 	headers_state = he_start;
 	rl_state = rl_start;
 }
@@ -38,6 +40,8 @@ RequestHeader::RequestHeader(RequestHandler& src)
 	dot_in_path = 0;
 	body_expected = 0;
 	expect_exists = 0;
+	body_beginning = 0;
+	body_length = 0;
 	headers_state = he_start;
 	rl_state = rl_start;
 }
@@ -62,6 +66,8 @@ RequestHeader::RequestHeader(const RequestHeader& src)
 	dot_in_path = src.dot_in_path;
 	body_expected = src.body_expected;
 	expect_exists = src.expect_exists;
+	body_beginning = src.body_beginning;
+	body_length = src.body_length;
 	headers_state = src.headers_state;
 	rl_state = src.rl_state;
 }
@@ -86,6 +92,8 @@ RequestHeader& RequestHeader::operator=(const RequestHeader& src)
 		dot_in_path = src.dot_in_path;
 		body_expected = src.body_expected;
 		expect_exists = src.expect_exists;
+		body_beginning = src.body_beginning;
+		body_length = src.body_length;
 		headers_state = src.headers_state;
 		rl_state = src.rl_state;
 	}
@@ -141,6 +149,16 @@ bool	RequestHeader::getHeaderExpectedStatus() const
 bool	RequestHeader::getTEStatus() const
 {
 	return (transfer_encoding_exists);
+}
+
+int		RequestHeader::getBodyBeginning() const
+{
+	return (body_beginning);
+}
+
+int		RequestHeader::getBodyLength() const
+{
+	return (body_length);
 }
 
 /////////////// MAIN METHODS //////////////////
@@ -273,7 +291,7 @@ void	RequestHeader::checkBodyLength(std::string value)
 			throw CustomException("Bad request 3"); // other error code?
 		}
 	}
-	handler.body_length = std::atoi(value.c_str());
+	body_length = std::atoi(value.c_str());
 }
 
 void	RequestHeader::parseHeaderFields()
@@ -405,7 +423,7 @@ void	RequestHeader::parseHeaderFields()
 					// }
 					content_length_exists = 1;
 					checkBodyLength(header_value);
-					if (handler.body_length > 0)
+					if (body_length > 0)
 						body_expected = 1;
 				}
 				if (header_name == "transfer-encoding")
@@ -450,7 +468,7 @@ void	RequestHeader::parseHeaderFields()
 				if (ch == LF)
 				{
 					headers_parsing_done = 1;
-					handler.body_beginning = handler.buf_pos;
+					body_beginning = handler.buf_pos;
 					header_complete = 1;
 					// std::cout << "headers fully parsed\n";
 					break;

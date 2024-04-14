@@ -13,11 +13,11 @@ POSTResponse::~POSTResponse()
 void	POSTResponse::respondFileUpload()
 {
 	status_line = createStatusLine();
-	// header_fields = "Content-Type: plain/text\r\nContent-Length: 3\r\n\r\n"; // maybe send a html response here instead
-	// body = "201"; // should be gotten from handler.status
+	header_fields = "Content-Type: plain/text\r\nContent-Length: 3\r\n\r\n"; // maybe send a html response here instead
+	body = "201"; // should be gotten from handler.status
 	// send redirection?
-	header_fields = ""; // send any header fields?
-	body = "";
+	// header_fields = ""; // send any header fields?
+	// body = "";
 }
 
 void	POSTResponse::createResponse()
