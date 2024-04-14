@@ -20,7 +20,7 @@ private:
 	bool				auto_index;
 
 	// helper methods
-	std::string	createStatusLine();
+	// std::string	createStatusLine();
 	std::string	createBody();
 	std::string createHeaderFields(std::string);
 	std::string	identifyMIME();

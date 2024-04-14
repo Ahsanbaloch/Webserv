@@ -205,7 +205,7 @@ AResponse* RequestHandler::prepareResponse()
 	else if (request_header.getMethod() == "DELETE")
 		return (new DELETEResponse(*this)); // need to free this somewhere
 	else if (request_header.getMethod() == "POST")
-		throw CustomException("POST not implemented yet");///
+		return (new POSTResponse(*this));
 	return (NULL);
 }
 
