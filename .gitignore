@@ -21,3 +21,6 @@ doc/
 
 # Ignore hidden txt files
 .*.txt
+
+# Ignore .DS_Store file
+.DS_Store
