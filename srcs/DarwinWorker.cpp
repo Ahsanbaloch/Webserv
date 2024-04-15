@@ -55,11 +55,8 @@ void	DarwinWorker::addToConnectedClients(ListeningSocket& socket)
 	int size = pending_fds.size();
 	for (int i = 0; i < size; i++)
 	{
-		// construct handler with socket/configData as input (maybe reference?)
 		ConnectionHandler* Handler = new ConnectionHandler(pending_fds[i], socket.getServerConfig());
 		connected_clients.insert(std::pair<int, ConnectionHandler*>(pending_fds[i], Handler));
-		// RequestHandler* Handler = new RequestHandler(pending_fds[i], socket.server_config); // need to free that memory somewhere --> when disconnecting the client
-		// ConnectedClients.insert(std::pair<int, RequestHandler*>(pending_fds[i], Handler));
 	}
 }
 
