@@ -21,23 +21,29 @@
 class DarwinWorker
 {
 private:
-	/* data */
-public:
-	KQueue							Q;
-	std::map<int, ListeningSocket>	listening_sockets;
-	std::map<int, ConnectionHandler*>	ConnectedClients;
-	std::vector<int>				pending_fds;
-	struct sockaddr					client_addr;
-	socklen_t						addr_size;
-	struct kevent					event_lst[MAX_EVENTS];
-
-	explicit	DarwinWorker(const KQueue&, ListeningSocketsBlock&);
+	// vars
+	KQueue								Q;
+	struct kevent						event_lst[MAX_EVENTS];
+	std::map<int, ListeningSocket>		listening_sockets;
+	std::map<int, ConnectionHandler*>	connected_clients;
+	std::vector<int>					pending_fds;
+	struct sockaddr						client_addr;
+	socklen_t							addr_size;
+	
+	// helper methods
+	void	addToConnectedClients(ListeningSocket&);
+	
+	// constructors
 	DarwinWorker();
+	DarwinWorker(const DarwinWorker&);
+	DarwinWorker& operator=(const DarwinWorker&);
+public:
+	// constructors & destructors
+	DarwinWorker(const KQueue&, ListeningSocketsBlock&);
 	~DarwinWorker();
 
+	// main method
 	void	runEventLoop();
-	void	addToConnectedClients(ListeningSocket&);
 };
-
 
 #endif

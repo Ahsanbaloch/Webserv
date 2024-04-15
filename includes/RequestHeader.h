@@ -78,12 +78,12 @@ private:
 
 	// constructors
 	RequestHeader();
-	RequestHeader(const RequestHeader&);
-	RequestHeader& operator=(const RequestHeader&);
 
 public:
 	// constructors & destructors
 	explicit RequestHeader(RequestHandler&);
+	RequestHeader(const RequestHeader&);
+	RequestHeader& operator=(const RequestHeader&);
 	~RequestHeader();
 	
 	// getters

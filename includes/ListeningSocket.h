@@ -8,28 +8,39 @@
 # include <cstring> // check if needed?
 # include <vector>
 # include <string>
+#include <unistd.h>
 #include "CustomException.h"
 #include "config/config_pars.hpp"
 
 class ListeningSocket
 {
 private:
-	int					socket_fd;
-	struct sockaddr_in	sock_config;
+	// vars
+	std::vector<t_server_config>	server_config;
+	int								socket_fd;
+	struct sockaddr_in				sock_config;
+	
+	// constructors
 	ListeningSocket();
+	ListeningSocket& operator=(const ListeningSocket&);
+
 public:
+	// constructor & destructors
 	ListeningSocket(int, std::vector<t_server_config>);
+	ListeningSocket(const ListeningSocket&);
 	~ListeningSocket();
 
-	std::vector<t_server_config> server_config;
-	
-	int			getSocketFd() const;
+	// getters
+	int								getSocketFd() const;
+	std::vector<t_server_config>	getServerConfig() const;
 
-	void		setSockOptions();
-	void		initSockConfig();
-	void		bindSock();
-	void		makeListen();
-	static void	setNonblocking(int);
+	// methods
+	void							setSockOptions();
+	void							initSockConfig();
+	void							bindSock();
+	void							makeListen();
+	static void						setNonblocking(int);
+
 };
 
 #endif

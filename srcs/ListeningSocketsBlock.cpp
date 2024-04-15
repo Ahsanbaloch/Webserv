@@ -1,21 +1,54 @@
 
 #include "ListeningSocketsBlock.h"
 
-ListeningSocketsBlock::ListeningSocketsBlock(std::map<std::string, std::vector<t_server_config> > &config_info)
-	: num_listening_sockets(config_info.size())
-{
-	createSockets(config_info); // here goes the config vector
-}
+///////// CONSTRUCTORS & DESTRUCTORS ///////////
 
 ListeningSocketsBlock::ListeningSocketsBlock()
 {
+}
+
+ListeningSocketsBlock::ListeningSocketsBlock(std::map<std::string, std::vector<t_server_config> > &config_info)
+	: num_listening_sockets(config_info.size())
+{
+	createSockets(config_info);
 }
 
 ListeningSocketsBlock::~ListeningSocketsBlock()
 {
 }
 
-// function to create server sockets
+ListeningSocketsBlock::ListeningSocketsBlock(const ListeningSocketsBlock& src)
+	: num_listening_sockets(src.num_listening_sockets), listening_sockets(src.listening_sockets)
+{
+}
+
+
+ListeningSocketsBlock& ListeningSocketsBlock::operator=(const ListeningSocketsBlock& src)
+{
+	if (this != &src)
+	{
+		num_listening_sockets = src.num_listening_sockets;
+		listening_sockets = src.listening_sockets;
+	}
+	return (*this);
+}
+
+
+///////// GETTERS ///////////
+
+int	ListeningSocketsBlock::getNumListeningSockets() const
+{
+	return (num_listening_sockets);
+}
+
+std::map<int, ListeningSocket> ListeningSocketsBlock::getListeningSockets() const
+{
+	return (listening_sockets);
+}
+
+
+///////// MAIN METHODS ///////////
+
 void	ListeningSocketsBlock::createSockets(std::map<std::string, std::vector<t_server_config> > &config_info)
 {
 	for (std::map<std::string, std::vector<t_server_config> >::iterator it = config_info.begin(); it != config_info.end(); it++)
@@ -39,9 +72,6 @@ void	ListeningSocketsBlock::createSockets(std::map<std::string, std::vector<t_se
 
 		// storing all socket data in a vector (at least for now)
 		listening_sockets.insert(std::pair<int, ListeningSocket> (socket_fd, serverSocket));
-
-		// populate socket_fd/configuration map
-		// server_configs.insert(std::pair<int, std::vector<t_server_config> >(socket_fd, it->second));
 	}
 }
 
