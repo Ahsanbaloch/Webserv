@@ -25,7 +25,7 @@ DarwinWorker::DarwinWorker(const DarwinWorker& src)
 {
 	Q = src.Q;
 	listening_sockets = src.listening_sockets;
-	ConnectedClients = src.ConnectedClients;
+	connected_clients = src.connected_clients;
 	pending_fds = src.pending_fds;
 	client_addr = src.client_addr;
 	addr_size = src.addr_size;
@@ -38,7 +38,7 @@ DarwinWorker& DarwinWorker::operator=(const DarwinWorker& src)
 	{
 		Q = src.Q;
 		listening_sockets = src.listening_sockets;
-		ConnectedClients = src.ConnectedClients;
+		connected_clients = src.connected_clients;
 		pending_fds = src.pending_fds;
 		client_addr = src.client_addr;
 		addr_size = src.addr_size;
@@ -57,7 +57,7 @@ void	DarwinWorker::addToConnectedClients(ListeningSocket& socket)
 	{
 		// construct handler with socket/configData as input (maybe reference?)
 		ConnectionHandler* Handler = new ConnectionHandler(pending_fds[i], socket.getServerConfig());
-		ConnectedClients.insert(std::pair<int, ConnectionHandler*>(pending_fds[i], Handler));
+		connected_clients.insert(std::pair<int, ConnectionHandler*>(pending_fds[i], Handler));
 		// RequestHandler* Handler = new RequestHandler(pending_fds[i], socket.server_config); // need to free that memory somewhere --> when disconnecting the client
 		// ConnectedClients.insert(std::pair<int, RequestHandler*>(pending_fds[i], Handler));
 	}
@@ -82,9 +82,9 @@ void	DarwinWorker::runEventLoop()
 			if (event_lst[i].flags & EV_EOF)
 			{
 				std::cout << "client disconnected\n";
-				delete ConnectedClients[event_lst[i].ident];
+				delete connected_clients[event_lst[i].ident];
 				close(event_lst[i].ident); // event_lst[i].ident is the file descriptor of the socket that triggered
-				ConnectedClients.erase(event_lst[i].ident);
+				connected_clients.erase(event_lst[i].ident);
 			}
 			// event came from listening socket --> we have to create a connection
 			else if (*reinterpret_cast<int*>(event_lst[i].udata) == Q.getListeningSocketIdent())
@@ -117,21 +117,21 @@ void	DarwinWorker::runEventLoop()
 			{
 				if (event_lst[i].filter == EVFILT_READ)
 				{
-					if (ConnectedClients[event_lst[i].ident]->getRequestHandler() == NULL)
-						ConnectedClients[event_lst[i].ident]->initRequestHandler();
-					ConnectedClients[event_lst[i].ident]->getRequestHandler()->processRequest();
-					ConnectedClients[event_lst[i].ident]->setResponseStatus(ConnectedClients[event_lst[i].ident]->getRequestHandler()->getResponseStatus());
+					if (connected_clients[event_lst[i].ident]->getRequestHandler() == NULL)
+						connected_clients[event_lst[i].ident]->initRequestHandler();
+					connected_clients[event_lst[i].ident]->getRequestHandler()->processRequest();
+					connected_clients[event_lst[i].ident]->setResponseStatus(connected_clients[event_lst[i].ident]->getRequestHandler()->getResponseStatus());
 					// ConnectedClients[event_lst[i].ident]->processRequest();
 				}
 				// else if (ConnectedClients[event_lst[i].ident]->response_ready && event_lst[i].filter == EVFILT_WRITE) // how to provide the reponse_ready info? // should this be an "If" OR "Else if"?
-				else if (ConnectedClients[event_lst[i].ident]->getResponseStatus() && event_lst[i].filter == EVFILT_WRITE) // how to provide the reponse_ready info? // should this be an "If" OR "Else if"?
+				else if (connected_clients[event_lst[i].ident]->getResponseStatus() && event_lst[i].filter == EVFILT_WRITE) // how to provide the reponse_ready info? // should this be an "If" OR "Else if"?
 				{
 					// ConnectedClients[event_lst[i].ident]->sendResponse();
-					ConnectedClients[event_lst[i].ident]->getRequestHandler()->sendResponse();
+					connected_clients[event_lst[i].ident]->getRequestHandler()->sendResponse();
 					// what about the connection header with value "keep-alive" and there is no error?
 						// --> probably need to reset all values for the requestHandler class otherwise the while loop exits (response_ready is still true)
-					ConnectedClients[event_lst[i].ident]->removeRequestHandler();
-					ConnectedClients[event_lst[i].ident]->setResponseStatus(0);
+					connected_clients[event_lst[i].ident]->removeRequestHandler();
+					connected_clients[event_lst[i].ident]->setResponseStatus(0);
 					// close connection if "keep-alive header is not set" // also close connection if an error response was sent?
 					// delete ConnectedClients[event_lst[i].ident];
 					// close(event_lst[i].ident); // close connection; how does it work with 100-continue response? 

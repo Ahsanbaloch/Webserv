@@ -25,7 +25,7 @@ private:
 	KQueue								Q;
 	struct kevent						event_lst[MAX_EVENTS];
 	std::map<int, ListeningSocket>		listening_sockets;
-	std::map<int, ConnectionHandler*>	ConnectedClients;
+	std::map<int, ConnectionHandler*>	connected_clients;
 	std::vector<int>					pending_fds;
 	struct sockaddr						client_addr;
 	socklen_t							addr_size;
