@@ -7,13 +7,20 @@
 class POSTResponse: public AResponse
 {
 private:
+	// helper methods
 	void	respondFileUpload();
-	void	respondFormSubmission();
+
+	// constructors
+	POSTResponse();
+	POSTResponse(const POSTResponse&);
+	POSTResponse& operator=(const POSTResponse&);
+
 public:
 	// constructors & destructors
 	explicit POSTResponse(RequestHandler&);
 	~POSTResponse();
 
+	// main method
 	void	createResponse();
 };
 

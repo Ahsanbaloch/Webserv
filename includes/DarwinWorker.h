@@ -25,7 +25,6 @@ private:
 public:
 	KQueue							Q;
 	std::map<int, ListeningSocket>	listening_sockets;
-	// std::map<int, RequestHandler*>	ConnectedClients;
 	std::map<int, ConnectionHandler*>	ConnectedClients;
 	std::vector<int>				pending_fds;
 	struct sockaddr					client_addr;

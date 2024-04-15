@@ -1,6 +1,13 @@
 
 #include "POSTResponse.h"
 
+///////// CONSTRUCTORS & DESTRUCTORS ///////////
+
+POSTResponse::POSTResponse()
+	: AResponse()
+{
+}
+
 POSTResponse::POSTResponse(RequestHandler& src)
 	: AResponse(src)
 {
@@ -9,6 +16,21 @@ POSTResponse::POSTResponse(RequestHandler& src)
 POSTResponse::~POSTResponse()
 {
 }
+
+POSTResponse::POSTResponse(const POSTResponse& src)
+	: AResponse(src)
+{
+}
+
+POSTResponse& POSTResponse::operator=(const POSTResponse& src)
+{
+	if (this != &src)
+		AResponse::operator=(src);
+	return (*this);
+}
+
+
+///////// HELPER METHODS //////////
 
 void	POSTResponse::respondFileUpload()
 {
@@ -19,6 +41,9 @@ void	POSTResponse::respondFileUpload()
 	// header_fields = ""; // send any header fields?
 	// body = "";
 }
+
+
+///////// MAIN METHOD //////////
 
 void	POSTResponse::createResponse()
 {

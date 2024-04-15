@@ -37,6 +37,7 @@ public:
 	explicit GETResponse(RequestHandler&);
 	~GETResponse();
 
+	// main method
 	void	createResponse();
 };
 

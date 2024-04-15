@@ -18,7 +18,7 @@ GETResponse::~GETResponse()
 }
 
 GETResponse::GETResponse(const GETResponse& src)
-	: AResponse(src), auto_index(src.auto_index)
+	: AResponse(src), file_path(src.file_path), auto_index(src.auto_index)
 {
 }
 
@@ -27,6 +27,7 @@ GETResponse& GETResponse::operator=(const GETResponse& src)
 	if (this != &src)
 	{
 		AResponse::operator=(src);
+		file_path = src.file_path;
 		auto_index = src.auto_index;
 	}
 	return (*this);
