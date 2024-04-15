@@ -3,13 +3,13 @@
 
 /////////// CONSTRUCTORS & DESTRUCTORS ///////////
 
-GETResponse::GETResponse(RequestHandler& src)
-	: AResponse(src), auto_index(0)
+GETResponse::GETResponse()
+	: AResponse(), auto_index(0)
 {
 }
 
-GETResponse::GETResponse(/* args */)
-	: AResponse(), auto_index(0)
+GETResponse::GETResponse(RequestHandler& src)
+	: AResponse(src), auto_index(0)
 {
 }
 
@@ -18,7 +18,7 @@ GETResponse::~GETResponse()
 }
 
 GETResponse::GETResponse(const GETResponse& src)
-	: AResponse(src), auto_index(src.auto_index)
+	: AResponse(src), file_path(src.file_path), auto_index(src.auto_index)
 {
 }
 
@@ -27,6 +27,7 @@ GETResponse& GETResponse::operator=(const GETResponse& src)
 	if (this != &src)
 	{
 		AResponse::operator=(src);
+		file_path = src.file_path;
 		auto_index = src.auto_index;
 	}
 	return (*this);
@@ -35,17 +36,17 @@ GETResponse& GETResponse::operator=(const GETResponse& src)
 
 /////////// HELPER METHODS ///////////
 
-std::string	GETResponse::createStatusLine()
-{
-	std::string status_line;
-	std::ostringstream status_conversion;
+// std::string	GETResponse::createStatusLine()
+// {
+// 	std::string status_line;
+// 	std::ostringstream status_conversion;
 
-	status_line.append("HTTP/1.1 "); // alternative handler.head.version
-	status_conversion << handler.getStatus();
-	status_line.append(status_conversion.str());
-	status_line.append(" \r\n");  //A server MUST send the space that separates the status-code from the reason-phrase even when the reason-phrase is absent (i.e., the status-line would end with the space)
-	return (status_line);
-}
+// 	status_line.append("HTTP/1.1 "); // alternative handler.head.version
+// 	status_conversion << handler.getStatus();
+// 	status_line.append(status_conversion.str());
+// 	status_line.append(" \r\n");  //A server MUST send the space that separates the status-code from the reason-phrase even when the reason-phrase is absent (i.e., the status-line would end with the space)
+// 	return (status_line);
+// }
 
 std::string	GETResponse::getBodyFromFile()
 {

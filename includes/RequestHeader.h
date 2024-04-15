@@ -24,6 +24,8 @@ private:
 	std::string							query;
 	std::string							version;
 	std::map<std::string, std::string>	header_fields;
+	int									body_beginning;
+	int									body_length;
 
 	// flags
 	bool								header_complete;
@@ -47,35 +49,9 @@ private:
 	// helper methods
 	void								handleMultipleSlashes();
 	void								checkMethod();
-	void								decode(std::string&);
 	void								checkBodyLength(std::string);
 	void								checkHttpVersion();
-
-	// constructors
-	RequestHeader();
-	RequestHeader(const RequestHeader&);
-	RequestHeader& operator=(const RequestHeader&);
-
-public:
-	// constructors & destructors
-	explicit RequestHeader(RequestHandler&);
-	~RequestHeader();
-	
-	// getters
-	std::string							getMethod() const;
-	std::string 						getPath() const;
-	std::string							getQuery() const;
-	std::string							getHttpVersion() const;
-	std::map<std::string, std::string>	getHeaderFields() const;
-	bool								getHeaderStatus() const;
-	bool								getBodyStatus() const;
-	bool								getHeaderExpectedStatus() const;
-
-	// TBD: move to request class??? 
-	// std::string							redirected_path;
-
-	// method
-	void								parseHeader();
+	void								decode(std::string&);
 
 	// parsing states
 	enum {
@@ -99,6 +75,33 @@ public:
 		he_done,
 		hes_end
 	} headers_state;
+
+	// constructors
+	RequestHeader();
+	RequestHeader(const RequestHeader&);
+	RequestHeader& operator=(const RequestHeader&);
+
+public:
+	// constructors & destructors
+	explicit RequestHeader(RequestHandler&);
+	~RequestHeader();
+	
+	// getters
+	std::string							getMethod() const;
+	std::string 						getPath() const;
+	std::string							getQuery() const;
+	std::string							getHttpVersion() const;
+	std::map<std::string, std::string>	getHeaderFields() const;
+	bool								getHeaderStatus() const;
+	bool								getBodyStatus() const;
+	bool								getHeaderExpectedStatus() const;
+	bool								getTEStatus() const;
+	int									getBodyBeginning() const;
+	int									getBodyLength() const;
+
+	// methods
+	void								parseHeader();
+	void								checkHeader();
 
 };
 

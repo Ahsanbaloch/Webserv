@@ -1,7 +1,10 @@
 
 #include "ERRORResponse.h"
 
-ERRORResponse::ERRORResponse(/* args */)
+///////// CONSTRUCTORS & DESTRUCTORS ///////////
+
+ERRORResponse::ERRORResponse()
+	: AResponse()
 {
 }
 
@@ -13,6 +16,23 @@ ERRORResponse::ERRORResponse(RequestHandler& src)
 ERRORResponse::~ERRORResponse()
 {
 }
+
+ERRORResponse::ERRORResponse(const ERRORResponse& src)
+	: AResponse(src)
+{
+}
+
+ERRORResponse& ERRORResponse::operator=(const ERRORResponse& src)
+{
+	if (this != &src)
+	{
+		AResponse::operator=(src);
+	}
+	return (*this);
+}
+
+
+///////// HELPER METHODS //////////
 
 std::string	ERRORResponse::getDefaultErrorMessage(std::string status_code)
 {
@@ -54,16 +74,15 @@ std::string	ERRORResponse::createBody(std::string status_code)
 	return (body);
 }
 
+///////// MAIN METHOD //////////
+
 void	ERRORResponse::createResponse()
 {
 	std::ostringstream status_conversion;
 	std::ostringstream length_conversion;
 
-	status_line.append("HTTP/1.1 ");
 	status_conversion << handler.getStatus();
-	status_line.append(status_conversion.str());
-	status_line.append(" \r\n");
-
+	status_line = createStatusLine();
 	body = createBody(status_conversion.str());
 	length_conversion << body.size();
 

@@ -23,6 +23,7 @@ protected:
 	// methods
 	bool			checkFileType();
 	int				checkFileExistence();
+	std::string		createStatusLine();
 
 	// constructors
 	AResponse();

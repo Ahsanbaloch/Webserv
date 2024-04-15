@@ -19,6 +19,10 @@ RequestHeader::RequestHeader()
 	dot_in_path = 0;
 	body_expected = 0;
 	expect_exists = 0;
+	body_beginning = 0;
+	body_length = 0;
+	headers_state = he_start;
+	rl_state = rl_start;
 }
 
 RequestHeader::RequestHeader(RequestHandler& src)
@@ -36,6 +40,10 @@ RequestHeader::RequestHeader(RequestHandler& src)
 	dot_in_path = 0;
 	body_expected = 0;
 	expect_exists = 0;
+	body_beginning = 0;
+	body_length = 0;
+	headers_state = he_start;
+	rl_state = rl_start;
 }
 
 RequestHeader::RequestHeader(const RequestHeader& src)
@@ -58,6 +66,10 @@ RequestHeader::RequestHeader(const RequestHeader& src)
 	dot_in_path = src.dot_in_path;
 	body_expected = src.body_expected;
 	expect_exists = src.expect_exists;
+	body_beginning = src.body_beginning;
+	body_length = src.body_length;
+	headers_state = src.headers_state;
+	rl_state = src.rl_state;
 }
 
 RequestHeader& RequestHeader::operator=(const RequestHeader& src)
@@ -80,6 +92,10 @@ RequestHeader& RequestHeader::operator=(const RequestHeader& src)
 		dot_in_path = src.dot_in_path;
 		body_expected = src.body_expected;
 		expect_exists = src.expect_exists;
+		body_beginning = src.body_beginning;
+		body_length = src.body_length;
+		headers_state = src.headers_state;
+		rl_state = src.rl_state;
 	}
 	return (*this);
 }
@@ -130,23 +146,40 @@ bool	RequestHeader::getHeaderExpectedStatus() const
 	return (expect_exists);
 }
 
+bool	RequestHeader::getTEStatus() const
+{
+	return (transfer_encoding_exists);
+}
+
+int		RequestHeader::getBodyBeginning() const
+{
+	return (body_beginning);
+}
+
+int		RequestHeader::getBodyLength() const
+{
+	return (body_length);
+}
+
 /////////////// MAIN METHODS //////////////////
 
 void	RequestHeader::parseHeader()
 {
-	parseRequestLine();
-	parseHeaderFields();
+	if (!rl_parsing_done)
+		parseRequestLine();
+	if (rl_parsing_done)
+		parseHeaderFields();
+}
+
+void	RequestHeader::checkHeader()
+{
 	if (dot_in_path)
 		removeDots();
 	// Decoding to do?: A common defense against response splitting is to filter requests for data that looks like encoded CR and LF (e.g., "%0D" and "%0A") --> What to do then?
-	// std::cout << "path before decoding: " << path << std::endl;
-	// std::cout << "query: " << query << std::endl;
 	if (path_encoded)
-		decode(path); 
+		decode(path);
 	if (query_encoded)
 		decode(query);
-	// std::cout << "path after decoding: " << path << std::endl;
-	// std::cout << "query after decoding: " << query << std::endl;
 	checkFields();
 	std::cout << "RequestHeader parsing complete\n";
 }
@@ -157,7 +190,7 @@ void	RequestHeader::checkFields()
 	if (header_fields.find("host") == header_fields.end()) // is is even connecting without host field?
 	{
 		handler.setStatus(410);
-		throw CustomException("Bad request");
+		throw CustomException("Bad request 1");
 	}
 	if (!transfer_encoding_exists && !content_length_exists && method == "POST") // if both exist at the same time is check when parsing
 	{
@@ -248,17 +281,17 @@ void	RequestHeader::checkBodyLength(std::string value)
 				else
 				{
 					handler.setStatus(400);
-					throw CustomException("Bad request"); // other error code?
+					throw CustomException("Bad request 2"); // other error code?
 				}
 			}
 		}
 		else if (!isdigit(*it))
 		{
 			handler.setStatus(400);
-			throw CustomException("Bad request"); // other error code?
+			throw CustomException("Bad request 3"); // other error code?
 		}
 	}
-	handler.body_length = std::atoi(value.c_str());
+	body_length = std::atoi(value.c_str());
 }
 
 void	RequestHeader::parseHeaderFields()
@@ -266,8 +299,6 @@ void	RequestHeader::parseHeaderFields()
 	unsigned char	ch;
 	std::string		header_name = "";
 	std::string		header_value = "";
-
-	headers_state = he_start; // move to constructor?
 
 	while (!headers_parsing_done && (handler.buf_pos)++ < handler.getBytesRead())
 	{
@@ -306,7 +337,7 @@ void	RequestHeader::parseHeaderFields()
 				else
 				{
 					handler.setStatus(400);
-					throw CustomException("Bad request");
+					throw CustomException("Bad request 4");
 				}
 				break;
 
@@ -345,7 +376,7 @@ void	RequestHeader::parseHeaderFields()
 				else
 				{
 					handler.setStatus(400);
-					throw CustomException("Bad request");
+					throw CustomException("Bad request 5");
 				}
 				break;
 			
@@ -376,7 +407,7 @@ void	RequestHeader::parseHeaderFields()
 				else 
 				{
 					handler.setStatus(400);
-					throw CustomException("Bad request");
+					throw CustomException("Bad request 6");
 				}
 			
 			case he_done:
@@ -384,29 +415,29 @@ void	RequestHeader::parseHeaderFields()
 				// check if there is a body in the message
 				if (header_name == "content-length")
 				{
-					if (content_length_exists || transfer_encoding_exists) // for security: when content_length is specified, TE shouldn't be
-					{
-						// to reduce attack vectors for request smuggling, we don't allow multiple content_length headers
-						handler.setStatus(400); // correct error value
-						throw CustomException("Bad request");
-					}
+					// if (content_length_exists || transfer_encoding_exists) // for security: when content_length is specified, TE shouldn't be
+					// {
+					// 	// to reduce attack vectors for request smuggling, we don't allow multiple content_length headers
+					// 	handler.setStatus(400); // correct error value
+					// 	throw CustomException("Bad request");
+					// }
 					content_length_exists = 1;
 					checkBodyLength(header_value);
-					if (handler.body_length > 0)
+					if (body_length > 0)
 						body_expected = 1;
 				}
 				if (header_name == "transfer-encoding")
 				{
-					if (transfer_encoding_exists || content_length_exists) // // for security: when content_length is specified, TE shouldn't be
-					{
-						// to reduce attack vectors for request smuggling, we don't allow multiple TE headers
-						handler.setStatus(400); // correct error value
-						throw CustomException("Bad request");
-					}
+					// if (transfer_encoding_exists || content_length_exists) // // for security: when content_length is specified, TE shouldn't be
+					// {
+					// 	// to reduce attack vectors for request smuggling, we don't allow multiple TE headers
+					// 	handler.setStatus(400); // correct error value
+					// 	throw CustomException("Bad request");
+					// }
 					if (header_value != "chunked")
 					{
-						handler.setStatus(400);
-						throw CustomException("Bad request");
+						handler.setStatus(501);
+						throw CustomException("Not implemented 1");
 					}
 					transfer_encoding_exists = 1;
 					body_expected = 1;
@@ -416,12 +447,12 @@ void	RequestHeader::parseHeaderFields()
 					if (host_exists)
 					{
 						handler.setStatus(400);
-						throw CustomException("Bad request");
+						throw CustomException("Bad request 7");
 					}
 					if (header_value.empty())
 					{
 						handler.setStatus(400);
-						throw CustomException("Bad request");
+						throw CustomException("Bad request 8");
 					}
 					host_exists = 1;
 				}
@@ -437,21 +468,21 @@ void	RequestHeader::parseHeaderFields()
 				if (ch == LF)
 				{
 					headers_parsing_done = 1;
+					body_beginning = handler.buf_pos;
+					header_complete = 1;
 					// std::cout << "headers fully parsed\n";
 					break;
 				}
 				handler.setStatus(400);
-				throw CustomException("Bad request");
+				throw CustomException("Bad request 9");
 		}
 	}
 
 	if (!headers_parsing_done) // is this the correct location to check?
 	{
 		handler.setStatus(413); // correct error code when header is too large for buffer OR 431 Request Header Fields Too Large
-		throw CustomException("Payload Too Large");  // correct error code when header is too large for buffer
+		throw CustomException("Content Too Large");  // correct error code when header is too large for buffer
 	}
-	header_complete = 1;
-	handler.body_beginning = handler.buf_pos; // this is the last ch of the empty line at the end of the headers. Next ch is the first of the body
 
 	// A sender MUST NOT send whitespace between the start-line and the first header field.
 	// A recipient that receives whitespace between the start-line and the first header field MUST either reject the message as invalid 
@@ -479,7 +510,7 @@ void	RequestHeader::checkMethod()
 			else
 			{
 				handler.setStatus(501);
-				throw CustomException("Not implemented");
+				throw CustomException("Not implemented 2");
 			}
 			break;
 		
@@ -490,7 +521,7 @@ void	RequestHeader::checkMethod()
 			else
 			{
 				handler.setStatus(501);
-				throw CustomException("Not implemented");
+				throw CustomException("Not implemented 3");
 			}
 			break;
 
@@ -501,12 +532,12 @@ void	RequestHeader::checkMethod()
 			else
 			{
 				handler.setStatus(501);
-				throw CustomException("Not implemented");
+				throw CustomException("Not implemented 4");
 			}
 			break;
 		default:
 			handler.setStatus(501);
-			throw CustomException("Not implemented");
+			throw CustomException("Not implemented 5");
 			break;
 		}
 }
@@ -546,8 +577,6 @@ void	RequestHeader::parseRequestLine()
 	// unreseved:  - _ . ~
 	// alphanumeric
 
-	rl_state = rl_start; // move to constructor?
-
 	while (!rl_parsing_done && (handler.buf_pos)++ < handler.getBytesRead())
 	{
 		ch = handler.buf[handler.buf_pos];
@@ -579,7 +608,7 @@ void	RequestHeader::parseRequestLine()
 					break;
 				}
 				handler.setStatus(400);
-				throw CustomException("Bad request");
+				throw CustomException("Bad request 10");
 				
 			case rl_path:
 				// do we have to handle authority request lines?
@@ -617,7 +646,7 @@ void	RequestHeader::parseRequestLine()
 						if (ch < 32 || ch == 127)
 						{
 							handler.setStatus(400);
-							throw CustomException("Bad request");
+							throw CustomException("Bad request 11");
 						}
 						break;
 
@@ -650,7 +679,7 @@ void	RequestHeader::parseRequestLine()
 						if (ch < 32 || ch == 127)
 						{
 							handler.setStatus(400);
-							throw CustomException("Bad request");
+							throw CustomException("Bad request 12");
 						}
 						break;
 				}
@@ -682,7 +711,7 @@ void	RequestHeader::parseRequestLine()
 				else 
 				{
 					handler.setStatus(400);
-					throw CustomException("Bad request");
+					throw CustomException("Bad request 13");
 				}
 			
 			case rl_done:

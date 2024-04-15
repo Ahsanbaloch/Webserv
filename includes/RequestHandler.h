@@ -9,10 +9,15 @@
 #include <cstdio>
 #include "CustomException.h"
 #include "RequestHeader.h"
+#include "ARequestBody.h"
+#include "MULTIPARTBody.h"
+#include "PLAINBody.h"
+#include "URLENCODEDBody.h"
 #include "AResponse.h"
 #include "GETResponse.h"
 #include "DELETEResponse.h"
 #include "ERRORResponse.h"
+#include "POSTResponse.h"
 #include "config/config_pars.hpp"
 #include "defines.h"
 
@@ -21,13 +26,17 @@ class RequestHandler
 {
 private:
 	RequestHeader					request_header;
+	ARequestBody*					request_body;
+	AResponse*						response;
 
+	// vars
 	std::vector<t_server_config>	server_config;
 	int								status;
 	int								selected_location;
 	int								selected_server;
 	int								connection_fd;
 	int								bytes_read;
+	int								request_length;
 
 	// flags
 	bool							response_ready;
@@ -49,26 +58,15 @@ public:
 	int								getStatus() const;
 	bool							getResponseStatus() const;
 	int								getBytesRead() const;
+	int								getRequestLength() const;
 	const RequestHeader&			getHeaderInfo();
 
 	// setters
 	void							setStatus(int);
-
-	AResponse*						response;
 	
-	// tbd
-	int								body_parsing_done;
-	int								chunk_length;
-	int								request_length;
-	int								body_read;
-	int								body_beginning;
-	int								body_length; // set inside header class
-	std::stringstream				raw_buf;
-	std::stringstream				body;
-	unsigned char					buf[BUFFER_SIZE]; // use std::vector<unsigned char> buf(BUFFER_SIZE) or uint8_t instead? // don't use the string type for your buffer because for upload and binary file you can have some \0 in the middle of the content). + CRLF interpretation --> request smuggling
+	// buffer TBD
+	unsigned char					buf[BUFFER_SIZE + 1];
 	int								buf_pos;
-	void							parseEncodedBody();
-	void							parseBody();
 	
 	// methods
 	void							processRequest();
@@ -78,18 +76,15 @@ public:
 	int								calcMatches(std::vector<std::string>&, std::vector<std::string>&); // make private?
 	std::vector<std::string>		splitPath(std::string input, char delim);
 	AResponse*						prepareResponse();
+	ARequestBody*					checkContentType();
 
+	// make private?
 	enum {
-		body_start = 0,
-		chunk_size,
-		chunk_size_cr,
-		chunk_extension,
-		chunk_data,
-		chunk_data_cr,
-		chunk_trailer,
-		body_end
-	} te_state;
-
+		unknown = 0,
+		multipart_form,
+		text_plain,
+		urlencoded
+	} content_type;
 };
 
 #endif

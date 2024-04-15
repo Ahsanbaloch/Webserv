@@ -53,6 +53,19 @@ std::string AResponse::getResponseStatusLine() const
 
 ///////// METHODS ///////////
 
+std::string	AResponse::createStatusLine() // make Response method? --> set?
+{
+	std::string status_line;
+	std::ostringstream status_conversion;
+
+	status_line.append("HTTP/1.1 "); // alternative handler.head.version
+	status_conversion << handler.getStatus();
+	status_line.append(status_conversion.str());
+	status_line.append(" \r\n");  //A server MUST send the space that separates the status-code from the reason-phrase even when the reason-phrase is absent (i.e., the status-line would end with the space)
+	return (status_line);
+}
+
+
 int	AResponse::checkFileExistence()
 {	
 	if (handler.getLocationConfig().path == "/") // maybe also cases where location ends with /? Is this possible?

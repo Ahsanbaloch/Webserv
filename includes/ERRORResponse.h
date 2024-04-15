@@ -8,15 +8,23 @@
 class ERRORResponse: public AResponse
 {
 private:
-	/* data */
+	// helper methods
+	std::string getDefaultErrorMessage(std::string);
+	std::string	createBody(std::string);
+
+	// constructors
+	ERRORResponse();
+	ERRORResponse(const ERRORResponse&);
+	ERRORResponse& operator=(const ERRORResponse&);
+
 public:
-	ERRORResponse(/* args */);
+	// constructors & destructors
 	explicit ERRORResponse(RequestHandler&);
 	~ERRORResponse();
 
+	// main method
 	void	createResponse();
-	std::string getDefaultErrorMessage(std::string);
-	std::string	createBody(std::string);
+
 };
 
 #endif
