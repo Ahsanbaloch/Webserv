@@ -96,6 +96,7 @@ void	DarwinWorker::runEventLoop()
 					{
 						if (errno == EAGAIN || errno == EWOULDBLOCK)
 						{
+							// need to free memory when fails?
 							Q.attachConnectionSockets(pending_fds);
 							std::map<int, ListeningSocket>::iterator it = listening_sockets.find(event_lst[i].ident);
 							if (it != listening_sockets.end())
