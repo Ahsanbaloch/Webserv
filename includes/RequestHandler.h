@@ -46,10 +46,10 @@ private:
 
 public:
 	// constructors & destructors
-	RequestHandler(int, std::vector<t_server_config>); // get ServerConfig as a reference? // might be able to remove int connection_fd as this is now part of the connection handler
 	RequestHandler();
-	~RequestHandler();
 	RequestHandler& operator=(const RequestHandler&);
+	RequestHandler(int, std::vector<t_server_config>); // get ServerConfig as a reference? // might be able to remove int connection_fd as this is now part of the connection handler
+	~RequestHandler();
 
 	// getters
 	std::vector<t_server_config>	getServerConfig() const;

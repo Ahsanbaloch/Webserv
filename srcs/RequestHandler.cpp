@@ -3,6 +3,11 @@
 
 ///////// CONSTRUCTORS & DESTRUCTORS ///////////
 
+RequestHandler::RequestHandler()
+	: request_header(*this)
+{
+}
+
 RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_config)
 	: request_header(*this)
 {
@@ -22,25 +27,22 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	memset(&buf, 0, sizeof(buf));
 }
 
-RequestHandler::RequestHandler(/* args */)
-	: request_header(*this)
-{
-}
-
 RequestHandler::~RequestHandler()
 {
+	delete response;
+	delete request_body;
 }
 
-// RequestHandler::RequestHandler(const RequestHandler& src)
-// 	: request_header(src.request_header)
-// {
-// }
+RequestHandler::RequestHandler(const RequestHandler& src)
+	: request_header(src.request_header)
+{
+}
 
 RequestHandler& RequestHandler::operator=(const RequestHandler& src)
 {
 	if (this != &src)
 	{
-		// request_header = src.request_header;
+		request_header = src.request_header;
 		server_config = src.server_config;
 		status = src.status;
 		selected_location = src.selected_location;
@@ -108,7 +110,6 @@ void	RequestHandler::setStatus(int status)
 }
 
 
-
 ///////// METHODS ///////////
 
 void	RequestHandler::sendResponse()
@@ -118,7 +119,6 @@ void	RequestHandler::sendResponse()
 	// check for errors when calling send
 }
 
-// read request handler
 void	RequestHandler::processRequest()
 {
 	buf_pos = -1;

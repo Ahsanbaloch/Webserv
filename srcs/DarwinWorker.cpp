@@ -121,21 +121,20 @@ void	DarwinWorker::runEventLoop()
 						connected_clients[event_lst[i].ident]->initRequestHandler();
 					connected_clients[event_lst[i].ident]->getRequestHandler()->processRequest();
 					connected_clients[event_lst[i].ident]->setResponseStatus(connected_clients[event_lst[i].ident]->getRequestHandler()->getResponseStatus());
-					// ConnectedClients[event_lst[i].ident]->processRequest();
 				}
-				// else if (ConnectedClients[event_lst[i].ident]->response_ready && event_lst[i].filter == EVFILT_WRITE) // how to provide the reponse_ready info? // should this be an "If" OR "Else if"?
 				else if (connected_clients[event_lst[i].ident]->getResponseStatus() && event_lst[i].filter == EVFILT_WRITE) // how to provide the reponse_ready info? // should this be an "If" OR "Else if"?
 				{
-					// ConnectedClients[event_lst[i].ident]->sendResponse();
 					connected_clients[event_lst[i].ident]->getRequestHandler()->sendResponse();
-					// what about the connection header with value "keep-alive" and there is no error?
-						// --> probably need to reset all values for the requestHandler class otherwise the while loop exits (response_ready is still true)
 					connected_clients[event_lst[i].ident]->removeRequestHandler();
 					connected_clients[event_lst[i].ident]->setResponseStatus(0);
-					// close connection if "keep-alive header is not set" // also close connection if an error response was sent?
-					// delete ConnectedClients[event_lst[i].ident];
-					// close(event_lst[i].ident); // close connection; how does it work with 100-continue response? 
-					// ConnectedClients.erase(event_lst[i].ident);
+					if (connected_clients[event_lst[i].ident]->getRequestHandler()->getHeaderInfo().getHeaderFields()["connection"] == "close"
+						|| connected_clients[event_lst[i].ident]->getRequestHandler()->getStatus() >= 400)
+					{
+						std::cout << "disconnected by server\n";
+						delete connected_clients[event_lst[i].ident];
+						close(event_lst[i].ident);
+						connected_clients.erase(event_lst[i].ident);
+					}
 				}
 			}
 		}
