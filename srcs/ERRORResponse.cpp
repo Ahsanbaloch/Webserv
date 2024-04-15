@@ -47,11 +47,21 @@ std::string	ERRORResponse::createBody(std::string status_code)
 {
 	std::string body;
 	std::string html_var = "ERROR_CODE";
-	std::string default_err_file = "./www/default_error.html";
+	std::string err_file = "./www/default_error.html";
 
-	// implement check whether location specifies particular error file
+	// check if there is a specific error file specified for a partiuclar error code
+	// if (handler.getStatus() == handler.getLocationConfig().errorPage.error_page_status)
+	// {
+	// 	if (handler.getLocationConfig().errorPage.html_page[0] == '/')
+	// 		err_file = "." + handler.getLocationConfig().errorPage.html_page;
+	// 	else
+	// 		err_file = "./" + handler.getLocationConfig().errorPage.html_page;
+	// }
 
-	std::ifstream file(default_err_file);
+	printf("err page path: %s\n", handler.getLocationConfig().errorPage.html_page.c_str());
+	printf("err code error_page: %i\n", handler.getLocationConfig().errorPage.error_page_status);
+
+	std::ifstream file(err_file);
 	if (!file.is_open()) 
 	{
 		body = getDefaultErrorMessage(status_code);
@@ -63,6 +73,8 @@ std::string	ERRORResponse::createBody(std::string status_code)
 	body = buffer.str();
 	file.close(); 
 
+	// if (handler.getStatus() != handler.getLocationConfig().errorPage.error_page_status)
+	// {
 	size_t pos = body.find(html_var);
 	if (pos != std::string::npos)
 		body.replace(pos, html_var.size(), status_code);
@@ -71,6 +83,7 @@ std::string	ERRORResponse::createBody(std::string status_code)
 		body = getDefaultErrorMessage(status_code);
 		return (body);
 	}
+	// }
 	return (body);
 }
 
