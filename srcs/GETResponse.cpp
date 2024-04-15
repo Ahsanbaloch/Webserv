@@ -3,13 +3,13 @@
 
 /////////// CONSTRUCTORS & DESTRUCTORS ///////////
 
-GETResponse::GETResponse(RequestHandler& src)
-	: AResponse(src), auto_index(0)
+GETResponse::GETResponse()
+	: AResponse(), auto_index(0)
 {
 }
 
-GETResponse::GETResponse(/* args */)
-	: AResponse(), auto_index(0)
+GETResponse::GETResponse(RequestHandler& src)
+	: AResponse(src), auto_index(0)
 {
 }
 

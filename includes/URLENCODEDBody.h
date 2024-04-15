@@ -38,6 +38,11 @@ private:
 		end_pair
 	} body_state;
 
+	// constructors
+	URLENCODEDBody();
+	URLENCODEDBody(const URLENCODEDBody&);
+	URLENCODEDBody& operator=(const URLENCODEDBody&);
+
 public:
 	// constructors and desctructors
 	explicit URLENCODEDBody(RequestHandler&);

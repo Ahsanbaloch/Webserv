@@ -3,13 +3,13 @@
 
 ///////// CONSTRUCTORS & DESTRUCTOR //////////
 
-DELETEResponse::DELETEResponse(RequestHandler& src)
-	: AResponse(src)
+DELETEResponse::DELETEResponse()
+	: AResponse()
 {
 }
 
-DELETEResponse::DELETEResponse(/* args */)
-	: AResponse()
+DELETEResponse::DELETEResponse(RequestHandler& src)
+	: AResponse(src)
 {
 }
 

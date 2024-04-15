@@ -2,44 +2,72 @@
 #include "ARequestBody.h"
 #include "RequestHandler.h"
 
-ARequestBody::ARequestBody(/* args */)
+///////// CONSTRUCTORS & DESTRUCTORS ///////////
+
+ARequestBody::ARequestBody()
 	: handler(*new RequestHandler())
 {
-	body_parsing_done = 0;
 	chunk_length = 0;
-	trailer_exists = 0;
 	total_chunk_size = 0;
 	body_read = 0;
-	// bytes_written = 0;
+	body_parsing_done = 0;
+	trailer_exists = 0;
 	te_state = body_start;
-	// content_type = unknown;
-	// outFile.setf(std::ios::app | std::ios::binary);
-	// temp.setf(std::ios::app | std::ios::binary);
 }
 
 ARequestBody::ARequestBody(RequestHandler& src)
 	: handler(src)
 {
-	body_parsing_done = 0;
 	chunk_length = 0;
-	trailer_exists = 0;
 	total_chunk_size = 0;
 	body_read = 0;
-	// bytes_written = 0;
+	body_parsing_done = 0;
+	trailer_exists = 0;
 	te_state = body_start;
-	// content_type = unknown;
-	// outFile.setf(std::ios::app | std::ios::binary);
-	// temp.setf(std::ios::app | std::ios::binary);
 }
 
 ARequestBody::~ARequestBody()
 {
 }
 
+ARequestBody::ARequestBody(const ARequestBody& src)
+	: handler(src.handler)
+{
+	chunk_length = src.chunk_length;
+	total_chunk_size = src.total_chunk_size;
+	body_read = src.body_read;
+	body_parsing_done = src.body_parsing_done;
+	trailer_exists = src.trailer_exists;
+	filename = src.filename;
+	te_state = src.te_state;
+}
+
+ARequestBody& ARequestBody::operator=(const ARequestBody& src)
+{
+	if (this != &src)
+	{
+		handler = src.handler;
+		chunk_length = src.chunk_length;
+		total_chunk_size = src.total_chunk_size;
+		body_read = src.body_read;
+		body_parsing_done = src.body_parsing_done;
+		trailer_exists = src.trailer_exists;
+		filename = src.filename;
+		te_state = src.te_state;
+	}
+	return (*this);
+}
+
+
+////////// GETTERS ///////////
+
 bool	ARequestBody::getBodyProcessed() const
 {
 	return (body_read);
 }
+
+
+///////// METHODS ///////////
 
 void	ARequestBody::storeChunkedData()
 {
@@ -54,13 +82,13 @@ void	ARequestBody::storeChunkedData()
 	else if (handler.content_type == handler.multipart_form || handler.content_type == handler.urlencoded)
 		filename = "temp.bin";
 
-	temp2.open(filename, std::ios::app | std::ios::binary);
+	temp_chunked.open(filename, std::ios::app | std::ios::binary);
 
 	int to_write = std::min(handler.getBytesRead() - handler.buf_pos, chunk_length);
-	temp2.write(reinterpret_cast<const char*>(&handler.buf[handler.buf_pos]), to_write);
+	temp_chunked.write(reinterpret_cast<const char*>(&handler.buf[handler.buf_pos]), to_write);
 	handler.buf_pos += to_write;
 	chunk_length -= to_write;
-	temp2.close();
+	temp_chunked.close();
 
 }
 

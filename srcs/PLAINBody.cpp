@@ -1,9 +1,13 @@
 
 #include "PLAINBody.h"
 
-// PLAINBody::PLAINBody()
-// {
-// }
+///////// CONSTRUCTORS & DESTRUCTORS ///////////
+
+PLAINBody::PLAINBody()
+	: ARequestBody()
+{
+	body_bytes_consumed = 0;
+}
 
 PLAINBody::PLAINBody(RequestHandler& src)
 	: ARequestBody(src)
@@ -15,10 +19,31 @@ PLAINBody::~PLAINBody()
 {
 }
 
+PLAINBody::PLAINBody(const PLAINBody& src)
+	: ARequestBody(src)
+{
+	body_bytes_consumed = src.body_bytes_consumed;
+}
+
+PLAINBody& PLAINBody::operator=(const PLAINBody& src)
+{
+	if (this != &src)
+	{
+		ARequestBody::operator=(src);
+		body_bytes_consumed = src.body_bytes_consumed;
+	}
+	return (*this);
+}
+
+///////// GETTERS //////////
+
 std::map<std::string, std::string>	URLENCODEDBody::getDatabase() const
 {
 	return (database);
 }
+
+
+/////////// METHODS ///////////
 
 void	PLAINBody::readBody()
 {

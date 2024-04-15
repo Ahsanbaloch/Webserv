@@ -16,6 +16,11 @@ private:
 	// vars
 	int							body_bytes_consumed;
 
+	// constructors
+	PLAINBody();
+	PLAINBody(const PLAINBody&);
+	PLAINBody& operator=(const PLAINBody&);
+
 public:
 	// constructors and desctructors
 	explicit PLAINBody(RequestHandler&);

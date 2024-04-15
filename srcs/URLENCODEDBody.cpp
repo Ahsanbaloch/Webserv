@@ -1,6 +1,17 @@
 
 #include "URLENCODEDBody.h"
 
+/////////// CONSTRUCTORS & DESTRUCTORS ///////////
+
+URLENCODEDBody::URLENCODEDBody()
+	: ARequestBody()
+{
+	encoded_key = 0;
+	encoded_value = 0;
+	body_bytes_consumed = 0;
+	body_state = key;
+}
+
 URLENCODEDBody::URLENCODEDBody(RequestHandler& src)
 	: ARequestBody(src)
 {
@@ -14,6 +25,37 @@ URLENCODEDBody::~URLENCODEDBody()
 {
 }
 
+URLENCODEDBody::URLENCODEDBody(const URLENCODEDBody& src)
+	: ARequestBody(src)
+{
+	// copy input filestream --> how?
+	encoded_key = src.encoded_key;
+	encoded_value = src.encoded_value;
+	body_bytes_consumed = src.body_bytes_consumed;
+	database = src.database;
+	temp_value = src.temp_value;
+	temp_key = src.temp_key;
+	body_state = src.body_state;
+}
+
+URLENCODEDBody& URLENCODEDBody::operator=(const URLENCODEDBody& src)
+{
+	if (this != &src)
+	{
+		ARequestBody::operator=(src);
+		encoded_key = src.encoded_key;
+		encoded_value = src.encoded_value;
+		body_bytes_consumed = src.body_bytes_consumed;
+		database = src.database;
+		temp_value = src.temp_value;
+		temp_key = src.temp_key;
+		body_state = src.body_state;
+	}
+	return (*this);
+}
+
+
+/////////// HELPER METHODS ///////////
 
 void	URLENCODEDBody::storeInDatabase()
 {
@@ -120,6 +162,9 @@ void	URLENCODEDBody::decode(std::string& sequence)
 			*it = ' ';
 	}
 }
+
+
+/////////// MAIN METHOD ///////////
 
 void	URLENCODEDBody::readBody()
 {

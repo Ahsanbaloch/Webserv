@@ -11,10 +11,20 @@ class RequestHandler;
 class ARequestBody
 {
 protected:
-	bool						body_read;
+	RequestHandler&	handler;
 
-	RequestHandler&				handler;
+	// vars
+	int				chunk_length;
+	int				total_chunk_size;
+	std::string		filename;
+	std::ofstream	temp_chunked;
 
+	// flags
+	bool			body_read;
+	bool			body_parsing_done;
+	bool			trailer_exists;
+
+	// states
 	enum {
 		body_start = 0,
 		chunk_size,
@@ -28,27 +38,24 @@ protected:
 		body_end
 	} te_state;
 
+	// constructors
+	ARequestBody();
+	ARequestBody(const ARequestBody&);
+	ARequestBody& operator=(const ARequestBody&);
+
 public:
-	ARequestBody(/* args */);
+	// constructors & destructors
 	explicit ARequestBody(RequestHandler&);
 	virtual ~ARequestBody();
 
+	// getters
+	bool			getBodyProcessed() const;
+
+	// methods
 	virtual void	readBody() = 0;
 	void			unchunkBody();
 	void			storeChunkedData();
 
-	int								num_body_reads;
-	int								body_parsing_done;
-	int								chunk_length;
-	int								total_chunk_size;
-	bool							trailer_exists; // maybe there is another solution
-	std::string						filename;
-	std::string						body;
-	std::ofstream					temp2;
-
-	bool							getBodyProcessed() const;
-
 };
-
 
 #endif

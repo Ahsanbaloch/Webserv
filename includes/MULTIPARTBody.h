@@ -3,6 +3,7 @@
 
 #include <string>
 #include <map>
+#include "CustomException.h"
 #include "ARequestBody.h"
 #include "RequestHandler.h"
 
@@ -64,6 +65,11 @@ private:
 		begin2 = 0,
 		type_name
 	} content_type_state;
+
+	// constructors
+	MULTIPARTBody();
+	MULTIPARTBody(const MULTIPARTBody&);
+	MULTIPARTBody& operator=(const MULTIPARTBody&);
 
 public:
 	// constructors and destructors

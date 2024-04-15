@@ -1,6 +1,21 @@
 
 #include "MULTIPARTBody.h"
 
+/////////// CONSTRUCTORS & DESTRUCTORS ///////////
+
+MULTIPARTBody::MULTIPARTBody()
+	: ARequestBody()
+{
+	identifyBoundary();
+	meta_data_size = 0;
+	file_data_size = 0;
+	saved_file_data = 0;
+	write_size = 0;
+	mp_state = mp_start;
+	content_dispo_state = begin;
+	content_type_state = begin2;
+}
+
 MULTIPARTBody::MULTIPARTBody(RequestHandler& src)
 	: ARequestBody(src)
 {
@@ -17,6 +32,47 @@ MULTIPARTBody::MULTIPARTBody(RequestHandler& src)
 MULTIPARTBody::~MULTIPARTBody()
 {
 }
+
+MULTIPARTBody::MULTIPARTBody(const MULTIPARTBody& src)
+	: ARequestBody(src)
+{
+	temp_value = src.temp_value;
+	temp_key = src.temp_key;
+	boundary = src.boundary;
+	content_disposition = src.content_disposition;
+	multipart_content_type = src.multipart_content_type;
+	meta_data_size = src.meta_data_size;
+	file_data_size = src.file_data_size;
+	saved_file_data = src.saved_file_data;
+	write_size = src.write_size;
+	mp_state = src.mp_state;
+	content_dispo_state = src.content_dispo_state;
+	content_type_state = src.content_type_state;
+}
+
+MULTIPARTBody& MULTIPARTBody::operator=(const MULTIPARTBody& src)
+{
+	if (this != &src)
+	{
+		ARequestBody::operator=(src);
+		temp_value = src.temp_value;
+		temp_key = src.temp_key;
+		boundary = src.boundary;
+		content_disposition = src.content_disposition;
+		multipart_content_type = src.multipart_content_type;
+		meta_data_size = src.meta_data_size;
+		file_data_size = src.file_data_size;
+		saved_file_data = src.saved_file_data;
+		write_size = src.write_size;
+		mp_state = src.mp_state;
+		content_dispo_state = src.content_dispo_state;
+		content_type_state = src.content_type_state;
+	}
+	return (*this);
+}
+
+
+/////////// HELPER METHODS ///////////
 
 void	MULTIPARTBody::identifyBoundary()
 {
@@ -372,6 +428,9 @@ void	MULTIPARTBody::parseBody(char ch)
 			break;
 	}
 }
+
+
+/////////// MAIN METHODS ///////////
 
 void	MULTIPARTBody::readBody()
 {
