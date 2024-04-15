@@ -25,6 +25,7 @@ public:
 	explicit DELETEResponse(RequestHandler&);
 	~DELETEResponse();
 
+	// main method
 	void	createResponse();
 
 };

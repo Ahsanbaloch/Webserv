@@ -1,17 +1,51 @@
 
 #include "ListeningSocket.h"
-#include <unistd.h>
+
+///////// CONSTRUCTORS & DESTRUCTORS ///////////
+
+ListeningSocket::ListeningSocket()
+{
+}
 
 ListeningSocket::ListeningSocket(int fd, std::vector<t_server_config> config_info)
 {
 	socket_fd = fd;
 	server_config = config_info;
-	memset(&sock_config, 0, sizeof(sock_config)); // allowed in subject? // also do for other structures?
+	memset(&sock_config, 0, sizeof(sock_config));
 }
 
 ListeningSocket::~ListeningSocket()
 {
 }
+
+ListeningSocket::ListeningSocket(const ListeningSocket& src)
+{
+	socket_fd = src.socket_fd;
+	server_config = src.server_config;
+	memcpy(&sock_config, &src.sock_config, sizeof(sock_config));
+}
+
+ListeningSocket& ListeningSocket::operator=(const ListeningSocket& src)
+{
+	if (this != &src)
+	{
+		socket_fd = src.socket_fd;
+		server_config = src.server_config;
+		memcpy(&sock_config, &src.sock_config, sizeof(sock_config));
+	}
+	return *this;
+}
+
+
+///////// GETTERS ///////////
+
+std::vector<t_server_config>	ListeningSocket::getServerConfig() const
+{
+	return (server_config);
+}
+
+
+///////// METHODS ///////////
 
 void	ListeningSocket::setSockOptions()
 {
