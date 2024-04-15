@@ -82,6 +82,8 @@ void	DarwinWorker::runEventLoop()
 			if (event_lst[i].flags & EV_EOF)
 			{
 				std::cout << "client disconnected\n";
+				connected_clients[event_lst[i].ident]->removeRequestHandler();
+				connected_clients[event_lst[i].ident]->setResponseStatus(0);
 				delete connected_clients[event_lst[i].ident];
 				close(event_lst[i].ident); // event_lst[i].ident is the file descriptor of the socket that triggered
 				connected_clients.erase(event_lst[i].ident);
@@ -125,15 +127,20 @@ void	DarwinWorker::runEventLoop()
 				else if (connected_clients[event_lst[i].ident]->getResponseStatus() && event_lst[i].filter == EVFILT_WRITE) // how to provide the reponse_ready info? // should this be an "If" OR "Else if"?
 				{
 					connected_clients[event_lst[i].ident]->getRequestHandler()->sendResponse();
-					connected_clients[event_lst[i].ident]->removeRequestHandler();
-					connected_clients[event_lst[i].ident]->setResponseStatus(0);
 					if (connected_clients[event_lst[i].ident]->getRequestHandler()->getHeaderInfo().getHeaderFields()["connection"] == "close"
 						|| connected_clients[event_lst[i].ident]->getRequestHandler()->getStatus() >= 400)
 					{
+						connected_clients[event_lst[i].ident]->removeRequestHandler();
+						connected_clients[event_lst[i].ident]->setResponseStatus(0);
 						std::cout << "disconnected by server\n";
 						delete connected_clients[event_lst[i].ident];
 						close(event_lst[i].ident);
 						connected_clients.erase(event_lst[i].ident);
+					}
+					else
+					{
+						connected_clients[event_lst[i].ident]->removeRequestHandler();
+						connected_clients[event_lst[i].ident]->setResponseStatus(0);
 					}
 				}
 			}
