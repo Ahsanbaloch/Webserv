@@ -71,7 +71,7 @@ void	DarwinWorker::runEventLoop()
 	while (1)
 	{
 		// check for new events that are registered in our kqueue (could come from a listening or connection socket)
-		int new_events = kevent(Q.kqueue_fd, NULL, 0, event_lst, MAX_EVENTS, NULL); // it depends on several kernel-internal factors whether kevent returns one or multiple events for several conncetion requests. That's why ideally one makes acception checks in a loop per each event
+		int new_events = kevent(Q.getKQueueFD(), NULL, 0, event_lst, MAX_EVENTS, NULL); // it depends on several kernel-internal factors whether kevent returns one or multiple events for several conncetion requests. That's why ideally one makes acception checks in a loop per each event
 		if (new_events == -1)
 			throw CustomException("Failed when checking for new events\n");
 
@@ -87,7 +87,7 @@ void	DarwinWorker::runEventLoop()
 				ConnectedClients.erase(event_lst[i].ident);
 			}
 			// event came from listening socket --> we have to create a connection
-			else if (*reinterpret_cast<int*>(event_lst[i].udata) == Q.listening_sock_ident)
+			else if (*reinterpret_cast<int*>(event_lst[i].udata) == Q.getListeningSocketIdent())
 			{
 				while (1) // to improve efficiency (reducing calls to kevent), we accept all connection requests related to the event in a loop
 				{
@@ -113,7 +113,7 @@ void	DarwinWorker::runEventLoop()
 				}
 			}
 			// event came from connection, so that we want to handle the request
-			else if (*reinterpret_cast<int*>(event_lst[i].udata) == Q.connection_sock_ident)
+			else if (*reinterpret_cast<int*>(event_lst[i].udata) == Q.getConnectionSocketIdent())
 			{
 				if (event_lst[i].filter == EVFILT_READ)
 				{

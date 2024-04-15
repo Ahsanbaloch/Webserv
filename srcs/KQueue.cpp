@@ -1,7 +1,9 @@
 
 #include "KQueue.h"
 
-KQueue::KQueue(/* args */)
+///////// CONSTRUCTORS & DESTRUCTORS ///////////
+
+KQueue::KQueue()
 {
 	kqueue_fd = kqueue();
 	if (kqueue_fd == -1)
@@ -13,6 +15,49 @@ KQueue::KQueue(/* args */)
 KQueue::~KQueue()
 {
 }
+
+KQueue::KQueue(const KQueue& src)
+{
+	kqueue_fd = src.kqueue_fd;
+	if (kqueue_fd == -1)
+		throw std::exception();
+	listening_sock_ident = src.listening_sock_ident;
+	connection_sock_ident = src.connection_sock_ident;
+}
+
+KQueue& KQueue::operator=(const KQueue& src)
+{
+	if (this != &src)
+	{
+		kqueue_fd = src.kqueue_fd;
+		if (kqueue_fd == -1)
+			throw std::exception();
+		listening_sock_ident = src.listening_sock_ident;
+		connection_sock_ident = src.connection_sock_ident;
+	}
+	return (*this);
+}
+
+
+///////// GETTERS ///////////
+
+int	KQueue::getKQueueFD() const
+{
+	return (kqueue_fd);
+}
+
+int	KQueue::getListeningSocketIdent() const
+{
+	return (listening_sock_ident);
+}
+
+int	KQueue::getConnectionSocketIdent() const
+{
+	return (connection_sock_ident);
+}
+
+
+///////// METHODS ///////////
 
 void	KQueue::attachListeningSockets(ListeningSocketsBlock& SocketsBlock)
 {
