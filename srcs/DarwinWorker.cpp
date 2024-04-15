@@ -12,7 +12,7 @@ DarwinWorker::DarwinWorker()
 DarwinWorker::DarwinWorker(const KQueue& Queue, ListeningSocketsBlock& Block)
 	: Q(Queue)
 {
-	listening_sockets = Block.listening_sockets;
+	listening_sockets = Block.getListeningSockets();
 	memset(&client_addr, 0, sizeof(client_addr));
 	addr_size = sizeof(client_addr);
 }
