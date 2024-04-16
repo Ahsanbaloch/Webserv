@@ -24,6 +24,7 @@ private:
 	std::string							query;
 	std::string							version;
 	std::map<std::string, std::string>	header_fields;
+	std::string							filename;
 	int									body_beginning;
 	int									body_length;
 
@@ -45,6 +46,7 @@ private:
 	void								parseHeaderFields();
 	void								removeDots();
 	void								checkFields();
+	void								identifyFileName();
 
 	// helper methods
 	void								handleMultipleSlashes();
@@ -92,6 +94,7 @@ public:
 	std::string							getQuery() const;
 	std::string							getHttpVersion() const;
 	std::map<std::string, std::string>	getHeaderFields() const;
+	std::string							getFilename() const;
 	bool								getHeaderStatus() const;
 	bool								getBodyStatus() const;
 	bool								getHeaderExpectedStatus() const;

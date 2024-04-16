@@ -40,6 +40,7 @@ private:
 	void	storeFileData();
 	void	storeUnchunkedFileData();
 	void	checkCleanTermination(char);
+	void	checkFileExistence();
 	char	advanceChar();
 	void	calcFileSize();
 
