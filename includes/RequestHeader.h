@@ -25,6 +25,7 @@ private:
 	std::string							version;
 	std::map<std::string, std::string>	header_fields;
 	std::string							filename;
+	std::string							file_ext;
 	int									body_beginning;
 	int									body_length;
 
@@ -95,6 +96,7 @@ public:
 	std::string							getHttpVersion() const;
 	std::map<std::string, std::string>	getHeaderFields() const;
 	std::string							getFilename() const;
+	std::string							getFileExtension() const;
 	bool								getHeaderStatus() const;
 	bool								getBodyStatus() const;
 	bool								getHeaderExpectedStatus() const;
