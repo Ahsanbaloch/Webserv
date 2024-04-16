@@ -16,14 +16,18 @@ protected:
 	std::string			file_type;
 	std::string			redirected_path;
 
-	std::string	body;
-	std::string status_line;
-	std::string header_fields;
+	std::string			body;
+	std::string 		status_line;
+	std::string 		header_fields;
+
+	// flags
+	bool				internal_redirect;
 
 	// methods
-	bool			checkFileType();
-	int				checkFileExistence();
-	std::string		createStatusLine();
+	bool				checkFileType();
+	void				identifyRedirectedPath();
+	int					checkFileExistence(std::string);
+	std::string			createStatusLine();
 
 	// constructors
 	AResponse();
@@ -40,6 +44,7 @@ public:
 	std::string			getResponseBody() const;
 	std::string			getResponseStatusLine() const;
 	std::string			getRespondsHeaderFields() const;
+	bool				getInternalRedirectStatus() const;
 
 	// methods
 	virtual void		createResponse() = 0;

@@ -241,11 +241,16 @@ ARequestBody*	RequestHandler::checkContentType()
 void	RequestHandler::findLocationBlock() // double check if this is entirely correct approach
 {
 	std::vector<std::string> uri_path_items;
-	if (response == NULL || response->getRedirectedPath().empty())
+	if (response == NULL || !response->getInternalRedirectStatus())
 		uri_path_items = splitPath(request_header.getPath(), '/');
 	else
 	{
-		std::string temp = "/" + response->getRedirectedPath();
+		std::string temp;
+		if (!getLocationConfig().index.empty() && getLocationConfig().index[0] != '/')
+			temp = "/" +  getLocationConfig().index;
+		else
+			temp = getLocationConfig().index;
+		std::cout << "temp: " << temp << std::endl;
 		uri_path_items = splitPath(temp, '/');
 	}
 	int	size = server_config[selected_server].locations.size();

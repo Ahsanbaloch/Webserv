@@ -6,11 +6,13 @@
 AResponse::AResponse()
 	: handler(*new RequestHandler())
 {
+	internal_redirect = 0;
 }
 
 AResponse::AResponse(RequestHandler& request_handler) 
 	: handler(request_handler)
 {
+	internal_redirect = 0;
 }
 
 AResponse::~AResponse()
@@ -20,12 +22,26 @@ AResponse::~AResponse()
 AResponse::AResponse(const AResponse& src)
 	: handler(src.handler)
 {
+	file_type = src.file_type;
+	redirected_path = src.redirected_path;
+	body = src.body;
+	status_line = src.status_line;
+	header_fields = src.header_fields;
+	internal_redirect = src.internal_redirect;
 }
 
 AResponse& AResponse::operator=(const AResponse& src)
 {
 	if (this != &src)
+	{
 		handler = src.handler;
+		file_type = src.file_type;
+		redirected_path = src.redirected_path;
+		body = src.body;
+		status_line = src.status_line;
+		header_fields = src.header_fields;
+		internal_redirect = src.internal_redirect;
+	}
 	return (*this);
 }
 
@@ -51,6 +67,11 @@ std::string AResponse::getResponseStatusLine() const
 	return (status_line);
 }
 
+bool	AResponse::getInternalRedirectStatus() const
+{
+	return (internal_redirect);
+}
+
 ///////// METHODS ///////////
 
 std::string	AResponse::createStatusLine() // make Response method? --> set?
@@ -65,16 +86,28 @@ std::string	AResponse::createStatusLine() // make Response method? --> set?
 	return (status_line);
 }
 
-
-int	AResponse::checkFileExistence()
-{	
-	if (handler.getLocationConfig().path == "/") // maybe also cases where location ends with /? Is this possible?
-		redirected_path = handler.getLocationConfig().root + handler.getLocationConfig().path + handler.getLocationConfig().index;
+void	AResponse::identifyRedirectedPath()
+{
+	if (!handler.getLocationConfig().path.empty() && handler.getLocationConfig().path[handler.getLocationConfig().path.length() - 1] == '/')
+	{
+		if (!handler.getLocationConfig().index.empty() && handler.getLocationConfig().index[0] != '/')
+			redirected_path = handler.getLocationConfig().root + handler.getLocationConfig().path + handler.getLocationConfig().index;
+		else
+			redirected_path = handler.getLocationConfig().root + handler.getLocationConfig().path + handler.getLocationConfig().index.substr(1);
+	}
 	else
-		redirected_path = handler.getLocationConfig().root + handler.getLocationConfig().path + "/" + handler.getLocationConfig().index;
-
+	{
+		if (!handler.getLocationConfig().index.empty() && handler.getLocationConfig().index[0] != '/')
+			redirected_path = handler.getLocationConfig().root + handler.getLocationConfig().path + "/" + handler.getLocationConfig().index;
+		else
+			redirected_path = handler.getLocationConfig().root + handler.getLocationConfig().path + handler.getLocationConfig().index;
+	}
 	std::cout << "index file path: " << redirected_path << std::endl;
-	int result = access(redirected_path.c_str(), F_OK); // call to access allowed?
+}
+
+int	AResponse::checkFileExistence(std::string path)
+{	
+	int result = access(path.c_str(), F_OK);
 	std::cout << "file exists: " << result << std::endl;
 	return (result);
 }
