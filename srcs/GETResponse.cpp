@@ -153,7 +153,6 @@ void	GETResponse::checkInternalRedirects()
 		{
 			internal_redirect = 1;
 			handler.findLocationBlock();
-			// do we have to set the root from the new location?
 			full_file_path = handler.getLocationConfig().root + full_file_path.substr(handler.getLocationConfig().root.length());
 			std::cout << "full file path: " << full_file_path << std::endl;
 			file_type = full_file_path.substr(full_file_path.find_last_of('.') + 1); // create a function for that in case it is not a file type
