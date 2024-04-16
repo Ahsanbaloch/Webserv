@@ -147,7 +147,7 @@ void	GETResponse::checkInternalRedirects()
 	// if the request is not for a file (otherwise the location has already been found)
 	if (handler.getHeaderInfo().getFileExtension().empty())
 	{
-		full_file_path = buildPath();
+		full_file_path = buildPathFromLocationIndex();
 		// check if file constructed from root, location path and index exists
 		if (access(full_file_path.c_str(), F_OK) == 0)
 		{

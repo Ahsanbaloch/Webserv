@@ -86,7 +86,7 @@ std::string	AResponse::createStatusLine()
 	return (status_line);
 }
 
-std::string	AResponse::buildPath()
+std::string	AResponse::buildPathFromLocationIndex()
 {
 	std::string path;
 

@@ -24,7 +24,7 @@ protected:
 	bool				internal_redirect; // may move to GETResponse
 
 	// methods
-	std::string			buildPath();
+	std::string			buildPathFromLocationIndex();
 	std::string			createStatusLine();
 
 	// constructors
