@@ -47,6 +47,15 @@ std::map<std::string, std::string>	URLENCODEDBody::getDatabase() const
 
 void	PLAINBody::readBody()
 {
+	filename = handler.getHeaderInfo().getFilename(); // add the upload location dir to path
+	if (filename.empty())
+	{
+		std::ostringstream num_conversion;
+		g_num_temp_files++;
+		num_conversion << g_num_temp_files;
+		filename = "www/" + num_conversion.str() + ".txt"; // add the upload location dir to path
+	}
+	// check for file existence
 	if (handler.getHeaderInfo().getTEStatus())
 	{
 		unchunkBody();
@@ -77,7 +86,7 @@ void	PLAINBody::readBody()
 		// identify filename // how to?
 		handler.buf_pos++;
 		int to_write = std::min(handler.getBytesRead() - handler.buf_pos, handler.getHeaderInfo().getBodyLength());
-		outfile.open("plain.txt", std::ios::app);
+		outfile.open(filename, std::ios::app);
 		outfile.write(reinterpret_cast<const char*>(&handler.buf[handler.buf_pos]), to_write);
 		handler.buf_pos += to_write;
 		body_bytes_consumed += to_write;

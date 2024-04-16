@@ -72,15 +72,15 @@ bool	ARequestBody::getBodyProcessed() const
 void	ARequestBody::storeChunkedData()
 {
 	// if content-type plain text use file name from header path (also check for existence, if not existing, create file)
-	if (handler.content_type == handler.text_plain)
-	{
-		// header should probably also provide file name? --> needed somewhere else? (in GET?)
-		// should be done somewhere else so that this is check is not done over and over again.
-		filename = "testing.txt";
+	// if (handler.content_type == handler.text_plain)
+	// {
+	// 	// header should probably also provide file name? --> needed somewhere else? (in GET?)
+	// 	// should be done somewhere else so that this is check is not done over and over again.
+	// 	filename = "testing.txt";
 		
-	}
-	else if (handler.content_type == handler.multipart_form || handler.content_type == handler.urlencoded)
-		filename = "temp.bin";
+	// }
+	if (handler.content_type == handler.multipart_form || handler.content_type == handler.urlencoded)
+		filename = "www/temp.bin";
 
 	temp_chunked.open(filename, std::ios::app | std::ios::binary);
 

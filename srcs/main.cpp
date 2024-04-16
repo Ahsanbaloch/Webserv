@@ -8,6 +8,9 @@
 #endif
 #include "ListeningSocketsBlock.h"
 #include "config/config_pars.hpp"
+#include "defines.h"
+
+int g_num_temp_files = 0;
 
 
 
