@@ -13,15 +13,25 @@
 class ListeningSocketsBlock
 {
 private:
-	
-public:
-	int								num_listening_sockets; // getting this info from config file
+	// vars
+	int								num_listening_sockets;
 	std::map<int, ListeningSocket>	listening_sockets;
 
-	explicit ListeningSocketsBlock(std::map<std::string, std::vector<t_server_config> >&);
+	// constructors
 	ListeningSocketsBlock();
+	ListeningSocketsBlock(const ListeningSocketsBlock&);
+	ListeningSocketsBlock& operator=(const ListeningSocketsBlock&);
+
+public:
+	// constructors & destructors
+	explicit ListeningSocketsBlock(std::map<std::string, std::vector<t_server_config> >&);
 	~ListeningSocketsBlock();
 
+	// getters
+	int								getNumListeningSockets() const;
+	std::map<int, ListeningSocket>	getListeningSockets() const;
+
+	// methods
 	void	createSockets(std::map<std::string, std::vector<t_server_config> >&);
 	void	closeSockets();
 };
