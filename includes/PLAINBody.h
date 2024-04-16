@@ -3,6 +3,7 @@
 
 #include "ARequestBody.h"
 #include "RequestHandler.h"
+#include "defines.h"
 
 class PLAINBody: public ARequestBody
 {
