@@ -32,6 +32,7 @@ private:
 	
 	// helper methods
 	void	addToConnectedClients(ListeningSocket&);
+	void	closeConnection(int);
 	
 	// constructors
 	DarwinWorker();

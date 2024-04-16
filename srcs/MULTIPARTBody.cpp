@@ -201,6 +201,16 @@ void	MULTIPARTBody::checkContentDispoChar(char ch)
 	}
 }
 
+void	MULTIPARTBody::checkFileExistence()
+{
+	std::string file_path = handler.getLocationConfig().root + content_disposition["filename"]; // add upload dir
+	if (access(file_path.c_str(), F_OK) == -1)
+	{
+		handler.setStatus(403);
+		throw CustomException("Forbidden");
+	}
+}
+
 void	MULTIPARTBody::saveContentDispo(char ch)
 {
 	if (handler.getHeaderInfo().getTEStatus())
@@ -228,6 +238,7 @@ void	MULTIPARTBody::saveContentDispo(char ch)
 	content_disposition.insert(std::pair<std::string, std::string>(temp_key, temp_value));
 	temp_key.erase();
 	temp_value.erase();
+	// checkFileExistence();
 	mp_state = mp_content_type;
 }
 

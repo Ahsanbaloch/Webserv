@@ -60,6 +60,15 @@ void	DarwinWorker::addToConnectedClients(ListeningSocket& socket)
 	}
 }
 
+void	DarwinWorker::closeConnection(int connection_id)
+{
+	connected_clients[event_lst[connection_id].ident]->removeRequestHandler();
+	connected_clients[event_lst[connection_id].ident]->setResponseStatus(0);
+	delete connected_clients[event_lst[connection_id].ident];
+	close(event_lst[connection_id].ident); // event_lst[i].ident is the file descriptor of the socket that triggered
+	connected_clients.erase(event_lst[connection_id].ident);
+}
+
 
 ///////// MAIN METHOD ///////////
 
@@ -79,11 +88,7 @@ void	DarwinWorker::runEventLoop()
 			if (event_lst[i].flags & EV_EOF)
 			{
 				std::cout << "client disconnected\n";
-				connected_clients[event_lst[i].ident]->removeRequestHandler();
-				connected_clients[event_lst[i].ident]->setResponseStatus(0);
-				delete connected_clients[event_lst[i].ident];
-				close(event_lst[i].ident); // event_lst[i].ident is the file descriptor of the socket that triggered
-				connected_clients.erase(event_lst[i].ident);
+				closeConnection(i);
 			}
 			// event came from listening socket --> we have to create a connection
 			else if (*reinterpret_cast<int*>(event_lst[i].udata) == Q.getListeningSocketIdent())
@@ -128,12 +133,8 @@ void	DarwinWorker::runEventLoop()
 					if (connected_clients[event_lst[i].ident]->getRequestHandler()->getHeaderInfo().getHeaderFields()["connection"] == "close"
 						|| connected_clients[event_lst[i].ident]->getRequestHandler()->getStatus() >= 400)
 					{
-						connected_clients[event_lst[i].ident]->removeRequestHandler();
-						connected_clients[event_lst[i].ident]->setResponseStatus(0);
 						std::cout << "disconnected by server\n";
-						delete connected_clients[event_lst[i].ident];
-						close(event_lst[i].ident);
-						connected_clients.erase(event_lst[i].ident);
+						closeConnection(i);
 					}
 					else
 					{

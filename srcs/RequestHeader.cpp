@@ -136,6 +136,11 @@ std::map<std::string, std::string>	RequestHeader::getHeaderFields() const
 	return (header_fields);
 }
 
+std::string	RequestHeader::getFilename() const
+{
+	return (filename);
+}
+
 bool	RequestHeader::getBodyStatus() const
 {
 	return (body_expected);
@@ -171,6 +176,16 @@ void	RequestHeader::parseHeader()
 		parseHeaderFields();
 }
 
+void	RequestHeader::identifyFileName()
+{
+	std::size_t found = path.find_last_of('.');
+	if (found == std::string::npos)
+		filename = "";
+	else
+		filename = path.substr(found + 1);
+}
+
+
 void	RequestHeader::checkHeader()
 {
 	if (dot_in_path)
@@ -181,6 +196,7 @@ void	RequestHeader::checkHeader()
 	if (query_encoded)
 		decode(query);
 	checkFields();
+	identifyFileName();
 	std::cout << "RequestHeader parsing complete\n";
 }
 
