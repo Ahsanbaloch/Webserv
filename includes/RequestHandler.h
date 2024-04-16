@@ -25,7 +25,6 @@
 class RequestHandler
 {
 private:
-	RequestHeader					request_header;
 	ARequestBody*					request_body;
 	AResponse*						response;
 
@@ -45,6 +44,7 @@ private:
 	RequestHandler(const RequestHandler&);
 
 public:
+	RequestHeader					request_header;
 	// constructors & destructors
 	RequestHandler(int, std::vector<t_server_config>); // get ServerConfig as a reference? // might be able to remove int connection_fd as this is now part of the connection handler
 	RequestHandler();
@@ -54,6 +54,7 @@ public:
 	// getters
 	std::vector<t_server_config>	getServerConfig() const;
 	s_location_config				getLocationConfig() const;
+	t_server_config					getSelectedServer() const;	
 	int								getSelectedLocation() const; // only for testing purposes
 	int								getStatus() const;
 	bool							getResponseStatus() const;
