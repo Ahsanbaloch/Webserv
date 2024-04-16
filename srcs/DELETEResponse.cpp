@@ -90,7 +90,7 @@ void	DELETEResponse::createResponse()
 	}
 
 	// check if file or directory that is requested to be deleted
-	if (checkFileType())
+	if (!handler.getHeaderInfo().getFileExtension().empty())
 		deleteFile();
 	else
 		deleteDir();

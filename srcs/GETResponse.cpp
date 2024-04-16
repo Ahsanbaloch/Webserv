@@ -152,7 +152,7 @@ void	GETResponse::checkInternalRedirects()
 		handler.findLocationBlock();
 		identifyRedirectedPath();
 		// check if file constructed from root, location path and index exists
-		if (checkFileExistence(redirected_path) == 0)
+		if (access(redirected_path.c_str(), F_OK) == 0)
 		{
 			full_file_path = redirected_path;
 			file_type = full_file_path.substr(full_file_path.find_last_of('.') + 1); // create a function for that in case it is not a file type

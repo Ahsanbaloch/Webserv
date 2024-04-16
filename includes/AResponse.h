@@ -13,20 +13,18 @@ protected:
 	RequestHandler&	handler;
 
 	// vars
-	std::string			file_type;
-	std::string			redirected_path;
+	std::string			file_type; // may move to GETResponse
+	std::string			redirected_path; // may move to GETResponse
 
 	std::string			body;
 	std::string 		status_line;
 	std::string 		header_fields;
 
 	// flags
-	bool				internal_redirect;
+	bool				internal_redirect; // may move to GETResponse
 
 	// methods
-	bool				checkFileType();
 	void				identifyRedirectedPath();
-	int					checkFileExistence(std::string);
 	std::string			createStatusLine();
 
 	// constructors
@@ -40,11 +38,11 @@ public:
 	virtual ~AResponse();
 
 	// getters
-	std::string			getRedirectedPath() const;
+	std::string			getRedirectedPath() const;  // may move to GETResponse
 	std::string			getResponseBody() const;
 	std::string			getResponseStatusLine() const;
 	std::string			getRespondsHeaderFields() const;
-	bool				getInternalRedirectStatus() const;
+	bool				getInternalRedirectStatus() const; // may move to GETResponse
 
 	// methods
 	virtual void		createResponse() = 0;

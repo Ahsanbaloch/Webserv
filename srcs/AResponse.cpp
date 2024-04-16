@@ -105,25 +105,3 @@ void	AResponse::identifyRedirectedPath()
 	std::cout << "index file path: " << redirected_path << std::endl;
 }
 
-int	AResponse::checkFileExistence(std::string path)
-{	
-	int result = access(path.c_str(), F_OK);
-	std::cout << "file exists: " << result << std::endl;
-	return (result);
-}
-
-bool	AResponse::checkFileType()
-{
-	// what if there are two dots in the path? // is there a better way to identify the file type requested?
-	std::size_t found = handler.getHeaderInfo().getPath().find('.');
-	if (found == std::string::npos)
-	{
-		file_type = "";
-		return (0);
-	}
-	else
-	{
-		file_type = handler.getHeaderInfo().getPath().substr(found + 1);
-		return (1);
-	}
-}
