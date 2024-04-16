@@ -11,8 +11,6 @@
 
 class RequestHandler;
 
-// rename class to RequestHeader
-
 class RequestHeader
 {
 private:

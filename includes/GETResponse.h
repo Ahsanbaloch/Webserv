@@ -14,13 +14,12 @@ class GETResponse: public AResponse
 {
 private:
 	// var
-	std::string			file_path; // better name?
+	std::string			full_file_path;
 
 	//flags
 	bool				auto_index;
 
 	// helper methods
-	// std::string	createStatusLine();
 	std::string	createBody();
 	std::string createHeaderFields(std::string);
 	std::string	identifyMIME();

@@ -18,7 +18,7 @@ GETResponse::~GETResponse()
 }
 
 GETResponse::GETResponse(const GETResponse& src)
-	: AResponse(src), file_path(src.file_path), auto_index(src.auto_index)
+	: AResponse(src), full_file_path(src.full_file_path), auto_index(src.auto_index)
 {
 }
 
@@ -27,7 +27,7 @@ GETResponse& GETResponse::operator=(const GETResponse& src)
 	if (this != &src)
 	{
 		AResponse::operator=(src);
-		file_path = src.file_path;
+		full_file_path = src.full_file_path;
 		auto_index = src.auto_index;
 	}
 	return (*this);
@@ -52,7 +52,7 @@ std::string	GETResponse::getBodyFromFile()
 {
 	std::string body;
 
-	std::ifstream file(file_path); // Open the file
+	std::ifstream file(full_file_path); // Open the file
 	if (!file.is_open()) 
 	{
 		handler.setStatus(404);
@@ -146,17 +146,16 @@ std::string	GETResponse::createHeaderFields(std::string body) // probably don't 
 void	GETResponse::checkInternalRedirects()
 {
 	// if the request is not for a file (otherwise the location has already been found)
-	if (!checkFileType())
+	if (handler.getHeaderInfo().getFileExtension().empty())
 	{
-		printf("Hey\n");
+		internal_redirect = 1;
+		handler.findLocationBlock();
+		identifyRedirectedPath();
 		// check if file constructed from root, location path and index exists
-		if (checkFileExistence() == 0)
+		if (access(redirected_path.c_str(), F_OK) == 0)
 		{
-			// if file does exist, search again for correct location
-			// findLocationBlock(handler); //should the root be taken into account when rechecking the location Block?
-			handler.findLocationBlock();
-			file_path = redirected_path;
-			file_type = file_path.substr(file_path.find('.') + 1); // create a function for that in case it is not a file type
+			full_file_path = redirected_path;
+			file_type = full_file_path.substr(full_file_path.find_last_of('.') + 1); // create a function for that in case it is not a file type
 		}
 		else
 		{
@@ -174,8 +173,8 @@ void	GETResponse::checkInternalRedirects()
 	}
 	else
 	{
-		// file_type is already set by checkFileType
-		file_path = handler.getLocationConfig().root + "/" + handler.getHeaderInfo().getPath();
+		file_type = handler.getHeaderInfo().getFileExtension();
+		full_file_path = handler.getLocationConfig().root + "/" + handler.getHeaderInfo().getPath();
 	}
 	std::cout << "location selected: " << handler.getSelectedLocation() << std::endl;
 }
