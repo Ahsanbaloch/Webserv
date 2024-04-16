@@ -18,7 +18,7 @@ GETResponse::~GETResponse()
 }
 
 GETResponse::GETResponse(const GETResponse& src)
-	: AResponse(src), full_file_path(src.full_file_path), auto_index(src.auto_index)
+	: AResponse(src), auto_index(src.auto_index)
 {
 }
 
@@ -27,7 +27,6 @@ GETResponse& GETResponse::operator=(const GETResponse& src)
 	if (this != &src)
 	{
 		AResponse::operator=(src);
-		full_file_path = src.full_file_path;
 		auto_index = src.auto_index;
 	}
 	return (*this);
@@ -148,13 +147,15 @@ void	GETResponse::checkInternalRedirects()
 	// if the request is not for a file (otherwise the location has already been found)
 	if (handler.getHeaderInfo().getFileExtension().empty())
 	{
-		internal_redirect = 1;
-		handler.findLocationBlock();
-		identifyRedirectedPath();
+		full_file_path = buildPath();
 		// check if file constructed from root, location path and index exists
-		if (access(redirected_path.c_str(), F_OK) == 0)
+		if (access(full_file_path.c_str(), F_OK) == 0)
 		{
-			full_file_path = redirected_path;
+			internal_redirect = 1;
+			handler.findLocationBlock();
+			// do we have to set the root from the new location?
+			full_file_path = handler.getLocationConfig().root + full_file_path.substr(handler.getLocationConfig().root.length());
+			std::cout << "full file path: " << full_file_path << std::endl;
 			file_type = full_file_path.substr(full_file_path.find_last_of('.') + 1); // create a function for that in case it is not a file type
 		}
 		else
