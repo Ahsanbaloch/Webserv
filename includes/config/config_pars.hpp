@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 14:22:42 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/29 11:54:19 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/04/16 20:00:00 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,7 @@
 #include "config_pars_utils.hpp"
 #include "exception_parsing.hpp"
 #include <set>
+#include <sys/stat.h>
 
 class config_pars
 {
@@ -29,6 +30,7 @@ class config_pars
 		std::string	_server_root;
 		std::string _server_index;
 		std::string _error_string;
+		std::string _upload;
 
 		std::map<std::string, std::vector<t_server_config> > _server_configs_map; //getter is getServerConfigsMap()
 
