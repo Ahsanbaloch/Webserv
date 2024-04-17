@@ -136,9 +136,10 @@ std::string	GETResponse::createHeaderFields(std::string body) // probably don't 
 			// header.append("ETag: "abc123""); //This header provides a unique identifier for the content being sent in the response. This can be used by clients to determine if the resource has changed since it was last requested, without having to download the entire resource again.
 			// header.append("Keep-Alive: timeout=5, max=100"); // used to enable persistent connections between the client and the server, allowing multiple requests and responses to be sent over a single TCP connection
 			// Access-Control-Allow-Origin; X-Frame-Options; X-XSS-Protection; Referrer-Policy; X-Forwarded-For; X-Powered-By; 
-			header.append("\r\n");
+			// header.append("\r\n");
 		}
 	}
+	header.append("\r\n");
 	return (header);
 }
 

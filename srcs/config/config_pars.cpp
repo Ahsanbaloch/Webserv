@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   config_pars.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
+/*   By: mamesser <mamesser@student.42wolfsburg.    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/04/16 20:22:09 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/04/17 12:03:29 by mamesser         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -132,7 +132,7 @@ void config_pars::extractErrorPage(int &status, std::string &page, std::string s
 				throw MissingValueException("Error Page Status...");
 			if (!(iss >> page))
 				throw MissingValueException("Error Page value...");
-			std::string fullpath = "/Users/ahsalam/42/ring_05/webserv_new/www/" + page;
+			std::string fullpath = "www/" + page;
 			struct stat buffer;
 			if (stat(fullpath.c_str(), &buffer) != 0)
 				throw MissingValueException("Error_Page doesn't exist in respective folder");
