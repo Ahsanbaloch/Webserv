@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/04/16 20:22:09 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/04/17 12:10:58 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -132,10 +132,19 @@ void config_pars::extractErrorPage(int &status, std::string &page, std::string s
 				throw MissingValueException("Error Page Status...");
 			if (!(iss >> page))
 				throw MissingValueException("Error Page value...");
-			std::string fullpath = "/Users/ahsalam/42/ring_05/webserv_new/www/" + page;
-			struct stat buffer;
-			if (stat(fullpath.c_str(), &buffer) != 0)
-				throw MissingValueException("Error_Page doesn't exist in respective folder");
+			//std::cout << _server_root << std::endl;
+			char cwd[PATH_MAX];
+			if (getcwd(cwd, sizeof(cwd)) == NULL) {
+    			std::cerr << "Error getting current directory: " << strerror(errno) << std::endl;
+    			throw MissingValueException("Error getting current directory");
+			}
+			else
+			{
+				std::string relativePath = std::string(cwd) + "/" + _server_root + "/" + page;
+				struct stat buffer;
+				if (stat(relativePath.c_str() , &buffer) != 0)
+    				throw MissingValueException("Error_Page doesn't exist in respective folder");
+			}
 		}
 		else
 			throw MissingValueException("InValid Error Page data");
@@ -266,6 +275,8 @@ void	config_pars::parseLocationBlock(t_location_config &location_config, const s
 		else
 			location_config.root = _server_root;
 	}
+	else
+		_server_root = location_config.root;
 	if (_server_index.empty() && location_config.index.empty())
 		location_config.index = "index.html";
 	else if (location_config.index.empty())
