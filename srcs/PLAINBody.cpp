@@ -83,7 +83,6 @@ void	PLAINBody::readBody()
 	}
 	else
 	{
-		// identify filename // how to?
 		handler.buf_pos++;
 		int to_write = std::min(handler.getBytesRead() - handler.buf_pos, handler.getHeaderInfo().getBodyLength());
 		outfile.open(filename, std::ios::app);

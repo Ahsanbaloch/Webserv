@@ -143,6 +143,18 @@ std::string	GETResponse::createHeaderFields(std::string body) // probably don't 
 	return (header);
 }
 
+void	GETResponse::checkRedirectedLocationBlock()
+{
+	if (!handler.getLocationConfig().GET)
+	{
+		handler.setStatus(405);
+		throw CustomException("Method Not Allowed");
+	}
+	if (!handler.getLocationConfig().redirect.empty())
+		handler.setStatus(307);
+		
+}
+
 void	GETResponse::checkInternalRedirects()
 {
 	// if the request is not for a file (otherwise the location has already been found)
@@ -154,6 +166,7 @@ void	GETResponse::checkInternalRedirects()
 		{
 			internal_redirect = 1;
 			handler.findLocationBlock();
+			checkRedirectedLocationBlock();
 			full_file_path = handler.getLocationConfig().root + full_file_path.substr(handler.getLocationConfig().root.length());
 			std::cout << "full file path: " << full_file_path << std::endl;
 			file_type = full_file_path.substr(full_file_path.find_last_of('.') + 1); // create a function for that in case it is not a file type
@@ -207,11 +220,11 @@ void	GETResponse::createResponse()
 		checkInternalRedirects();
 
 	// check allowed methods for the selected location
-	if (!handler.getLocationConfig().GET)
-	{
-		handler.setStatus(405);
-		throw CustomException("Method Not Allowed");
-	}
+	// if (!handler.getLocationConfig().GET)
+	// {
+	// 	handler.setStatus(405);
+	// 	throw CustomException("Method Not Allowed");
+	// }
 
 	status_line = createStatusLine();
 	if ((handler.getStatus() >= 100 && handler.getStatus() <= 103) || handler.getStatus() == 204 || handler.getStatus() == 304 || handler.getStatus() == 307)

@@ -23,6 +23,7 @@ private:
 	void		checkInternalRedirects();
 	std::string	getBodyFromFile();
 	std::string	getBodyFromDir();
+	void		checkRedirectedLocationBlock();
 
 	// constructors
 	GETResponse();

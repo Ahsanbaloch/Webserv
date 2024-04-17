@@ -73,6 +73,7 @@ public:
 	void							sendResponse();
 	void							findServerBlock();
 	void							findLocationBlock();
+	void							checkAllowedMethods();
 	int								calcMatches(std::vector<std::string>&, std::vector<std::string>&); // make private?
 	std::vector<std::string>		splitPath(std::string input, char delim);
 	AResponse*						prepareResponse();

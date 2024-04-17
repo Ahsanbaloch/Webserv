@@ -186,6 +186,25 @@ void	RequestHandler::processRequest()
 	}
 }
 
+void		RequestHandler::checkAllowedMethods()
+{
+	if (request_header.getMethod() == "GET" && !getLocationConfig().GET)
+	{
+		setStatus(405);
+		throw CustomException("Method Not Allowed");
+	}
+	else if (request_header.getMethod() == "POST" && !getLocationConfig().POST)
+	{
+		setStatus(405);
+		throw CustomException("Method Not Allowed");
+	}
+	else if (request_header.getMethod() == "DELETE" && !getLocationConfig().DELETE)
+	{
+		setStatus(405);
+		throw CustomException("Method Not Allowed");
+	}
+}
+
 
 AResponse* RequestHandler::prepareResponse()
 {
@@ -196,6 +215,9 @@ AResponse* RequestHandler::prepareResponse()
 	// find location block within server block if multiple exist (this applies to all request types; for GET requests there might be an internal redirect happening later on)
 	if (server_config[selected_server].locations.size() > 1)
 		findLocationBlock();
+
+	// check if method is allowed in selected location
+	checkAllowedMethods();
 
 	if (request_header.getMethod() == "GET")
 		return (new GETResponse(*this)); // need to free this somewhere
