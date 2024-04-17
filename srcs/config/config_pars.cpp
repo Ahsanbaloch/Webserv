@@ -6,13 +6,14 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/04/02 12:42:51 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/04/16 20:22:09 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "config/config_pars.hpp"
 
-config_pars::config_pars(int argc, char **argv) : _server_root(""), _server_index(""), _error_string("")
+config_pars::config_pars(int argc, char **argv) 
+: _server_root(""), _server_index(""), _error_string(""), _upload("")
 {
 	std::string fileContent;
 	std::string argument_value;
@@ -113,13 +114,14 @@ void	config_pars::parse_server_block(t_server_config &server_config, const std::
 	server_config.serverName = extractServerVariable("Server_name", globalPart);
 	server_config.bodySize = extractBodySize(globalPart);
 	_error_string = extractServerVariable("error_page", globalPart);
+	_upload	= extractServerVariable("uploadDir", globalPart);
 	if (!locationPart.empty())
     	Location_block(server_config, locationPart);
 	else
 		throw InvalidLocationException();
 }
 
-void config_pars::extractErrorPage(int &status, std::string & page, std::string split_string)
+void config_pars::extractErrorPage(int &status, std::string &page, std::string split_string)
 {
 	if (!split_string.empty())
 	{
@@ -130,13 +132,19 @@ void config_pars::extractErrorPage(int &status, std::string & page, std::string 
 				throw MissingValueException("Error Page Status...");
 			if (!(iss >> page))
 				throw MissingValueException("Error Page value...");
+			std::string fullpath = "/Users/ahsalam/42/ring_05/webserv_new/www/" + page;
+			struct stat buffer;
+			if (stat(fullpath.c_str(), &buffer) != 0)
+				throw MissingValueException("Error_Page doesn't exist in respective folder");
 		}
 		else
 			throw MissingValueException("InValid Error Page data");
 	}
 	else
+	{
 		status = -1;
 		page = "";
+	}
 }
 
 std::string config_pars::extractServerVariable(const std::string variable, const std::string &server_block)
@@ -241,23 +249,20 @@ void	config_pars::parseLocationBlock(t_location_config &location_config, const s
 {
 	location_config.path = extractPath(location_block);
 	location_config.redirect = extractVariables("redirect_url",location_block);
+	allowMethods(location_config.GET, location_config.POST, location_config.DELETE, location_block);
+	location_config.autoIndex = extractAutoIndex(location_block);
 	if (location_config.path == "/cgi-bin" )
 	{
 		location_config.cgi_ex = extractVariables("cgi-ext",location_block);
 		if (location_config.cgi_ex.empty())
 			throw MissingValueException("cgi-ext");
 	}
-	location_config.root = extractVariables("root", location_block);
+	location_config.root = extractVariables("root", location_block);  //TODO: make another function for readability  root and index
 	location_config.index = extractVariables("index", location_block);
-	/* if (_server_root.empty() && location_config.root.empty()) //recheck if the seg fault comes again
-		throw MissingValueException("root"); */
 	if (location_config.root.empty())
 	{
 		if (_server_root.empty())
-		{
-			//printf("Hello\n");
 			throw MissingValueException("Root");
-		}
 		else
 			location_config.root = _server_root;
 	}
@@ -265,18 +270,20 @@ void	config_pars::parseLocationBlock(t_location_config &location_config, const s
 		location_config.index = "index.html";
 	else if (location_config.index.empty())
 		location_config.index = _server_index;
-	std::string error_page_string = extractVariables("error_page", location_block);
-	if (error_page_string.empty() && _error_string.empty())
-	{
-		extractErrorPage(location_config.errorPage.error_page_status, location_config.errorPage.html_page, "");
-	}
-	else if (!error_page_string.empty())
+	std::string upload = extractVariables("uploadDir", location_block);
+	if (!upload.empty())
+		location_config.uploadDir = upload;
+	else
+		location_config.uploadDir = _upload;
+	
+	std::string error_page_string = extractVariables("error_page", location_block); //TODO: make another function for readability Error page
+	if (!error_page_string.empty())
 		extractErrorPage(location_config.errorPage.error_page_status, location_config.errorPage.html_page, error_page_string);
+
+	else if (error_page_string.empty() && _error_string.empty())
+		extractErrorPage(location_config.errorPage.error_page_status, location_config.errorPage.html_page, "");
 	else
 		extractErrorPage(location_config.errorPage.error_page_status, location_config.errorPage.html_page, _error_string);
-	
-	allowMethods(location_config.GET, location_config.POST, location_config.DELETE, location_block);
-	location_config.autoIndex = extractAutoIndex(location_block);
 }
 
 void	config_pars::allowMethods(bool &GET, bool &POST, bool &DELETE, const std::string location_block)
