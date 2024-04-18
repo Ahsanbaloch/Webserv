@@ -30,14 +30,14 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	te_state = body_start;
 	
 	response = NULL;
-	request_body = NULL;
+	uploader = NULL;
 	memset(&buf, 0, sizeof(buf));
 }
 
 RequestHandler::~RequestHandler()
 {
 	delete response;
-	delete request_body;
+	delete uploader;
 }
 
 RequestHandler::RequestHandler(const RequestHandler& src)
@@ -60,7 +60,7 @@ RequestHandler& RequestHandler::operator=(const RequestHandler& src)
 		request_length = src.request_length;
 		buf_pos = src.buf_pos;
 		response = src.response;
-		request_body = src.request_body;
+		uploader = src.uploader;
 	}
 	return (*this);
 }
@@ -187,14 +187,21 @@ void	RequestHandler::processRequest()
 					unchunkBody();
 				if (!getHeaderInfo().getTEStatus() || body_unchunked)
 				{
-					if (request_body == NULL)
-						request_body = checkContentType(); // needs to be deleted/freed somewhere
-					request_body->readBody();
+					if (request_header.getFileExtension() == "py")
+					{
+						
+					}
+					else
+					{
+						if (uploader == NULL)
+							uploader = checkContentType(); // needs to be deleted/freed somewhere
+						uploader->uploadData();
+					}
 				}
 			}
 			// if no body is expected OR end of body has been reached
 			// check how getBodyStatus() gets set (does it already check for request method?)
-			if (!request_header.getBodyStatus() || (request_body != NULL && request_body->getBodyProcessed()) || !getLocationConfig().redirect.empty())
+			if (!request_header.getBodyStatus() || (uploader != NULL && uploader->getUploadStatus()) || !getLocationConfig().redirect.empty())
 			{
 				// std::cout << "body content: " << request_body.body << std::endl;
 				response = prepareResponse(); // how to handle errors in here?

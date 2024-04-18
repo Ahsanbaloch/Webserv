@@ -45,7 +45,7 @@ AUploadModule& AUploadModule::operator=(const AUploadModule& src)
 
 ////////// GETTERS ///////////
 
-bool	AUploadModule::getBodyProcessed() const
+bool	AUploadModule::getUploadStatus() const
 {
 	return (body_read);
 }

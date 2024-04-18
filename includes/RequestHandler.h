@@ -27,7 +27,7 @@ class RequestHandler
 {
 private:
 	RequestHeader					request_header;
-	AUploadModule*					request_body;
+	AUploadModule*					uploader;
 	AResponse*						response;
 
 	// vars

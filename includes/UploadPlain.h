@@ -28,7 +28,7 @@ public:
 	~UploadPlain();
 
 	// main method
-	void	readBody();
+	void	uploadData();
 };
 
 
