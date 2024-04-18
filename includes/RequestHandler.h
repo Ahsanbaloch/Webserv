@@ -90,6 +90,7 @@ public:
 	std::string						getUnchunkedDataFile() const;
 	int								getTotalChunkSize() const;
 	bool							getUnchunkingStatus() const;
+	std::string						getTempBodyFilepath() const;
 
 	// setters
 	void							setStatus(int);
