@@ -173,7 +173,7 @@ std::map<std::string, std::string>	UploadUrlencoded::getDatabase() const
 
 /////////// MAIN METHOD ///////////
 
-void	UploadUrlencoded::readBody()
+void	UploadUrlencoded::uploadData()
 {
 	if (handler.getHeaderInfo().getTEStatus())
 	{

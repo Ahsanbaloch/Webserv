@@ -17,8 +17,8 @@ protected:
 	std::string			filename; // move to children? (if not needed in all sub-classes)
 
 	// flags
-	bool			body_read;
-	bool			body_parsing_done; // only needed in Multipart class
+	bool				body_read;
+	bool				body_parsing_done; // only needed in Multipart class
 
 	// constructors
 	AUploadModule();
@@ -31,10 +31,10 @@ public:
 	virtual ~AUploadModule();
 
 	// getters
-	bool			getBodyProcessed() const;
+	bool			getUploadStatus() const;
 
 	// methods
-	virtual void	readBody() = 0;
+	virtual void	uploadData() = 0;
 
 };
 

@@ -52,7 +52,7 @@ public:
 	std::map<std::string, std::string>	getDatabase() const;
 
 	// main method
-	void	readBody();
+	void	uploadData();
 
 };
 

@@ -443,7 +443,7 @@ void	UploadMultipart::parseBody(char ch)
 
 /////////// MAIN METHODS ///////////
 
-void	UploadMultipart::readBody()
+void	UploadMultipart::uploadData()
 {
 	if (handler.getHeaderInfo().getTEStatus())
 	{

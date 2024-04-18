@@ -30,19 +30,23 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	te_state = body_start;
 	
 	response = NULL;
-	request_body = NULL;
+	uploader = NULL;
+	body_extractor = NULL;
 	memset(&buf, 0, sizeof(buf));
 }
 
 RequestHandler::~RequestHandler()
 {
 	delete response;
-	delete request_body;
+	delete uploader;
+	if (body_extractor != NULL) // needed?
+		delete body_extractor;
 }
 
 RequestHandler::RequestHandler(const RequestHandler& src)
 	: request_header(src.request_header)
 {
+	// tbd
 }
 
 RequestHandler& RequestHandler::operator=(const RequestHandler& src)
@@ -60,7 +64,8 @@ RequestHandler& RequestHandler::operator=(const RequestHandler& src)
 		request_length = src.request_length;
 		buf_pos = src.buf_pos;
 		response = src.response;
-		request_body = src.request_body;
+		uploader = src.uploader;
+		body_extractor = src.body_extractor;
 	}
 	return (*this);
 }
@@ -107,6 +112,12 @@ const RequestHeader&	RequestHandler::getHeaderInfo()
 {
 	return (request_header);
 }
+
+bool	RequestHandler::getUnchunkingStatus() const
+{
+	return (body_unchunked);
+}
+
 
 
 ///////// SETTERS ///////////
@@ -179,22 +190,33 @@ void	RequestHandler::processRequest()
 				// make reponse
 				// in this case we don't want to destroy the requesthandler object
 			}
-			// if body is expected, read the body (unless the selected location demands a redirect or it is not a POST request)
+			// if body is expected, read the body (unless the selected location demands a redirect or it is not a POST request) 
 			if (request_header.getBodyStatus() && request_header.getMethod() == "POST" && getLocationConfig().redirect.empty())
 			{
 				// unchunk body if needed
-				if (getHeaderInfo().getTEStatus())
+				if (getHeaderInfo().getTEStatus() && !body_unchunked)
 					unchunkBody();
 				if (!getHeaderInfo().getTEStatus() || body_unchunked)
 				{
-					if (request_body == NULL)
-						request_body = checkContentType(); // needs to be deleted/freed somewhere
-					request_body->readBody();
+					if (request_header.getFileExtension() == "py") // what if other cgi extension?
+					{
+						if (body_extractor == NULL)
+							body_extractor = new BodyExtractor(*this);
+						body_extractor->extractBody();
+						std::cout << body_extractor->getTempBodyFilepath() << std::endl;
+					}
+					else
+					{
+						if (uploader == NULL)
+							uploader = checkContentType(); // needs to be deleted/freed somewhere
+						uploader->uploadData();
+					}
 				}
 			}
 			// if no body is expected OR end of body has been reached
 			// check how getBodyStatus() gets set (does it already check for request method?)
-			if (!request_header.getBodyStatus() || (request_body != NULL && request_body->getBodyProcessed()) || !getLocationConfig().redirect.empty())
+			if (!request_header.getBodyStatus() || (uploader != NULL && uploader->getUploadStatus())
+				|| !getLocationConfig().redirect.empty() || (body_extractor != NULL && body_extractor->getExtractionStatus()))
 			{
 				// std::cout << "body content: " << request_body.body << std::endl;
 				response = prepareResponse(); // how to handle errors in here?

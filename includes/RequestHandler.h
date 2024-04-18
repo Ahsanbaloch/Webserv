@@ -19,6 +19,7 @@
 #include "ERRORResponse.h"
 #include "POSTResponse.h"
 #include "REDIRECTResponse.h"
+#include "BodyExtractor.h"
 #include "config/config_pars.hpp"
 #include "defines.h"
 
@@ -27,8 +28,9 @@ class RequestHandler
 {
 private:
 	RequestHeader					request_header;
-	AUploadModule*					request_body;
+	AUploadModule*					uploader;
 	AResponse*						response;
+	BodyExtractor*					body_extractor;
 
 	// vars
 	std::vector<t_server_config>	server_config;
@@ -87,6 +89,7 @@ public:
 	const RequestHeader&			getHeaderInfo();
 	std::string						getUnchunkedDataFile() const;
 	int								getTotalChunkSize() const;
+	bool							getUnchunkingStatus() const;
 
 	// setters
 	void							setStatus(int);

@@ -38,7 +38,7 @@ UploadPlain& UploadPlain::operator=(const UploadPlain& src)
 
 /////////// METHODS ///////////
 
-void	UploadPlain::readBody()
+void	UploadPlain::uploadData()
 {
 	filename = handler.getHeaderInfo().getFilename(); // add the upload location dir to path
 	if (filename.empty())

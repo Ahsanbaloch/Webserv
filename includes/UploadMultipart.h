@@ -78,7 +78,7 @@ public:
 	~UploadMultipart();
 
 	// main method
-	void	readBody();
+	void	uploadData();
 
 };
 
