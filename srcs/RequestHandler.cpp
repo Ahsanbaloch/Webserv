@@ -118,6 +118,11 @@ bool	RequestHandler::getUnchunkingStatus() const
 	return (body_unchunked);
 }
 
+std::string	RequestHandler::getTempBodyFilepath() const
+{
+	return (body_extractor->getTempBodyFilepath());
+}
+
 
 
 ///////// SETTERS ///////////
