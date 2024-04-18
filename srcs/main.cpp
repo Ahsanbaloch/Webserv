@@ -11,7 +11,7 @@
 #include "defines.h"
 
 int g_num_temp_files = 0;
-
+int g_num_temp_unchunked_files = 0;
 
 
 // next:

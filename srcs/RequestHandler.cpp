@@ -184,13 +184,7 @@ void	RequestHandler::processRequest()
 			{
 				// unchunk body if needed
 				if (getHeaderInfo().getTEStatus())
-				{
-					printf("body unchunked: %i\n", body_unchunked);
 					unchunkBody();
-					printf("body unchunked post: %i\n", body_unchunked);
-					std::cout << "state: " << te_state << std::endl;
-
-				}
 				if (!getHeaderInfo().getTEStatus() || body_unchunked)
 				{
 					if (request_body == NULL)
@@ -394,7 +388,7 @@ void	RequestHandler::findServerBlock()
 
 std::string	RequestHandler::getUnchunkedDataFile() const
 {
-	return (temp_filename);
+	return (temp_filename_unchunked);
 }
 
 int			RequestHandler::getTotalChunkSize() const
@@ -404,23 +398,20 @@ int			RequestHandler::getTotalChunkSize() const
 
 void	RequestHandler::storeChunkedData()
 {
-	// if content-type plain text use file name from header path (also check for existence, if not existing, create file)
-	// if (handler.content_type == handler.text_plain)
-	// {
-	// 	// header should probably also provide file name? --> needed somewhere else? (in GET?)
-	// 	// should be done somewhere else so that this is check is not done over and over again.
-	// 	filename = "testing.txt";
-		
-	// }
-	// if (handler.content_type == handler.multipart_form || handler.content_type == handler.urlencoded)
-	temp_filename = "www/temp.bin";
-	temp_chunked.open(temp_filename, std::ios::app | std::ios::binary);
+	if (temp_filename_unchunked.empty())
+	{
+		std::ostringstream num_conversion;
+		g_num_temp_unchunked_files++;
+		num_conversion << g_num_temp_unchunked_files;
+		temp_filename_unchunked = "www/temp/" + num_conversion.str() + ".bin";
+	}
 
+	temp_unchunked.open(temp_filename_unchunked, std::ios::app | std::ios::binary);
 	int to_write = std::min(getBytesRead() - buf_pos, chunk_length);
-	temp_chunked.write(reinterpret_cast<const char*>(&buf[buf_pos]), to_write);
+	temp_unchunked.write(reinterpret_cast<const char*>(&buf[buf_pos]), to_write);
 	buf_pos += to_write;
 	chunk_length -= to_write;
-	temp_chunked.close();
+	temp_unchunked.close();
 
 }
 

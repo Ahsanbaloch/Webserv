@@ -41,10 +41,10 @@ private:
 
 	int								chunk_length;
 	int								total_chunk_size;
-	std::ofstream					temp_chunked;
+	std::ofstream					temp_unchunked;
 	bool							trailer_exists;
 	bool							body_unchunked;
-	std::string						temp_filename;
+	std::string						temp_filename_unchunked;
 
 	// flags
 	bool							response_ready;
