@@ -1,11 +1,11 @@
-#ifndef PLAINBODY_H
-# define PLAINBODY_H
+#ifndef UPLOADPLAIN_H
+# define UPLOADPLAIN_H
 
 #include "AUploadModule.h"
 #include "RequestHandler.h"
 #include "defines.h"
 
-class PLAINBody: public AUploadModule
+class UploadPlain: public AUploadModule
 {
 private:
 	// input
@@ -18,14 +18,14 @@ private:
 	int							body_bytes_consumed;
 
 	// constructors
-	PLAINBody();
-	PLAINBody(const PLAINBody&);
-	PLAINBody& operator=(const PLAINBody&);
+	UploadPlain();
+	UploadPlain(const UploadPlain&);
+	UploadPlain& operator=(const UploadPlain&);
 
 public:
 	// constructors and desctructors
-	explicit PLAINBody(RequestHandler&);
-	~PLAINBody();
+	explicit UploadPlain(RequestHandler&);
+	~UploadPlain();
 
 	// main method
 	void	readBody();

@@ -264,18 +264,18 @@ AUploadModule*	RequestHandler::checkContentType()
 	if (type == "multipart/form-data")
 	{
 		content_type = multipart_form;
-		return (new MULTIPARTBody(*this));
+		return (new UploadMultipart(*this));
 	}
 	else if (type == "application/x-www-form-urlencoded")
 	{
 		content_type = urlencoded;
-		return (new URLENCODEDBody(*this));
+		return (new UploadUrlencoded(*this));
 	}
 	else
 	{
 		// or throwException if type is not supported?
 		content_type = text_plain;
-		return (new PLAINBody(*this));
+		return (new UploadPlain(*this));
 	}
 }
 

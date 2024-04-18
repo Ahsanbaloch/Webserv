@@ -1,31 +1,31 @@
 
-#include "PLAINBody.h"
+#include "UploadPlain.h"
 
 ///////// CONSTRUCTORS & DESTRUCTORS ///////////
 
-PLAINBody::PLAINBody()
+UploadPlain::UploadPlain()
 	: AUploadModule()
 {
 	body_bytes_consumed = 0;
 }
 
-PLAINBody::PLAINBody(RequestHandler& src)
+UploadPlain::UploadPlain(RequestHandler& src)
 	: AUploadModule(src)
 {
 	body_bytes_consumed = 0;
 }
 
-PLAINBody::~PLAINBody()
+UploadPlain::~UploadPlain()
 {
 }
 
-PLAINBody::PLAINBody(const PLAINBody& src)
+UploadPlain::UploadPlain(const UploadPlain& src)
 	: AUploadModule(src)
 {
 	body_bytes_consumed = src.body_bytes_consumed;
 }
 
-PLAINBody& PLAINBody::operator=(const PLAINBody& src)
+UploadPlain& UploadPlain::operator=(const UploadPlain& src)
 {
 	if (this != &src)
 	{
@@ -35,17 +35,10 @@ PLAINBody& PLAINBody::operator=(const PLAINBody& src)
 	return (*this);
 }
 
-///////// GETTERS //////////
-
-std::map<std::string, std::string>	URLENCODEDBody::getDatabase() const
-{
-	return (database);
-}
-
 
 /////////// METHODS ///////////
 
-void	PLAINBody::readBody()
+void	UploadPlain::readBody()
 {
 	filename = handler.getHeaderInfo().getFilename(); // add the upload location dir to path
 	if (filename.empty())
