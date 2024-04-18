@@ -4,13 +4,13 @@
 ///////// CONSTRUCTORS & DESTRUCTORS ///////////
 
 PLAINBody::PLAINBody()
-	: ARequestBody()
+	: AUploadModule()
 {
 	body_bytes_consumed = 0;
 }
 
 PLAINBody::PLAINBody(RequestHandler& src)
-	: ARequestBody(src)
+	: AUploadModule(src)
 {
 	body_bytes_consumed = 0;
 }
@@ -20,7 +20,7 @@ PLAINBody::~PLAINBody()
 }
 
 PLAINBody::PLAINBody(const PLAINBody& src)
-	: ARequestBody(src)
+	: AUploadModule(src)
 {
 	body_bytes_consumed = src.body_bytes_consumed;
 }
@@ -29,7 +29,7 @@ PLAINBody& PLAINBody::operator=(const PLAINBody& src)
 {
 	if (this != &src)
 	{
-		ARequestBody::operator=(src);
+		AUploadModule::operator=(src);
 		body_bytes_consumed = src.body_bytes_consumed;
 	}
 	return (*this);

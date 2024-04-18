@@ -4,7 +4,7 @@
 /////////// CONSTRUCTORS & DESTRUCTORS ///////////
 
 MULTIPARTBody::MULTIPARTBody()
-	: ARequestBody()
+	: AUploadModule()
 {
 	identifyBoundary();
 	meta_data_size = 0;
@@ -17,7 +17,7 @@ MULTIPARTBody::MULTIPARTBody()
 }
 
 MULTIPARTBody::MULTIPARTBody(RequestHandler& src)
-	: ARequestBody(src)
+	: AUploadModule(src)
 {
 	identifyBoundary();
 	meta_data_size = 0;
@@ -34,7 +34,7 @@ MULTIPARTBody::~MULTIPARTBody()
 }
 
 MULTIPARTBody::MULTIPARTBody(const MULTIPARTBody& src)
-	: ARequestBody(src)
+	: AUploadModule(src)
 {
 	temp_value = src.temp_value;
 	temp_key = src.temp_key;
@@ -54,7 +54,7 @@ MULTIPARTBody& MULTIPARTBody::operator=(const MULTIPARTBody& src)
 {
 	if (this != &src)
 	{
-		ARequestBody::operator=(src);
+		AUploadModule::operator=(src);
 		temp_value = src.temp_value;
 		temp_key = src.temp_key;
 		boundary = src.boundary;

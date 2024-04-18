@@ -9,7 +9,7 @@
 #include <cstdio>
 #include "CustomException.h"
 #include "RequestHeader.h"
-#include "ARequestBody.h"
+#include "AUploadModule.h"
 #include "MULTIPARTBody.h"
 #include "PLAINBody.h"
 #include "URLENCODEDBody.h"
@@ -27,7 +27,7 @@ class RequestHandler
 {
 private:
 	RequestHeader					request_header;
-	ARequestBody*					request_body;
+	AUploadModule*					request_body;
 	AResponse*						response;
 
 	// vars
@@ -79,7 +79,7 @@ public:
 	int								calcMatches(std::vector<std::string>&, std::vector<std::string>&); // make private?
 	std::vector<std::string>		splitPath(std::string input, char delim);
 	AResponse*						prepareResponse();
-	ARequestBody*					checkContentType();
+	AUploadModule*					checkContentType();
 
 	// make private?
 	enum {

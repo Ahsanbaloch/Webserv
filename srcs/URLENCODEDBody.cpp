@@ -4,7 +4,7 @@
 /////////// CONSTRUCTORS & DESTRUCTORS ///////////
 
 URLENCODEDBody::URLENCODEDBody()
-	: ARequestBody()
+	: AUploadModule()
 {
 	encoded_key = 0;
 	encoded_value = 0;
@@ -13,7 +13,7 @@ URLENCODEDBody::URLENCODEDBody()
 }
 
 URLENCODEDBody::URLENCODEDBody(RequestHandler& src)
-	: ARequestBody(src)
+	: AUploadModule(src)
 {
 	encoded_key = 0;
 	encoded_value = 0;
@@ -26,7 +26,7 @@ URLENCODEDBody::~URLENCODEDBody()
 }
 
 URLENCODEDBody::URLENCODEDBody(const URLENCODEDBody& src)
-	: ARequestBody(src)
+	: AUploadModule(src)
 {
 	// copy input filestream --> how?
 	encoded_key = src.encoded_key;
@@ -42,7 +42,7 @@ URLENCODEDBody& URLENCODEDBody::operator=(const URLENCODEDBody& src)
 {
 	if (this != &src)
 	{
-		ARequestBody::operator=(src);
+		AUploadModule::operator=(src);
 		encoded_key = src.encoded_key;
 		encoded_value = src.encoded_value;
 		body_bytes_consumed = src.body_bytes_consumed;

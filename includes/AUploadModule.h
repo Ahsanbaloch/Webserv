@@ -1,5 +1,5 @@
-#ifndef AREQUESTBODY_H
-# define AREQUESTBODY_H
+#ifndef AUPLOADMODULE_H
+# define AUPLOADMODULE_H
 
 #include <string>
 #include <map>
@@ -8,7 +8,7 @@
 
 class RequestHandler;
 
-class ARequestBody
+class AUploadModule
 {
 protected:
 	RequestHandler&	handler;
@@ -39,14 +39,14 @@ protected:
 	} te_state;
 
 	// constructors
-	ARequestBody();
-	ARequestBody(const ARequestBody&);
-	ARequestBody& operator=(const ARequestBody&);
+	AUploadModule();
+	AUploadModule(const AUploadModule&);
+	AUploadModule& operator=(const AUploadModule&);
 
 public:
 	// constructors & destructors
-	explicit ARequestBody(RequestHandler&);
-	virtual ~ARequestBody();
+	explicit AUploadModule(RequestHandler&);
+	virtual ~AUploadModule();
 
 	// getters
 	bool			getBodyProcessed() const;

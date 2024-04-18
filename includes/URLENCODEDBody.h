@@ -3,10 +3,10 @@
 
 #include <map>
 #include <string>
-#include "ARequestBody.h"
+#include "AUploadModule.h"
 #include "RequestHandler.h"
 
-class URLENCODEDBody: public ARequestBody
+class URLENCODEDBody: public AUploadModule
 {
 private:
 	// input

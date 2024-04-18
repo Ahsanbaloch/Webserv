@@ -1,10 +1,10 @@
 
-#include "ARequestBody.h"
+#include "AUploadModule.h"
 #include "RequestHandler.h"
 
 ///////// CONSTRUCTORS & DESTRUCTORS ///////////
 
-ARequestBody::ARequestBody()
+AUploadModule::AUploadModule()
 	: handler(*new RequestHandler())
 {
 	chunk_length = 0;
@@ -15,7 +15,7 @@ ARequestBody::ARequestBody()
 	te_state = body_start;
 }
 
-ARequestBody::ARequestBody(RequestHandler& src)
+AUploadModule::AUploadModule(RequestHandler& src)
 	: handler(src)
 {
 	chunk_length = 0;
@@ -26,11 +26,11 @@ ARequestBody::ARequestBody(RequestHandler& src)
 	te_state = body_start;
 }
 
-ARequestBody::~ARequestBody()
+AUploadModule::~AUploadModule()
 {
 }
 
-ARequestBody::ARequestBody(const ARequestBody& src)
+AUploadModule::AUploadModule(const AUploadModule& src)
 	: handler(src.handler)
 {
 	chunk_length = src.chunk_length;
@@ -42,7 +42,7 @@ ARequestBody::ARequestBody(const ARequestBody& src)
 	te_state = src.te_state;
 }
 
-ARequestBody& ARequestBody::operator=(const ARequestBody& src)
+AUploadModule& AUploadModule::operator=(const AUploadModule& src)
 {
 	if (this != &src)
 	{
@@ -61,7 +61,7 @@ ARequestBody& ARequestBody::operator=(const ARequestBody& src)
 
 ////////// GETTERS ///////////
 
-bool	ARequestBody::getBodyProcessed() const
+bool	AUploadModule::getBodyProcessed() const
 {
 	return (body_read);
 }
@@ -69,7 +69,7 @@ bool	ARequestBody::getBodyProcessed() const
 
 ///////// METHODS ///////////
 
-void	ARequestBody::storeChunkedData()
+void	AUploadModule::storeChunkedData()
 {
 	// if content-type plain text use file name from header path (also check for existence, if not existing, create file)
 	// if (handler.content_type == handler.text_plain)
@@ -92,7 +92,7 @@ void	ARequestBody::storeChunkedData()
 
 }
 
-void	ARequestBody::unchunkBody()
+void	AUploadModule::unchunkBody()
 {
 	while (!body_parsing_done && handler.buf_pos++ < handler.getBytesRead())
 	{

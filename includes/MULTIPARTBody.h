@@ -4,10 +4,10 @@
 #include <string>
 #include <map>
 #include "CustomException.h"
-#include "ARequestBody.h"
+#include "AUploadModule.h"
 #include "RequestHandler.h"
 
-class MULTIPARTBody: public ARequestBody
+class MULTIPARTBody: public AUploadModule
 {
 private:
 	// input

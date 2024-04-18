@@ -1,11 +1,11 @@
 #ifndef PLAINBODY_H
 # define PLAINBODY_H
 
-#include "ARequestBody.h"
+#include "AUploadModule.h"
 #include "RequestHandler.h"
 #include "defines.h"
 
-class PLAINBody: public ARequestBody
+class PLAINBody: public AUploadModule
 {
 private:
 	// input

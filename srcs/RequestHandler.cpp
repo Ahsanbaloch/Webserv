@@ -175,7 +175,7 @@ void	RequestHandler::processRequest()
 			// if body is expected, read the body (unless the selected location demands a redirect or it is not a POST request)
 			if (request_header.getBodyStatus() && request_header.getMethod() == "POST" && getLocationConfig().redirect.empty())
 			{
-				
+
 				if (request_body == NULL)
 					request_body = checkContentType(); // needs to be deleted/freed somewhere
 				request_body->readBody();
@@ -249,7 +249,7 @@ AResponse* RequestHandler::prepareResponse()
 }
 
 
-ARequestBody*	RequestHandler::checkContentType()
+AUploadModule*	RequestHandler::checkContentType()
 {
 	std::string value = getHeaderInfo().getHeaderFields()["content-type"];
 	std::string type;
