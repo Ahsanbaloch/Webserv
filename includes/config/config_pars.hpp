@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 14:22:42 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/04/16 20:00:00 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/04/17 12:03:14 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,6 +23,8 @@
 #include "exception_parsing.hpp"
 #include <set>
 #include <sys/stat.h>
+#include <limits.h>
+#include <unistd.h>
 
 class config_pars
 {

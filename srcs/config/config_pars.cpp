@@ -6,7 +6,7 @@
 /*   By: mamesser <mamesser@student.42wolfsburg.    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/04/17 12:03:29 by mamesser         ###   ########.fr       */
+/*   Updated: 2024/04/18 19:02:19 by mamesser         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -132,10 +132,9 @@ void config_pars::extractErrorPage(int &status, std::string &page, std::string s
 				throw MissingValueException("Error Page Status...");
 			if (!(iss >> page))
 				throw MissingValueException("Error Page value...");
-			std::string fullpath = "www/" + page;
-			struct stat buffer;
-			if (stat(fullpath.c_str(), &buffer) != 0)
-				throw MissingValueException("Error_Page doesn't exist in respective folder");
+			std::string Path = _server_root + "/" + page;
+			if (access(Path.c_str() , F_OK) != 0)
+    			throw MissingValueException("Error_Page doesn't exist in respective folder");
 		}
 		else
 			throw MissingValueException("InValid Error Page data");
@@ -266,6 +265,8 @@ void	config_pars::parseLocationBlock(t_location_config &location_config, const s
 		else
 			location_config.root = _server_root;
 	}
+	else
+		_server_root = location_config.root;
 	if (_server_index.empty() && location_config.index.empty())
 		location_config.index = "index.html";
 	else if (location_config.index.empty())
