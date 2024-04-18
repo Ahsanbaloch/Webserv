@@ -18,6 +18,7 @@
 #include "DELETEResponse.h"
 #include "ERRORResponse.h"
 #include "POSTResponse.h"
+#include "REDIRECTResponse.h"
 #include "config/config_pars.hpp"
 #include "defines.h"
 

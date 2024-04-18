@@ -218,7 +218,8 @@ AResponse* RequestHandler::prepareResponse()
 
 	// check if method is allowed in selected location
 	checkAllowedMethods();
-
+	if (!getLocationConfig().redirect.empty())
+		return (new REDIRECTResponse(*this));
 	if (request_header.getMethod() == "GET")
 		return (new GETResponse(*this)); // need to free this somewhere
 	else if (request_header.getMethod() == "DELETE")
