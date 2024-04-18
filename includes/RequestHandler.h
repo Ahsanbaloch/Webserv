@@ -70,6 +70,7 @@ public:
 	int								buf_pos;
 	
 	// methods
+	void							determineLocationBlock();
 	void							processRequest();
 	void							sendResponse();
 	void							findServerBlock();

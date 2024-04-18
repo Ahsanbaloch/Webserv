@@ -115,6 +115,7 @@ void	RequestHandler::setStatus(int status)
 void	RequestHandler::sendResponse()
 {
 	std::string resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
+	// std::cout << resp << std::endl;
 	send(connection_fd, resp.c_str(), resp.length(), 0); 
 	// check for errors when calling send
 }
@@ -139,10 +140,21 @@ void	RequestHandler::processRequest()
 	{
 		// check if headers have already been read
 		if (!request_header.getHeaderStatus())
-			request_header.parseHeader();
+		{
+			if (!request_header.getRequestLineStatus())
+				request_header.parseRequestLine();
+			if (request_header.getRequestLineStatus())
+			{
+				determineLocationBlock();
+				checkAllowedMethods(); // check if method is allowed in selected location
+				request_header.parseHeaderFields();
+			}
+		}
+
 		if (request_header.getHeaderStatus())
 		{
 			request_header.checkHeader();
+
 			//for testing: print received headers
 			printf("\nheaders\n");
 			std::map<std::string, std::string> headers = request_header.getHeaderFields();
@@ -160,9 +172,10 @@ void	RequestHandler::processRequest()
 				// make reponse
 				// in this case we don't want to destroy the requesthandler object
 			}
-			// if body is expected, read the body
-			if (request_header.getBodyStatus())
+			// if body is expected, read the body (unless the selected location demands a redirect or it is not a POST request)
+			if (request_header.getBodyStatus() && request_header.getMethod() == "POST" && getLocationConfig().redirect.empty())
 			{
+				
 				if (request_body == NULL)
 					request_body = checkContentType(); // needs to be deleted/freed somewhere
 				request_body->readBody();
@@ -173,6 +186,7 @@ void	RequestHandler::processRequest()
 				// std::cout << "body content: " << request_body.body << std::endl;
 				response = prepareResponse(); // how to handle errors in here?
 				response->createResponse(); // how to handle errors in here?
+				// if index directive is cgi, check here again and create cgi object
 				response_ready = 1;
 			}
 		}
@@ -205,8 +219,7 @@ void		RequestHandler::checkAllowedMethods()
 	}
 }
 
-
-AResponse* RequestHandler::prepareResponse()
+void RequestHandler::determineLocationBlock()
 {
 	// find server block if there are multiple that match (this applies to all request types)
 	if (server_config.size() > 1)
@@ -215,18 +228,24 @@ AResponse* RequestHandler::prepareResponse()
 	// find location block within server block if multiple exist (this applies to all request types; for GET requests there might be an internal redirect happening later on)
 	if (server_config[selected_server].locations.size() > 1)
 		findLocationBlock();
+}
 
-	// check if method is allowed in selected location
-	checkAllowedMethods();
+AResponse* RequestHandler::prepareResponse()
+{
 	if (!getLocationConfig().redirect.empty())
 		return (new REDIRECTResponse(*this));
-	if (request_header.getMethod() == "GET")
+	else if (request_header.getMethod() == "GET")
 		return (new GETResponse(*this)); // need to free this somewhere
 	else if (request_header.getMethod() == "DELETE")
 		return (new DELETEResponse(*this)); // need to free this somewhere
 	else if (request_header.getMethod() == "POST")
 		return (new POSTResponse(*this));
-	return (NULL);
+	else
+	{
+		setStatus(501);
+		throw CustomException("Not implemented");
+	}
+		
 }
 
 
