@@ -293,7 +293,7 @@ void	UploadMultipart::calcFileSize()
 {
 	if (handler.getHeaderInfo().getTEStatus())
 	{
-		file_data_size = total_chunk_size - meta_data_size - boundary.size() - 8;
+		file_data_size = handler.getTotalChunkSize() - meta_data_size - boundary.size() - 8;
 		// meta_data_size = handler.buf_pos - handler.body_beginning;
 		// may have to adjust the extra padding of 8 (2x CRLFCRLF) based on client
 		// file_data_size = handler.body_length - meta_data_size - boundary.size() - 8;
@@ -447,11 +447,11 @@ void	UploadMultipart::readBody()
 {
 	if (handler.getHeaderInfo().getTEStatus())
 	{
-		unchunkBody();
-		if (body_read)
-		{
-			body_parsing_done = 0;
-			input.open(filename, std::ios::binary);
+		// unchunkBody();
+		// if (body_read)
+		// {
+			// body_parsing_done = 0;
+			input.open(handler.getUnchunkedDataFile(), std::ios::binary);
 			char ch;
 			while (!body_parsing_done)
 			{
@@ -460,8 +460,8 @@ void	UploadMultipart::readBody()
 				parseBody(ch);
 			}
 			input.close();
-			remove(filename.c_str()); // check if file was removed
-		}
+			// remove(handler.getUnchunkedDataFile().c_str()); // check if file was removed
+		// }
 	}
 	else
 	{
@@ -472,4 +472,5 @@ void	UploadMultipart::readBody()
 			parseBody(ch);
 		}
 	}
+	// might what to set filename here
 }

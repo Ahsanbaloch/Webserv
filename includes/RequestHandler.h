@@ -39,9 +39,33 @@ private:
 	int								bytes_read;
 	int								request_length;
 
+	int								chunk_length;
+	int								total_chunk_size;
+	std::ofstream					temp_chunked;
+	bool							trailer_exists;
+	bool							body_unchunked;
+	std::string						temp_filename;
+
 	// flags
 	bool							response_ready;
 	
+	// states
+	enum {
+		body_start = 0,
+		chunk_size,
+		chunk_size_cr,
+		chunk_extension,
+		chunk_data,
+		chunk_data_cr,
+		chunk_trailer,
+		chunk_trailer_cr,
+		body_end_cr,
+		body_end
+	} te_state;
+
+	void			unchunkBody();
+	void			storeChunkedData();
+
 	// constructors
 	RequestHandler(const RequestHandler&);
 
@@ -61,6 +85,8 @@ public:
 	int								getBytesRead() const;
 	int								getRequestLength() const;
 	const RequestHeader&			getHeaderInfo();
+	std::string						getUnchunkedDataFile() const;
+	int								getTotalChunkSize() const;
 
 	// setters
 	void							setStatus(int);

@@ -51,27 +51,27 @@ void	UploadPlain::readBody()
 	// check for file existence
 	if (handler.getHeaderInfo().getTEStatus())
 	{
-		unchunkBody();
-		// identify filename
-		// probably not necessary as unChunk already stores in correct format; just need to identify correct filename
+		// unchunkBody();
 
 		// if (handler.body_read)
 		// {
-		// 	input.open(filename, std::ios::ate);
-		// 	std::streamsize file_size = input.tellg();
-		// 	input.seekg(0, std::ios::beg);
-		// 	temp.open("plain.txt", std::ios::app);
-		// 	char buffer[BUFFER_SIZE];
+			input.open(handler.getUnchunkedDataFile(), std::ios::ate);
+			std::streamsize file_size = input.tellg();
+			input.seekg(0, std::ios::beg);
+			outfile.open(filename, std::ios::app);
+			char buffer[BUFFER_SIZE];
 
-		// 	while (file_size > 0)
-		// 	{
-		// 		int write_size = std::min(BUFFER_SIZE, static_cast<int>(file_size));
-		// 		input.read(buffer, write_size);
-		// 		temp.write(buffer, input.gcount());
-		// 		file_size -= input.gcount();
-		// 	}
-		// 	input.close();
-		// 	temp.close();
+			while (file_size > 0)
+			{
+				int write_size = std::min(BUFFER_SIZE, static_cast<int>(file_size));
+				input.read(buffer, write_size);
+				outfile.write(buffer, input.gcount());
+				file_size -= input.gcount();
+			}
+			body_read = 1;
+			input.close();
+			// remove(handler.getUnchunkedDataFile().c_str()); // check if file was removed
+			outfile.close();
 		// }
 	}
 	else

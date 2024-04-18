@@ -177,10 +177,10 @@ void	UploadUrlencoded::readBody()
 {
 	if (handler.getHeaderInfo().getTEStatus())
 	{
-		unchunkBody();
-		if (body_read)
-		{
-			input.open(filename, std::ios::ate);
+		// unchunkBody();
+		// if (body_read)
+		// {
+			input.open(handler.getUnchunkedDataFile(), std::ios::ate);
 			std::streamsize file_size = input.tellg();
 			input.seekg(0, std::ios::beg);
 			char ch;
@@ -190,9 +190,10 @@ void	UploadUrlencoded::readBody()
 				parseBody(ch);
 			}
 			storeInDatabase();
+			body_read = 1;
 			input.close();
-			remove(filename.c_str());
-		}
+			// remove(handler.getUnchunkedDataFile().c_str());
+		// }
 	}
 	else
 	{
@@ -208,11 +209,11 @@ void	UploadUrlencoded::readBody()
 			storeInDatabase();
 			body_read = 1;
 		}
-
-		//testing
-		for (std::map<std::string, std::string>::iterator it = database.begin(); it != database.end(); it++)
-		{
-			std::cout << "key: " << it->first << " value: " << it->second << std::endl;
-		}
 	}
+	//testing
+	for (std::map<std::string, std::string>::iterator it = database.begin(); it != database.end(); it++)
+	{
+		std::cout << "key: " << it->first << " value: " << it->second << std::endl;
+	}
+	// may want to store in file and then specify filename here?
 }
