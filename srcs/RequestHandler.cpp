@@ -194,7 +194,7 @@ void	RequestHandler::processRequest()
 			}
 			// if no body is expected OR end of body has been reached
 			// check how getBodyStatus() gets set (does it already check for request method?)
-			if (!request_header.getBodyStatus() || (request_body != NULL && request_body->getBodyProcessed()))
+			if (!request_header.getBodyStatus() || (request_body != NULL && request_body->getBodyProcessed()) || !getLocationConfig().redirect.empty())
 			{
 				// std::cout << "body content: " << request_body.body << std::endl;
 				response = prepareResponse(); // how to handle errors in here?
@@ -414,8 +414,6 @@ void	RequestHandler::storeChunkedData()
 	temp_unchunked.close();
 
 }
-
-
 
 void	RequestHandler::unchunkBody()
 {

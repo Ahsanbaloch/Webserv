@@ -37,7 +37,6 @@ REDIRECTResponse& REDIRECTResponse::operator=(const REDIRECTResponse& src)
 std::string	REDIRECTResponse::createHeaderFields()
 {
 	std::string	header;
-
 	header.append("Location: " + handler.getLocationConfig().redirect + "\r\n");
 	header.append("\r\n");
 	return (header);
