@@ -1,13 +1,13 @@
-#ifndef MULTIPARTBODY_H
-# define MULTIPARTBODY_H
+#ifndef UPLOADMULTIPART_H
+# define UPLOADMULTIPART_H
 
 #include <string>
 #include <map>
 #include "CustomException.h"
-#include "ARequestBody.h"
+#include "AUploadModule.h"
 #include "RequestHandler.h"
 
-class MULTIPARTBody: public ARequestBody
+class UploadMultipart: public AUploadModule
 {
 private:
 	// input
@@ -68,14 +68,14 @@ private:
 	} content_type_state;
 
 	// constructors
-	MULTIPARTBody();
-	MULTIPARTBody(const MULTIPARTBody&);
-	MULTIPARTBody& operator=(const MULTIPARTBody&);
+	UploadMultipart();
+	UploadMultipart(const UploadMultipart&);
+	UploadMultipart& operator=(const UploadMultipart&);
 
 public:
 	// constructors and destructors
-	explicit MULTIPARTBody(RequestHandler&);
-	~MULTIPARTBody();
+	explicit UploadMultipart(RequestHandler&);
+	~UploadMultipart();
 
 	// main method
 	void	readBody();

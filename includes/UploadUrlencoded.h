@@ -1,12 +1,12 @@
-#ifndef URLENCODEDBODY_H
-# define URLENCODEDBODY_H
+#ifndef UPLOADURLENCODED_H
+# define UPLOADURLENCODED_H
 
 #include <map>
 #include <string>
-#include "ARequestBody.h"
+#include "AUploadModule.h"
 #include "RequestHandler.h"
 
-class URLENCODEDBody: public ARequestBody
+class UploadUrlencoded: public AUploadModule
 {
 private:
 	// input
@@ -39,14 +39,14 @@ private:
 	} body_state;
 
 	// constructors
-	URLENCODEDBody();
-	URLENCODEDBody(const URLENCODEDBody&);
-	URLENCODEDBody& operator=(const URLENCODEDBody&);
+	UploadUrlencoded();
+	UploadUrlencoded(const UploadUrlencoded&);
+	UploadUrlencoded& operator=(const UploadUrlencoded&);
 
 public:
 	// constructors and desctructors
-	explicit URLENCODEDBody(RequestHandler&);
-	~URLENCODEDBody();
+	explicit UploadUrlencoded(RequestHandler&);
+	~UploadUrlencoded();
 
 	// getters
 	std::map<std::string, std::string>	getDatabase() const;

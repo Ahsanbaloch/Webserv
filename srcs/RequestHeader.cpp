@@ -131,6 +131,11 @@ bool	RequestHeader::getHeaderStatus() const
 	return (header_complete);
 }
 
+bool	RequestHeader::getRequestLineStatus() const
+{
+	return (rl_parsing_done);
+}
+
 std::map<std::string, std::string>	RequestHeader::getHeaderFields() const
 {
 	return (header_fields);
@@ -172,14 +177,6 @@ int		RequestHeader::getBodyLength() const
 }
 
 /////////////// MAIN METHODS //////////////////
-
-void	RequestHeader::parseHeader()
-{
-	if (!rl_parsing_done)
-		parseRequestLine();
-	if (rl_parsing_done)
-		parseHeaderFields();
-}
 
 void	RequestHeader::identifyFileName()
 {

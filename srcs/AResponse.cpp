@@ -23,7 +23,7 @@ AResponse::AResponse(const AResponse& src)
 	: handler(src.handler)
 {
 	file_type = src.file_type;
-	redirected_path = src.redirected_path;
+	full_file_path = src.full_file_path;
 	body = src.body;
 	status_line = src.status_line;
 	header_fields = src.header_fields;
@@ -36,7 +36,7 @@ AResponse& AResponse::operator=(const AResponse& src)
 	{
 		handler = src.handler;
 		file_type = src.file_type;
-		redirected_path = src.redirected_path;
+		full_file_path = src.full_file_path;
 		body = src.body;
 		status_line = src.status_line;
 		header_fields = src.header_fields;
@@ -46,11 +46,6 @@ AResponse& AResponse::operator=(const AResponse& src)
 }
 
 ////////// GETTERS ///////////
-
-std::string	AResponse::getRedirectedPath() const
-{
-	return (redirected_path);
-}
 
 std::string AResponse::getRespondsHeaderFields() const
 {
@@ -67,6 +62,11 @@ std::string AResponse::getResponseStatusLine() const
 	return (status_line);
 }
 
+std::string AResponse::getFullFilePath() const
+{
+	return (full_file_path);
+}
+
 bool	AResponse::getInternalRedirectStatus() const
 {
 	return (internal_redirect);
@@ -74,7 +74,7 @@ bool	AResponse::getInternalRedirectStatus() const
 
 ///////// METHODS ///////////
 
-std::string	AResponse::createStatusLine() // make Response method? --> set?
+std::string	AResponse::createStatusLine()
 {
 	std::string status_line;
 	std::ostringstream status_conversion;
@@ -86,22 +86,25 @@ std::string	AResponse::createStatusLine() // make Response method? --> set?
 	return (status_line);
 }
 
-void	AResponse::identifyRedirectedPath()
+std::string	AResponse::buildPathFromLocationIndex()
 {
+	std::string path;
+
 	if (!handler.getLocationConfig().path.empty() && handler.getLocationConfig().path[handler.getLocationConfig().path.length() - 1] == '/')
 	{
 		if (!handler.getLocationConfig().index.empty() && handler.getLocationConfig().index[0] != '/')
-			redirected_path = handler.getLocationConfig().root + handler.getLocationConfig().path + handler.getLocationConfig().index;
+			path = handler.getLocationConfig().root + handler.getLocationConfig().path + handler.getLocationConfig().index;
 		else
-			redirected_path = handler.getLocationConfig().root + handler.getLocationConfig().path + handler.getLocationConfig().index.substr(1);
+			path = handler.getLocationConfig().root + handler.getLocationConfig().path + handler.getLocationConfig().index.substr(1);
 	}
 	else
 	{
 		if (!handler.getLocationConfig().index.empty() && handler.getLocationConfig().index[0] != '/')
-			redirected_path = handler.getLocationConfig().root + handler.getLocationConfig().path + "/" + handler.getLocationConfig().index;
+			path = handler.getLocationConfig().root + handler.getLocationConfig().path + "/" + handler.getLocationConfig().index;
 		else
-			redirected_path = handler.getLocationConfig().root + handler.getLocationConfig().path + handler.getLocationConfig().index;
+			path = handler.getLocationConfig().root + handler.getLocationConfig().path + handler.getLocationConfig().index;
 	}
-	std::cout << "index file path: " << redirected_path << std::endl;
+	std::cout << "identified path: " << path << std::endl;
+	return (path);
 }
 

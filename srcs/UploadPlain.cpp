@@ -1,51 +1,44 @@
 
-#include "PLAINBody.h"
+#include "UploadPlain.h"
 
 ///////// CONSTRUCTORS & DESTRUCTORS ///////////
 
-PLAINBody::PLAINBody()
-	: ARequestBody()
+UploadPlain::UploadPlain()
+	: AUploadModule()
 {
 	body_bytes_consumed = 0;
 }
 
-PLAINBody::PLAINBody(RequestHandler& src)
-	: ARequestBody(src)
+UploadPlain::UploadPlain(RequestHandler& src)
+	: AUploadModule(src)
 {
 	body_bytes_consumed = 0;
 }
 
-PLAINBody::~PLAINBody()
+UploadPlain::~UploadPlain()
 {
 }
 
-PLAINBody::PLAINBody(const PLAINBody& src)
-	: ARequestBody(src)
+UploadPlain::UploadPlain(const UploadPlain& src)
+	: AUploadModule(src)
 {
 	body_bytes_consumed = src.body_bytes_consumed;
 }
 
-PLAINBody& PLAINBody::operator=(const PLAINBody& src)
+UploadPlain& UploadPlain::operator=(const UploadPlain& src)
 {
 	if (this != &src)
 	{
-		ARequestBody::operator=(src);
+		AUploadModule::operator=(src);
 		body_bytes_consumed = src.body_bytes_consumed;
 	}
 	return (*this);
 }
 
-///////// GETTERS //////////
-
-std::map<std::string, std::string>	URLENCODEDBody::getDatabase() const
-{
-	return (database);
-}
-
 
 /////////// METHODS ///////////
 
-void	PLAINBody::readBody()
+void	UploadPlain::readBody()
 {
 	filename = handler.getHeaderInfo().getFilename(); // add the upload location dir to path
 	if (filename.empty())
@@ -58,32 +51,31 @@ void	PLAINBody::readBody()
 	// check for file existence
 	if (handler.getHeaderInfo().getTEStatus())
 	{
-		unchunkBody();
-		// identify filename
-		// probably not necessary as unChunk already stores in correct format; just need to identify correct filename
+		// unchunkBody();
 
 		// if (handler.body_read)
 		// {
-		// 	input.open(filename, std::ios::ate);
-		// 	std::streamsize file_size = input.tellg();
-		// 	input.seekg(0, std::ios::beg);
-		// 	temp.open("plain.txt", std::ios::app);
-		// 	char buffer[BUFFER_SIZE];
+			input.open(handler.getUnchunkedDataFile(), std::ios::ate);
+			std::streamsize file_size = input.tellg();
+			input.seekg(0, std::ios::beg);
+			outfile.open(filename, std::ios::app);
+			char buffer[BUFFER_SIZE];
 
-		// 	while (file_size > 0)
-		// 	{
-		// 		int write_size = std::min(BUFFER_SIZE, static_cast<int>(file_size));
-		// 		input.read(buffer, write_size);
-		// 		temp.write(buffer, input.gcount());
-		// 		file_size -= input.gcount();
-		// 	}
-		// 	input.close();
-		// 	temp.close();
+			while (file_size > 0)
+			{
+				int write_size = std::min(BUFFER_SIZE, static_cast<int>(file_size));
+				input.read(buffer, write_size);
+				outfile.write(buffer, input.gcount());
+				file_size -= input.gcount();
+			}
+			body_read = 1;
+			input.close();
+			// remove(handler.getUnchunkedDataFile().c_str()); // check if file was removed
+			outfile.close();
 		// }
 	}
 	else
 	{
-		// identify filename // how to?
 		handler.buf_pos++;
 		int to_write = std::min(handler.getBytesRead() - handler.buf_pos, handler.getHeaderInfo().getBodyLength());
 		outfile.open(filename, std::ios::app);

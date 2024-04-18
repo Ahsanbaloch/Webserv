@@ -18,7 +18,7 @@ GETResponse::~GETResponse()
 }
 
 GETResponse::GETResponse(const GETResponse& src)
-	: AResponse(src), full_file_path(src.full_file_path), auto_index(src.auto_index)
+	: AResponse(src), auto_index(src.auto_index)
 {
 }
 
@@ -27,7 +27,6 @@ GETResponse& GETResponse::operator=(const GETResponse& src)
 	if (this != &src)
 	{
 		AResponse::operator=(src);
-		full_file_path = src.full_file_path;
 		auto_index = src.auto_index;
 	}
 	return (*this);
@@ -35,18 +34,6 @@ GETResponse& GETResponse::operator=(const GETResponse& src)
 
 
 /////////// HELPER METHODS ///////////
-
-// std::string	GETResponse::createStatusLine()
-// {
-// 	std::string status_line;
-// 	std::ostringstream status_conversion;
-
-// 	status_line.append("HTTP/1.1 "); // alternative handler.head.version
-// 	status_conversion << handler.getStatus();
-// 	status_line.append(status_conversion.str());
-// 	status_line.append(" \r\n");  //A server MUST send the space that separates the status-code from the reason-phrase even when the reason-phrase is absent (i.e., the status-line would end with the space)
-// 	return (status_line);
-// }
 
 std::string	GETResponse::getBodyFromFile()
 {
@@ -137,10 +124,23 @@ std::string	GETResponse::createHeaderFields(std::string body) // probably don't 
 			// header.append("ETag: "abc123""); //This header provides a unique identifier for the content being sent in the response. This can be used by clients to determine if the resource has changed since it was last requested, without having to download the entire resource again.
 			// header.append("Keep-Alive: timeout=5, max=100"); // used to enable persistent connections between the client and the server, allowing multiple requests and responses to be sent over a single TCP connection
 			// Access-Control-Allow-Origin; X-Frame-Options; X-XSS-Protection; Referrer-Policy; X-Forwarded-For; X-Powered-By; 
-			header.append("\r\n");
+			// header.append("\r\n");
 		}
 	}
+	header.append("\r\n");
 	return (header);
+}
+
+void	GETResponse::checkRedirectedLocationBlock()
+{
+	if (!handler.getLocationConfig().GET)
+	{
+		handler.setStatus(405);
+		throw CustomException("Method Not Allowed");
+	}
+	if (!handler.getLocationConfig().redirect.empty())
+		handler.setStatus(307);
+		
 }
 
 void	GETResponse::checkInternalRedirects()
@@ -148,13 +148,15 @@ void	GETResponse::checkInternalRedirects()
 	// if the request is not for a file (otherwise the location has already been found)
 	if (handler.getHeaderInfo().getFileExtension().empty())
 	{
-		internal_redirect = 1;
-		handler.findLocationBlock();
-		identifyRedirectedPath();
+		full_file_path = buildPathFromLocationIndex();
 		// check if file constructed from root, location path and index exists
-		if (access(redirected_path.c_str(), F_OK) == 0)
+		if (access(full_file_path.c_str(), F_OK) == 0)
 		{
-			full_file_path = redirected_path;
+			internal_redirect = 1;
+			handler.findLocationBlock();
+			checkRedirectedLocationBlock();
+			full_file_path = handler.getLocationConfig().root + full_file_path.substr(handler.getLocationConfig().root.length());
+			std::cout << "full file path: " << full_file_path << std::endl;
 			file_type = full_file_path.substr(full_file_path.find_last_of('.') + 1); // create a function for that in case it is not a file type
 		}
 		else
@@ -206,11 +208,11 @@ void	GETResponse::createResponse()
 		checkInternalRedirects();
 
 	// check allowed methods for the selected location
-	if (!handler.getLocationConfig().GET)
-	{
-		handler.setStatus(405);
-		throw CustomException("Method Not Allowed");
-	}
+	// if (!handler.getLocationConfig().GET)
+	// {
+	// 	handler.setStatus(405);
+	// 	throw CustomException("Method Not Allowed");
+	// }
 
 	status_line = createStatusLine();
 	if ((handler.getStatus() >= 100 && handler.getStatus() <= 103) || handler.getStatus() == 204 || handler.getStatus() == 304 || handler.getStatus() == 307)
