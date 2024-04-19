@@ -22,7 +22,7 @@ private:
 	// helper methods
 	// std::string	createStatusLine();
 	std::string	createBody();
-	
+	std::string createHeaderFields(std::string);
 	std::string	identifyMIME();
 	void		checkInternalRedirects();
 	std::string	getBodyFromFile();
@@ -39,7 +39,7 @@ public:
 
 	// main method
 	void	createResponse();
-	static std::string createHeaderFields(std::string);
+
 };
 
 #endif

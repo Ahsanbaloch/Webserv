@@ -1,6 +1,7 @@
 #ifndef CGI_RESPONSE_HPP
 #define CGI_RESPONSE_HPP
 
+#include "AResponse.h"
 #include "RequestHandler.h"
 #include <signal.h>
 
@@ -9,7 +10,7 @@ public:
     
     ~CgiResponse();
     CgiResponse(const CgiResponse &other);
-	CgiResponse(RequestHandler &request_handler);
+	CgiResponse(RequestHandler&);
     CgiResponse &operator=(const CgiResponse &other);
 
     RequestHeader *header();
@@ -17,6 +18,8 @@ public:
 private:
     CgiResponse();
 
+    std::string createHeaderFields(std::string);
+    std::string identifyMIME();
     void _getScriptPath();
     void _getQueryString();
     void _getPathInfo();
@@ -24,7 +27,8 @@ private:
     void _readCgiOutput();
     void _setEnv();
     void _exportEnv();
-    void _execCgi(RequestHeader *header);
+    void _execCgi();
+    void createResponse();
 
     char **_envp;
     std::vector<std::string> _env;

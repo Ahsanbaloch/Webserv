@@ -201,6 +201,11 @@ AResponse* RequestHandler::prepareResponse()
 	// find location block within server block if multiple exist (this applies to all request types; for GET requests there might be an internal redirect happening later on)
 	if (server_config[selected_server].locations.size() > 1)
 		findLocationBlock();
+	if (request_header.getFileExtension() == "py")
+	{
+		
+		return (new CgiResponse(*this)); // need to free this somewhere
+	}
 	//CGi Extension Check to be done here
 	if (request_header.getMethod() == "GET")
 		return (new GETResponse(*this)); // need to free this somewhere
