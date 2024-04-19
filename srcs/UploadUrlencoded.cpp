@@ -177,23 +177,24 @@ void	UploadUrlencoded::uploadData()
 {
 	if (handler.getHeaderInfo().getTEStatus())
 	{
-		// unchunkBody();
-		// if (body_read)
-		// {
-			input.open(handler.getUnchunkedDataFile(), std::ios::ate);
-			std::streamsize file_size = input.tellg();
-			input.seekg(0, std::ios::beg);
-			char ch;
-			for (int i = 0; i < file_size; i++)
-			{
-				input.read(&ch, 1);
-				parseBody(ch);
-			}
-			storeInDatabase();
-			body_read = 1;
-			input.close();
-			// remove(handler.getUnchunkedDataFile().c_str());
-		// }
+		input.open(handler.getUnchunkedDataFile(), std::ios::ate);
+		if (!input.is_open())
+		{
+			handler.setStatus(500); // or 403 or other code?
+			throw CustomException("Internal Server Error");
+		}
+		std::streamsize file_size = input.tellg();
+		input.seekg(0, std::ios::beg);
+		char ch;
+		for (int i = 0; i < file_size; i++)
+		{
+			input.read(&ch, 1);
+			parseBody(ch);
+		}
+		storeInDatabase();
+		body_read = 1;
+		remove(handler.getUnchunkedDataFile().c_str()); // check if file was removed
+		input.close();
 	}
 	else
 	{

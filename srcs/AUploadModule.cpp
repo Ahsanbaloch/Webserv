@@ -27,7 +27,7 @@ AUploadModule::AUploadModule(const AUploadModule& src)
 {
 	body_read = src.body_read;
 	body_parsing_done = src.body_parsing_done;
-	filename = src.filename;
+	filepath_outfile = src.filepath_outfile;
 }
 
 AUploadModule& AUploadModule::operator=(const AUploadModule& src)
@@ -37,7 +37,7 @@ AUploadModule& AUploadModule::operator=(const AUploadModule& src)
 		handler = src.handler;
 		body_read = src.body_read;
 		body_parsing_done = src.body_parsing_done;
-		filename = src.filename;
+		filepath_outfile = src.filepath_outfile;
 	}
 	return (*this);
 }
@@ -53,3 +53,20 @@ bool	AUploadModule::getUploadStatus() const
 
 ///////// METHODS ///////////
 
+std::string	AUploadModule::getUploadDir()
+{
+	std::string upload_dir;
+
+	if (handler.getLocationConfig().root[handler.getLocationConfig().root.length() - 1] == '/')
+		upload_dir.append(handler.getLocationConfig().root);
+	else
+		upload_dir.append(handler.getLocationConfig().root + "/");
+	if (handler.getLocationConfig().uploadDir[0] == '/')
+		upload_dir.append(handler.getLocationConfig().uploadDir, 1);
+	else
+		upload_dir.append(handler.getLocationConfig().uploadDir);
+	if (upload_dir[upload_dir.length() - 1] != '/')
+		upload_dir.append("/");
+
+	return (upload_dir);
+}
