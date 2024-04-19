@@ -6,5 +6,8 @@
 #define CR 13
 #define SP 32
 
+extern int g_num_temp_files;
+extern int g_num_temp_unchunked_files;
+extern int g_num_temp_raw_body;
 
 #endif

@@ -1,10 +1,10 @@
 
-#include "MULTIPARTBody.h"
+#include "UploadMultipart.h"
 
 /////////// CONSTRUCTORS & DESTRUCTORS ///////////
 
-MULTIPARTBody::MULTIPARTBody()
-	: ARequestBody()
+UploadMultipart::UploadMultipart()
+	: AUploadModule()
 {
 	identifyBoundary();
 	meta_data_size = 0;
@@ -16,8 +16,8 @@ MULTIPARTBody::MULTIPARTBody()
 	content_type_state = begin2;
 }
 
-MULTIPARTBody::MULTIPARTBody(RequestHandler& src)
-	: ARequestBody(src)
+UploadMultipart::UploadMultipart(RequestHandler& src)
+	: AUploadModule(src)
 {
 	identifyBoundary();
 	meta_data_size = 0;
@@ -29,12 +29,12 @@ MULTIPARTBody::MULTIPARTBody(RequestHandler& src)
 	content_type_state = begin2;
 }
 
-MULTIPARTBody::~MULTIPARTBody()
+UploadMultipart::~UploadMultipart()
 {
 }
 
-MULTIPARTBody::MULTIPARTBody(const MULTIPARTBody& src)
-	: ARequestBody(src)
+UploadMultipart::UploadMultipart(const UploadMultipart& src)
+	: AUploadModule(src)
 {
 	temp_value = src.temp_value;
 	temp_key = src.temp_key;
@@ -50,11 +50,11 @@ MULTIPARTBody::MULTIPARTBody(const MULTIPARTBody& src)
 	content_type_state = src.content_type_state;
 }
 
-MULTIPARTBody& MULTIPARTBody::operator=(const MULTIPARTBody& src)
+UploadMultipart& UploadMultipart::operator=(const UploadMultipart& src)
 {
 	if (this != &src)
 	{
-		ARequestBody::operator=(src);
+		AUploadModule::operator=(src);
 		temp_value = src.temp_value;
 		temp_key = src.temp_key;
 		boundary = src.boundary;
@@ -74,7 +74,7 @@ MULTIPARTBody& MULTIPARTBody::operator=(const MULTIPARTBody& src)
 
 /////////// HELPER METHODS ///////////
 
-void	MULTIPARTBody::identifyBoundary()
+void	UploadMultipart::identifyBoundary()
 {
 	std::string value = handler.getHeaderInfo().getHeaderFields()["content-type"];
 
@@ -88,7 +88,7 @@ void	MULTIPARTBody::identifyBoundary()
 	}
 }
 
-char	MULTIPARTBody::advanceChar()
+char	UploadMultipart::advanceChar()
 {
 	char ch;
 
@@ -105,7 +105,7 @@ char	MULTIPARTBody::advanceChar()
 	return (ch);
 }
 
-void	MULTIPARTBody::checkBoundaryID()
+void	UploadMultipart::checkBoundaryID()
 {
 	// why necessary?
 	char ch = advanceChar();
@@ -124,7 +124,7 @@ void	MULTIPARTBody::checkBoundaryID()
 	mp_state = mp_content_dispo;
 }
 
-void	MULTIPARTBody::checkCleanTermination(char ch)
+void	UploadMultipart::checkCleanTermination(char ch)
 {
 	if (ch == CR)
 	{
@@ -143,7 +143,7 @@ void	MULTIPARTBody::checkCleanTermination(char ch)
 }
 
 
-void	MULTIPARTBody::checkContentDispoChar(char ch)
+void	UploadMultipart::checkContentDispoChar(char ch)
 {
 	switch (content_dispo_state)
 	{
@@ -201,7 +201,7 @@ void	MULTIPARTBody::checkContentDispoChar(char ch)
 	}
 }
 
-void	MULTIPARTBody::checkFileExistence()
+void	UploadMultipart::checkFileExistence()
 {
 	std::string file_path = handler.getLocationConfig().root + content_disposition["filename"]; // add upload dir
 	if (access(file_path.c_str(), F_OK) == -1)
@@ -211,7 +211,7 @@ void	MULTIPARTBody::checkFileExistence()
 	}
 }
 
-void	MULTIPARTBody::saveContentDispo(char ch)
+void	UploadMultipart::saveContentDispo(char ch)
 {
 	if (handler.getHeaderInfo().getTEStatus())
 	{
@@ -242,7 +242,7 @@ void	MULTIPARTBody::saveContentDispo(char ch)
 	mp_state = mp_content_type;
 }
 
-void	MULTIPARTBody::checkContentTypeChar(char ch)
+void	UploadMultipart::checkContentTypeChar(char ch)
 {
 	switch (content_type_state)
 	{
@@ -262,7 +262,7 @@ void	MULTIPARTBody::checkContentTypeChar(char ch)
 	}
 }
 
-void	MULTIPARTBody::saveContentType(char ch)
+void	UploadMultipart::saveContentType(char ch)
 {
 	if (handler.getHeaderInfo().getTEStatus())
 	{
@@ -289,11 +289,11 @@ void	MULTIPARTBody::saveContentType(char ch)
 	mp_state = mp_empty_line;
 }
 
-void	MULTIPARTBody::calcFileSize()
+void	UploadMultipart::calcFileSize()
 {
 	if (handler.getHeaderInfo().getTEStatus())
 	{
-		file_data_size = total_chunk_size - meta_data_size - boundary.size() - 8;
+		file_data_size = handler.getTotalChunkSize() - meta_data_size - boundary.size() - 8;
 		// meta_data_size = handler.buf_pos - handler.body_beginning;
 		// may have to adjust the extra padding of 8 (2x CRLFCRLF) based on client
 		// file_data_size = handler.body_length - meta_data_size - boundary.size() - 8;
@@ -308,7 +308,7 @@ void	MULTIPARTBody::calcFileSize()
 	}
 }
 
-void	MULTIPARTBody::storeFileData()
+void	UploadMultipart::storeFileData()
 {
 	// may have to adjust the extra padding of 4 (CRLFCRLF) based on client
 	if (handler.getRequestLength() < handler.getHeaderInfo().getBodyBeginning() + handler.getHeaderInfo().getBodyLength() - static_cast<int>(boundary.size()) - 4)
@@ -348,7 +348,7 @@ void	MULTIPARTBody::storeFileData()
 	outfile.close();
 }
 
-void	MULTIPARTBody::storeUnchunkedFileData()
+void	UploadMultipart::storeUnchunkedFileData()
 {
 	outfile.open(content_disposition["filename"], std::ios::app | std::ios::binary);
 	char buffer[BUFFER_SIZE];
@@ -364,7 +364,7 @@ void	MULTIPARTBody::storeUnchunkedFileData()
 	mp_state = mp_boundary_end;
 }
 
-void	MULTIPARTBody::parseBody(char ch)
+void	UploadMultipart::parseBody(char ch)
 {
 	switch (mp_state)
 	{
@@ -443,15 +443,15 @@ void	MULTIPARTBody::parseBody(char ch)
 
 /////////// MAIN METHODS ///////////
 
-void	MULTIPARTBody::readBody()
+void	UploadMultipart::uploadData()
 {
 	if (handler.getHeaderInfo().getTEStatus())
 	{
-		unchunkBody();
-		if (body_read)
-		{
-			body_parsing_done = 0;
-			input.open(filename, std::ios::binary);
+		// unchunkBody();
+		// if (body_read)
+		// {
+			// body_parsing_done = 0;
+			input.open(handler.getUnchunkedDataFile(), std::ios::binary);
 			char ch;
 			while (!body_parsing_done)
 			{
@@ -460,8 +460,8 @@ void	MULTIPARTBody::readBody()
 				parseBody(ch);
 			}
 			input.close();
-			remove(filename.c_str()); // check if file was removed
-		}
+			// remove(handler.getUnchunkedDataFile().c_str()); // check if file was removed
+		// }
 	}
 	else
 	{
@@ -472,4 +472,5 @@ void	MULTIPARTBody::readBody()
 			parseBody(ch);
 		}
 	}
+	// might what to set filename here
 }

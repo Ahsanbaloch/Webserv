@@ -82,15 +82,8 @@ void	DELETEResponse::deleteDir()
 
 void	DELETEResponse::createResponse()
 {
-	// check allowed methods for the selected location
-	if (!handler.getLocationConfig().DELETE)
-	{
-		handler.setStatus(405);
-		throw CustomException("Method Not Allowed");
-	}
-
 	// check if file or directory that is requested to be deleted
-	if (checkFileType())
+	if (!handler.getHeaderInfo().getFileExtension().empty())
 		deleteFile();
 	else
 		deleteDir();

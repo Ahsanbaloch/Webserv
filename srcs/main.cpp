@@ -8,7 +8,11 @@
 #endif
 #include "ListeningSocketsBlock.h"
 #include "config/config_pars.hpp"
+#include "defines.h"
 
+int g_num_temp_files = 0;
+int g_num_temp_unchunked_files = 0;
+int g_num_temp_raw_body = 0;
 
 
 // next:
@@ -35,8 +39,9 @@ int	main(int argc, char **argv)
 		// 		std::cout << "port and server name: " << it2->port << " " << it2->serverName << std::endl;
 		// 		for (std::vector<t_location_config>::iterator it3 = it2->locations.begin(); it3 != it2->locations.end(); it3++)
 		// 		{
-		// 			std::cout << "path: " << it3->path << std::endl;
-		// 			std::cout << "redirect: " << it3->redirect << std::endl;
+		// 			/* std::cout << "error status : " << it3->errorPage.error_page_status << std::endl;
+		// 			std::cout << "error page : "  << it3->errorPage.html_page << std::endl; */
+		// 			std::cout << "upload: " << it3->uploadDir << std::endl;
 		// 		}
 		// 	}
 		// }

@@ -6,11 +6,13 @@
 AResponse::AResponse()
 	: handler(*new RequestHandler())
 {
+	internal_redirect = 0;
 }
 
 AResponse::AResponse(RequestHandler& request_handler) 
 	: handler(request_handler)
 {
+	internal_redirect = 0;
 }
 
 AResponse::~AResponse()
@@ -20,21 +22,30 @@ AResponse::~AResponse()
 AResponse::AResponse(const AResponse& src)
 	: handler(src.handler)
 {
+	file_type = src.file_type;
+	full_file_path = src.full_file_path;
+	body = src.body;
+	status_line = src.status_line;
+	header_fields = src.header_fields;
+	internal_redirect = src.internal_redirect;
 }
 
 AResponse& AResponse::operator=(const AResponse& src)
 {
 	if (this != &src)
+	{
 		handler = src.handler;
+		file_type = src.file_type;
+		full_file_path = src.full_file_path;
+		body = src.body;
+		status_line = src.status_line;
+		header_fields = src.header_fields;
+		internal_redirect = src.internal_redirect;
+	}
 	return (*this);
 }
 
 ////////// GETTERS ///////////
-
-std::string	AResponse::getRedirectedPath() const
-{
-	return (redirected_path);
-}
 
 std::string AResponse::getRespondsHeaderFields() const
 {
@@ -51,9 +62,19 @@ std::string AResponse::getResponseStatusLine() const
 	return (status_line);
 }
 
+std::string AResponse::getFullFilePath() const
+{
+	return (full_file_path);
+}
+
+bool	AResponse::getInternalRedirectStatus() const
+{
+	return (internal_redirect);
+}
+
 ///////// METHODS ///////////
 
-std::string	AResponse::createStatusLine() // make Response method? --> set?
+std::string	AResponse::createStatusLine()
 {
 	std::string status_line;
 	std::ostringstream status_conversion;
@@ -65,32 +86,25 @@ std::string	AResponse::createStatusLine() // make Response method? --> set?
 	return (status_line);
 }
 
-
-int	AResponse::checkFileExistence()
-{	
-	if (handler.getLocationConfig().path == "/") // maybe also cases where location ends with /? Is this possible?
-		redirected_path = handler.getLocationConfig().root + handler.getLocationConfig().path + handler.getLocationConfig().index;
-	else
-		redirected_path = handler.getLocationConfig().root + handler.getLocationConfig().path + "/" + handler.getLocationConfig().index;
-
-	std::cout << "index file path: " << redirected_path << std::endl;
-	int result = access(redirected_path.c_str(), F_OK); // call to access allowed?
-	std::cout << "file exists: " << result << std::endl;
-	return (result);
-}
-
-bool	AResponse::checkFileType()
+std::string	AResponse::buildPathFromLocationIndex()
 {
-	// what if there are two dots in the path? // is there a better way to identify the file type requested?
-	std::size_t found = handler.getHeaderInfo().getPath().find('.');
-	if (found == std::string::npos)
+	std::string path;
+
+	if (!handler.getLocationConfig().path.empty() && handler.getLocationConfig().path[handler.getLocationConfig().path.length() - 1] == '/')
 	{
-		file_type = "";
-		return (0);
+		if (!handler.getLocationConfig().index.empty() && handler.getLocationConfig().index[0] != '/')
+			path = handler.getLocationConfig().root + handler.getLocationConfig().path + handler.getLocationConfig().index;
+		else
+			path = handler.getLocationConfig().root + handler.getLocationConfig().path + handler.getLocationConfig().index.substr(1);
 	}
 	else
 	{
-		file_type = handler.getHeaderInfo().getPath().substr(found + 1);
-		return (1);
+		if (!handler.getLocationConfig().index.empty() && handler.getLocationConfig().index[0] != '/')
+			path = handler.getLocationConfig().root + handler.getLocationConfig().path + "/" + handler.getLocationConfig().index;
+		else
+			path = handler.getLocationConfig().root + handler.getLocationConfig().path + handler.getLocationConfig().index;
 	}
+	std::cout << "identified path: " << path << std::endl;
+	return (path);
 }
+
