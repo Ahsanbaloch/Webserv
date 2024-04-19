@@ -17,6 +17,7 @@
 #include "GETResponse.h"
 #include "DELETEResponse.h"
 #include "ERRORResponse.h"
+#include "CgiResponse.hpp"
 #include "POSTResponse.h"
 #include "REDIRECTResponse.h"
 #include "BodyExtractor.h"
@@ -72,6 +73,7 @@ private:
 	RequestHandler(const RequestHandler&);
 
 public:
+	RequestHeader					request_header;
 	// constructors & destructors
 	RequestHandler();
 	RequestHandler& operator=(const RequestHandler&);
@@ -81,6 +83,7 @@ public:
 	// getters
 	std::vector<t_server_config>	getServerConfig() const;
 	s_location_config				getLocationConfig() const;
+	t_server_config					getSelectedServer() const;	
 	int								getSelectedLocation() const; // only for testing purposes
 	int								getStatus() const;
 	bool							getResponseStatus() const;

@@ -36,6 +36,7 @@ public:
 
 	// main method
 	void	createResponse();
+
 };
 
 #endif
