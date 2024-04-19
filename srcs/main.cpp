@@ -31,6 +31,7 @@ int	main(int argc, char **argv)
 		config_pars config(argc, argv);
 		std::map<std::string, std::vector<t_server_config> > serverConfigsMap = config.getServerConfigsMap();
 
+		
 		// for testing
 		// for (std::map<std::string, std::vector<t_server_config> >::iterator it = serverConfigsMap.begin(); it != serverConfigsMap.end(); it++)
 		// {
@@ -41,7 +42,7 @@ int	main(int argc, char **argv)
 		// 		{
 		// 			/* std::cout << "error status : " << it3->errorPage.error_page_status << std::endl;
 		// 			std::cout << "error page : "  << it3->errorPage.html_page << std::endl; */
-		// 			std::cout << "upload: " << it3->uploadDir << std::endl;
+		// 			std::cout << "ext " << it3->cgi_ex << std::endl;
 		// 		}
 		// 	}
 		// }

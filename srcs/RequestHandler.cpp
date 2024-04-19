@@ -203,7 +203,7 @@ void	RequestHandler::processRequest()
 					unchunkBody();
 				if (!getHeaderInfo().getTEStatus() || body_unchunked)
 				{
-					if (request_header.getFileExtension() == "py") // what if other cgi extension?
+					if (request_header.getFileExtension() == ".py") // what if other cgi extension?
 					{
 						if (body_extractor == NULL)
 							body_extractor = new BodyExtractor(*this);

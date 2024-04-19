@@ -188,7 +188,7 @@ void	RequestHeader::identifyFileName()
 	}
 	else
 	{
-		file_ext = path.substr(found + 1);
+		file_ext = path.substr(found);
 		found = path.find_last_of('/');
 		filename = path.substr(found + 1);
 	}
