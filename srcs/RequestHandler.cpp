@@ -233,6 +233,7 @@ void	RequestHandler::processRequest()
 	}
 	catch(const std::exception& e)
 	{
+		// delete response before reassigning if response != NULL ?
 		response = new ERRORResponse(*this); // need to free this somewhere
 		response->createResponse();
 		response_ready = 1;
