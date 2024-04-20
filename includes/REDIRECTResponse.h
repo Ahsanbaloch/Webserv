@@ -1,9 +1,10 @@
 #ifndef REDIRECTRESPONSE_H
 # define REDIRECTRESPONSE_H
 
+# include <string>
 # include "AResponse.h"
 # include "RequestHandler.h"
-# include "Utils.h"
+# include "utils.tpp"
 
 class REDIRECTResponse: public AResponse
 {
