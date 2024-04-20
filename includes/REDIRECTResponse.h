@@ -3,12 +3,14 @@
 
 # include "AResponse.h"
 # include "RequestHandler.h"
+# include "Utils.h"
 
 class REDIRECTResponse: public AResponse
 {
 private:
 	// helper methods
 	std::string	createHeaderFields();
+	std::string	removeSchemeFromURL();
 
 	// construtcors
 	REDIRECTResponse();
