@@ -55,18 +55,19 @@ bool	AUploadModule::getUploadStatus() const
 
 std::string	AUploadModule::getUploadDir()
 {
-	std::string upload_dir;
+	std::string upload_dir = handler.getLocationConfig().root + handler.getLocationConfig().path + handler.getLocationConfig().uploadDir;
 
-	if (handler.getLocationConfig().root[handler.getLocationConfig().root.length() - 1] == '/')
-		upload_dir.append(handler.getLocationConfig().root);
-	else
-		upload_dir.append(handler.getLocationConfig().root + "/");
-	if (handler.getLocationConfig().uploadDir[0] == '/')
-		upload_dir.append(handler.getLocationConfig().uploadDir, 1);
-	else
-		upload_dir.append(handler.getLocationConfig().uploadDir);
+	// this would be ideally done by configParser for improved efficiency
+	for (std::string::iterator it = upload_dir.begin(); it != upload_dir.end(); it++)
+	{
+		if (*it == '/')
+		{
+			it++;
+			while (*it == '/')
+				it = upload_dir.erase(it);
+		}
+	}
 	if (upload_dir[upload_dir.length() - 1] != '/')
 		upload_dir.append("/");
-
 	return (upload_dir);
 }

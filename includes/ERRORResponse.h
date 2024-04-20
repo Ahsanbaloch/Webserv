@@ -11,6 +11,7 @@ private:
 	// helper methods
 	std::string getDefaultErrorMessage(std::string);
 	std::string	createBody(std::string);
+	std::string	getErrorPagePath();
 	void		appendAllowedMethods();
 
 	// constructors
