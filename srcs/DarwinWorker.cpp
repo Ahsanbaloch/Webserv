@@ -117,8 +117,8 @@ void	DarwinWorker::runEventLoop()
 					pending_fds.push_back(connection_fd);
 				}
 			}
-			// event came from connection, so that we want to handle the request
-			else if (*reinterpret_cast<int*>(event_lst[i].udata) == Q.getConnectionSocketIdent())
+			// event came from connection, so that we want to handle the request (unless the connection has been closed)
+			else if (*reinterpret_cast<int*>(event_lst[i].udata) == Q.getConnectionSocketIdent() && connected_clients[event_lst[i].ident] != NULL)
 			{
 				if (event_lst[i].filter == EVFILT_READ)
 				{

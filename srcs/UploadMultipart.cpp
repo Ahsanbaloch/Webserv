@@ -323,7 +323,14 @@ void	UploadMultipart::storeFileData()
 	}
 
 	if (filepath_outfile.empty())
+	{
 		filepath_outfile = getUploadDir() + content_disposition["filename"];
+		if (access(filepath_outfile.c_str(), F_OK) == 0)
+		{
+			handler.setStatus(403);
+			throw CustomException("Forbidden");
+		}
+	}
 
 	outfile.open(filepath_outfile, std::ios::app | std::ios::binary);
 	if (!outfile.is_open())
@@ -359,7 +366,14 @@ void	UploadMultipart::storeFileData()
 void	UploadMultipart::storeUnchunkedFileData()
 {
 	if (filepath_outfile.empty())
+	{
 		filepath_outfile = getUploadDir() + content_disposition["filename"];
+		if (access(filepath_outfile.c_str(), F_OK) == 0)
+		{
+			handler.setStatus(403);
+			throw CustomException("Forbidden");
+		}
+	}
 	
 	outfile.open(filepath_outfile, std::ios::app | std::ios::binary);
 	if (!outfile.is_open())

@@ -43,7 +43,14 @@ void	UploadPlain::uploadData()
 	if (filepath_outfile.empty())
 	{
 		if (!handler.getHeaderInfo().getFilename().empty())
+		{
 			filepath_outfile = getUploadDir() + handler.getHeaderInfo().getFilename();
+			if (access(filepath_outfile.c_str(), F_OK) == 0)
+			{
+				handler.setStatus(403);
+				throw CustomException("Forbidden");
+			}
+		}
 		else
 		{
 			std::ostringstream num_conversion;
