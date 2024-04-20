@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 14:22:42 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/04/17 12:03:14 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/04/18 16:14:58 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,12 @@ class config_pars
 		std::string _server_index;
 		std::string _error_string;
 		std::string _upload;
+	/* 	methods		_GET;
+		methods		_POST;
+		methods		_DELETE; */
+		bool		_GET;
+		bool		_POST;
+		bool		_DELETE;
 
 		std::map<std::string, std::vector<t_server_config> > _server_configs_map; //getter is getServerConfigsMap()
 
@@ -51,10 +57,12 @@ class config_pars
 		std::string	extractPath(const std::string &location_block); //extract path
 		std::string extractVariables(const std::string &variable, const std::string &location_block); //extract variables
 		bool		extractAutoIndex(const std::string &location_block); //extract autoindex
-		void		allowMethods(bool &GET, bool &POST, bool &DELETE, const std::string location_block); //allow methods
+		//void		allowMethods(bool &GET, bool &POST, bool &DELETE, const std::string location_block); //allow methods
 		int			extractBodySize(const std::string &server_block); //extract body size
 		void 		extractErrorPage(int &status, std::string & page, std::string split_string);
 		std::string	extractServerVariable(const std::string variable, const std::string &server_block); //extract server variable
+		int			allowMethods(bool &GET, bool &POST, bool &DELETE, const std::string location_block);
+
 	public:
 		config_pars(int argc, char **argv);
 		~config_pars();

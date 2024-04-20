@@ -40,7 +40,11 @@ int	main(int argc, char **argv)
 				{
 					/* std::cout << "error status : " << it3->errorPage.error_page_status << std::endl;
 					std::cout << "error page : "  << it3->errorPage.html_page << std::endl; */
-					std::cout << "upload: " << it3->uploadDir << std::endl;
+					//std::cout << "upload: " << it3->uploadDir << std::endl;
+					/* std::cout << "Path : " << it3->path << std::endl;
+					std::cout << "GET : " << std::boolalpha << it3->GET << 
+					"\tPOST : " << std::boolalpha << it3->POST <<
+					"\tDELETE : " << std::boolalpha << it3->DELETE << std::endl; */
 				}
 			}
 		}

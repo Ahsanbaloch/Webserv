@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 16:53:25 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/19 16:42:25 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/04/20 21:17:55 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -134,4 +134,42 @@ void	checkport(const std::string &port_str, int &port)
 	}
 	else
 		throw InvalidPortException();
+}
+
+//root insertion and  valueCheck for root
+void rootValueCheck(t_location_config &location_config, std::string rootValue, std::string &_server_root)
+{
+	rootValue = removeMultipleSlashes(rootValue);
+	_server_root = removeMultipleSlashes(rootValue);
+	if (rootValue.empty() && _server_root.empty())
+		throw MissingValueException("Root : ");
+	else if (!rootValue.empty())
+	{
+		location_config.root = removeFndLSlashes(rootValue);
+	}
+	else
+		location_config.root = removeFndLSlashes(_server_root);
+}
+
+std::string removeFndLSlashes(std::string & input)
+{
+	if (input[0] == '/')
+		input = input.substr(1);
+	if (input[input.length() - 1] == '/')
+		input = input.substr(0, (input.length() - 1));
+	return (input);
+}
+
+std::string removeMultipleSlashes(const std::string& input) 
+{
+    std::string result;
+    char lastChar = 0;
+    for (std::string::const_iterator it = input.begin(); it != input.end(); ++it) 
+	{
+        char c = *it;
+        if (c != '/' || lastChar != '/')
+            result += c;
+        lastChar = c;
+    }
+    return (result);
 }
