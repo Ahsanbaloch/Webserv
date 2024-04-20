@@ -11,8 +11,7 @@ class REDIRECTResponse: public AResponse
 private:
 	// helper methods
 	std::string	createHeaderFields();
-	std::string	removeSchemeFromURL();
-
+	
 	// construtcors
 	REDIRECTResponse();
 	REDIRECTResponse(const REDIRECTResponse&);
@@ -24,6 +23,8 @@ public:
 
 	// main method
 	void	createResponse();
+	static std::string	removeSchemeFromURL(std::string);
+	
 };
 
 #endif

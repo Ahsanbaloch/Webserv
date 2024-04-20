@@ -42,21 +42,15 @@ std::string	REDIRECTResponse::createHeaderFields()
 	return (header);
 }
 
-std::string	REDIRECTResponse::removeSchemeFromURL()
+std::string	REDIRECTResponse::removeSchemeFromURL(std::string input)
 {
 	std::string redirect_url;
 
-	std::size_t found_http = handler.getLocationConfig().redirect.find("http://");
+	std::size_t found_http = input.find("http://");
 	if (found_http == std::string::npos)
-	{
-		std::size_t found_https = handler.getLocationConfig().redirect.find("https://");
-		if (found_https == std::string::npos)
-			redirect_url = handler.getLocationConfig().redirect;
-		else
-			redirect_url.append(handler.getLocationConfig().redirect, 8);
-	}
+		redirect_url = input;
 	else
-		redirect_url.append(handler.getLocationConfig().redirect, 7);
+		redirect_url.append(input, 7);
 
 	return (redirect_url);
 }
@@ -66,7 +60,7 @@ std::string	REDIRECTResponse::removeSchemeFromURL()
 
 void	REDIRECTResponse::createResponse()
 {
-	std::string redirect_url = removeSchemeFromURL();
+	std::string redirect_url = removeSchemeFromURL(handler.getLocationConfig().redirect);
 
 	if (redirect_url == "localhost:" + toString(handler.getServerConfig()[handler.getSelectedLocation()].port) + handler.getLocationConfig().path)
 	{

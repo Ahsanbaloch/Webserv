@@ -139,7 +139,15 @@ void	GETResponse::checkRedirectedLocationBlock()
 		throw CustomException("Method Not Allowed");
 	}
 	if (!handler.getLocationConfig().redirect.empty())
+	{
+		std::string redirect_url = REDIRECTResponse::removeSchemeFromURL(handler.getLocationConfig().redirect);
+		if (redirect_url == "localhost:" + toString(handler.getServerConfig()[0].port) + org_path)
+		{
+			handler.setStatus(508);
+			throw CustomException("Loop Detected");
+		}
 		handler.setStatus(307);
+	}
 		
 }
 
@@ -153,7 +161,8 @@ void	GETResponse::checkInternalRedirects()
 		if (access(full_file_path.c_str(), F_OK) == 0)
 		{
 			internal_redirect = 1;
-			handler.findLocationBlock();
+			org_path = handler.getLocationConfig().path;
+			handler.findLocationBlock(); // changing the selected location here might create a wild pointer issue
 			checkRedirectedLocationBlock();
 			full_file_path = handler.getLocationConfig().root + full_file_path.substr(handler.getLocationConfig().root.length());
 			std::cout << "full file path: " << full_file_path << std::endl;

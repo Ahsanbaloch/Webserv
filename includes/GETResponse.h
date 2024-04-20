@@ -13,6 +13,9 @@
 class GETResponse: public AResponse
 {
 private:
+	// vars
+	std::string			org_path;
+
 	//flags
 	bool				auto_index;
 
