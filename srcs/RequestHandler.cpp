@@ -299,7 +299,7 @@ void RequestHandler::checkInternalRedirect()
 			checkAllowedMethods();
 			if (!getLocationConfig().redirect.empty())
 				return ;
-			// not exactly correct if root does not have the same length --> need to check in a different way
+			// not exactly correct if root does not have the same length --> need to check in a different way // needs to have the new root
 			new_file_path = getLocationConfig().root + new_file_path.substr(getLocationConfig().root.length()); // replace after config parsig update
 			if (getLocationConfig().path == "/cgi-bin" && new_file_path.substr(new_file_path.find_last_of('.')) == ".py")
 				cgi_post_int_redirect = 1;
