@@ -82,6 +82,7 @@ public:
 	std::vector<t_server_config>	getServerConfig() const;
 	s_location_config				getLocationConfig() const;
 	int								getSelectedLocation() const; // only for testing purposes
+	int								getSelectedServer() const;
 	int								getStatus() const;
 	bool							getResponseStatus() const;
 	int								getBytesRead() const;

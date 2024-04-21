@@ -131,6 +131,20 @@ std::string	GETResponse::createHeaderFields(std::string body) // probably don't 
 	return (header);
 }
 
+// probably can be removed if config file is adjusted
+std::string	GETResponse::removeSchemeFromURL(std::string input)
+{
+	std::string redirect_url;
+
+	std::size_t found_http = input.find("http://");
+	if (found_http == std::string::npos)
+		redirect_url = input;
+	else
+		redirect_url.append(input, 7);
+
+	return (redirect_url);
+}
+
 void	GETResponse::checkRedirectedLocationBlock()
 {
 	if (!handler.getLocationConfig().GET)
@@ -140,8 +154,8 @@ void	GETResponse::checkRedirectedLocationBlock()
 	}
 	if (!handler.getLocationConfig().redirect.empty())
 	{
-		std::string redirect_url = REDIRECTResponse::removeSchemeFromURL(handler.getLocationConfig().redirect);
-		if (redirect_url == "localhost:" + toString(handler.getServerConfig()[0].port) + org_path)
+		std::string redirect_url = removeSchemeFromURL(handler.getLocationConfig().redirect);
+		if (redirect_url == "localhost:" + toString(handler.getServerConfig()[handler.getSelectedServer()].port) + org_path)
 		{
 			handler.setStatus(508);
 			throw CustomException("Loop Detected");
@@ -162,7 +176,7 @@ void	GETResponse::checkInternalRedirects()
 		{
 			internal_redirect = 1;
 			org_path = handler.getLocationConfig().path;
-			handler.findLocationBlock(); // changing the selected location here might create a wild pointer issue
+			handler.findLocationBlock();
 			checkRedirectedLocationBlock();
 			full_file_path = handler.getLocationConfig().root + full_file_path.substr(handler.getLocationConfig().root.length());
 			std::cout << "full file path: " << full_file_path << std::endl;

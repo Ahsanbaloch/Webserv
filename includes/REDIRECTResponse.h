@@ -23,7 +23,6 @@ public:
 
 	// main method
 	void	createResponse();
-	static std::string	removeSchemeFromURL(std::string);
 	
 };
 

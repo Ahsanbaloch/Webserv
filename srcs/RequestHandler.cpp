@@ -11,6 +11,7 @@ RequestHandler::RequestHandler()
 RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_config)
 	: request_header(*this)
 {
+	std::cout << "request handler constructed" << std::endl;
 	this->server_config = server_config;
 	connection_fd = fd;
 	status = 200;
@@ -37,6 +38,7 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 
 RequestHandler::~RequestHandler()
 {
+	std::cout << "request handler destroyed" << std::endl;
 	delete response;
 	delete uploader;
 	if (body_extractor != NULL) // needed?
@@ -91,6 +93,11 @@ s_location_config	RequestHandler::getLocationConfig() const
 int	RequestHandler::getSelectedLocation() const
 {
 	return (selected_location);
+}
+
+int	RequestHandler::getSelectedServer() const
+{
+	return (selected_server);
 }
 
 bool	RequestHandler::getResponseStatus() const
@@ -226,6 +233,7 @@ void	RequestHandler::processRequest()
 				// std::cout << "body content: " << request_body.body << std::endl;
 				response = prepareResponse(); // how to handle errors in here?
 				response->createResponse(); // how to handle errors in here?
+				std::cout << "bug?: " << getServerConfig()[0].port << std::endl;
 				// if index directive is cgi, check here again and create cgi object
 				response_ready = 1;
 			}
@@ -321,7 +329,7 @@ AUploadModule*	RequestHandler::checkContentType()
 }
 
 
-void	RequestHandler::findLocationBlock() // double check if this is entirely correct approach
+void	RequestHandler::findLocationBlock()
 {
 	std::vector<std::string> uri_path_items;
 	if (response == NULL || !response->getInternalRedirectStatus())

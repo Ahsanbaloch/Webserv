@@ -27,6 +27,7 @@ private:
 	std::string	getBodyFromFile();
 	std::string	getBodyFromDir();
 	void		checkRedirectedLocationBlock();
+	std::string	removeSchemeFromURL(std::string);
 
 	// constructors
 	GETResponse();
