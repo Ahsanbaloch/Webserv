@@ -115,6 +115,7 @@ public:
 	void							findLocationBlock();
 	void							checkAllowedMethods();
 	void							checkInternalRedirect();
+	void							checkMaxBodySize();
 	int								calcMatches(std::vector<std::string>&, std::vector<std::string>&); // make private?
 	std::vector<std::string>		splitPath(std::string input, char delim);
 	AResponse*						prepareResponse();

@@ -43,7 +43,6 @@ private:
 	// main methods
 	void								removeDots();
 	void								checkFields();
-	void								identifyFileName();
 
 	// helper methods
 	void								handleMultipleSlashes();
@@ -104,6 +103,7 @@ public:
 	// methods
 	void								parseRequestLine();
 	void								parseHeaderFields();
+	void								identifyFileName();
 	void								checkHeader();
 
 };

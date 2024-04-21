@@ -198,6 +198,7 @@ void	RequestHeader::identifyFileName()
 
 void	RequestHeader::checkHeader()
 {
+	checkFields();
 	if (dot_in_path)
 		removeDots();
 	// Decoding to do?: A common defense against response splitting is to filter requests for data that looks like encoded CR and LF (e.g., "%0D" and "%0A") --> What to do then?
@@ -205,15 +206,13 @@ void	RequestHeader::checkHeader()
 		decode(path);
 	if (query_encoded)
 		decode(query);
-	checkFields();
-	identifyFileName();
 	std::cout << "RequestHeader parsing complete\n";
 }
 
 void	RequestHeader::checkFields()
 {
 	// others check such as empty host field value, TE != chunked etc. is done in parsing
-	if (header_fields.find("host") == header_fields.end()) // is is even connecting without host field?
+	if (header_fields.find("host") == header_fields.end())
 	{
 		handler.setStatus(410);
 		throw CustomException("Bad request 1");
@@ -222,6 +221,11 @@ void	RequestHeader::checkFields()
 	{
 		handler.setStatus(411);
 		throw CustomException("Length Required");
+	}
+	if (content_length_exists && body_length > handler.getServerConfig()[handler.getSelectedServer()].bodySize)
+	{
+		handler.setStatus(413);
+		throw CustomException("Content Too Large");
 	}
 }
 
@@ -506,8 +510,8 @@ void	RequestHeader::parseHeaderFields()
 
 	if (!headers_parsing_done) // is this the correct location to check?
 	{
-		handler.setStatus(413); // correct error code when header is too large for buffer OR 431 Request Header Fields Too Large
-		throw CustomException("Content Too Large");  // correct error code when header is too large for buffer
+		handler.setStatus(431); // correct error code when header is too large for buffer OR 431 Request Header Fields Too Large
+		throw CustomException("Request Header Fields Too Large");  // correct error code when header is too large for buffer
 	}
 
 	// A sender MUST NOT send whitespace between the start-line and the first header field.

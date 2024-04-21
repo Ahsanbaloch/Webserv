@@ -192,6 +192,7 @@ void	RequestHandler::processRequest()
 				request_header.parseRequestLine();
 			if (request_header.getRequestLineStatus())
 			{
+				request_header.identifyFileName();
 				determineLocationBlock();
 				checkAllowedMethods(); // check if method is allowed in selected location
 				if (request_header.getMethod() == "GET")
@@ -500,6 +501,17 @@ void	RequestHandler::storeChunkedData()
 
 }
 
+void	RequestHandler::checkMaxBodySize()
+{
+	if (total_chunk_size > getServerConfig()[selected_server].bodySize)
+	{
+		setStatus(413);
+		if (!temp_filename_unchunked.empty())
+			remove(temp_filename_unchunked.c_str());
+		throw CustomException("Content Too Large");
+	}
+}
+
 void	RequestHandler::unchunkBody()
 {
 	while (!body_unchunked && buf_pos++ < getBytesRead())
@@ -575,18 +587,21 @@ void	RequestHandler::unchunkBody()
 				else if (ch == CR)
 				{
 					total_chunk_size += chunk_length;
+					checkMaxBodySize();
 					te_state = chunk_size_cr;
 					break;
 				}
 				else if (ch == LF)
 				{
 					total_chunk_size += chunk_length;
+					checkMaxBodySize();
 					te_state = chunk_data;
 					break;
 				}
 				else if (ch == ';')
 				{
 					total_chunk_size += chunk_length;
+					checkMaxBodySize();
 					te_state = chunk_extension;
 					break;
 				}
