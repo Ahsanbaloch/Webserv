@@ -95,38 +95,29 @@ std::string	GETResponse::createHeaderFields(std::string body) // probably don't 
 {
 	std::string	header;
 
-	if (!handler.getLocationConfig().redirect.empty())
-		header.append("Location: " + handler.getLocationConfig().redirect + "\r\n");
-	else
-	{
-		std::string mime_type = identifyMIME(); // should not be called if we have a url redirection
-		if (mime_type.empty()) // only check when body should be sent?
-		{
-			handler.setStatus(415);
-			throw CustomException("Unsupported Media Type");
-		}
-		else
-		{
-			std::ostringstream length_conversion;
-			length_conversion << body.size();
-			header.append("Content-Type: " + mime_type + "\r\n");
-			header.append("Content-Length: "); // alternatively TE: chunked?
-			header.append(length_conversion.str() + "\r\n");
-			// header.append("Location: url"); // redirect client to a different url or new path 
-			// what other headers to include?
-			// send Repsonses in Chunks?
-			// header.append("Transfer-Encoding: chunked");
-			// header.append("Cache-Control: no-cache");
-			// header.append("Set-Cookie: preference=darkmode; Domain=example.com");
-			// header.append("Server: nginx/1.21.0");
-			// header.append("Expires: Sat, 08 May 2023 12:00:00 GMT"); // If a client requests the same resource before the expiration date has passed, the server can return a cached copy of the resource.
-			// header.append("Last-Modified: Tue, 04 May 2023 16:00:00 GMT"); // This header specifies the date and time when the content being sent in the response was last modified. This can be used by clients to determine if the resource has changed since it was last requested.
-			// header.append("ETag: "abc123""); //This header provides a unique identifier for the content being sent in the response. This can be used by clients to determine if the resource has changed since it was last requested, without having to download the entire resource again.
-			// header.append("Keep-Alive: timeout=5, max=100"); // used to enable persistent connections between the client and the server, allowing multiple requests and responses to be sent over a single TCP connection
-			// Access-Control-Allow-Origin; X-Frame-Options; X-XSS-Protection; Referrer-Policy; X-Forwarded-For; X-Powered-By; 
-			// header.append("\r\n");
-		}
-	}
+	// if (!handler.getLocationConfig().redirect.empty())
+	// 	header.append("Location: " + handler.getLocationConfig().redirect + "\r\n");
+	std::string mime_type = identifyMIME(); // should not be called if we have a url redirection
+
+	std::ostringstream length_conversion;
+	length_conversion << body.size();
+	header.append("Content-Type: " + mime_type + "\r\n");
+	header.append("Content-Length: "); // alternatively TE: chunked?
+	header.append(length_conversion.str() + "\r\n");
+	// header.append("Location: url"); // redirect client to a different url or new path 
+	// what other headers to include?
+	// send Repsonses in Chunks?
+	// header.append("Transfer-Encoding: chunked");
+	// header.append("Cache-Control: no-cache");
+	// header.append("Set-Cookie: preference=darkmode; Domain=example.com");
+	// header.append("Server: nginx/1.21.0");
+	// header.append("Expires: Sat, 08 May 2023 12:00:00 GMT"); // If a client requests the same resource before the expiration date has passed, the server can return a cached copy of the resource.
+	// header.append("Last-Modified: Tue, 04 May 2023 16:00:00 GMT"); // This header specifies the date and time when the content being sent in the response was last modified. This can be used by clients to determine if the resource has changed since it was last requested.
+	// header.append("ETag: "abc123""); //This header provides a unique identifier for the content being sent in the response. This can be used by clients to determine if the resource has changed since it was last requested, without having to download the entire resource again.
+	// header.append("Keep-Alive: timeout=5, max=100"); // used to enable persistent connections between the client and the server, allowing multiple requests and responses to be sent over a single TCP connection
+	// Access-Control-Allow-Origin; X-Frame-Options; X-XSS-Protection; Referrer-Policy; X-Forwarded-For; X-Powered-By; 
+	// header.append("\r\n");
+
 	header.append("\r\n");
 	return (header);
 }
@@ -166,17 +157,50 @@ void	GETResponse::determineOutput()
 std::string	GETResponse::identifyMIME()
 {
 	// also check against accept header? --> return 406 if the requirement cannot be satisfied
-	// how to best identifyMIME?
+	
 	if (auto_index) // probably also rather going to be html
 		return ("text/plain");
 	else if (file_type == ".html")
 		return ("text/html");
-	else if (file_type == ".jpeg")
+	else if (file_type == ".jpeg" || file_type == ".jpg")
 		return ("image/jpeg");
 	else if (file_type == ".png" || file_type == ".ico")
 		return ("image/png");
+	else if (file_type == ".bin")
+		return ("application/octet-stream");
+	else if (file_type == ".bmp")
+		return ("image/bmp");
+	else if (file_type == ".css")
+		return ("text/css");
+	else if (file_type == ".csv")
+		return ("text/csv");
+	else if (file_type == ".gif")
+		return ("image/gif");
+	else if (file_type == ".js")
+		return ("text/javascript");
+	else if (file_type == ".json")
+		return ("application/json");
+	else if (file_type == ".mp3")
+		return ("audio/mpeg");
+	else if (file_type == ".mp4")
+		return ("video/mp4");
+	else if (file_type == ".mpeg")
+		return ("video/mpeg");
+	else if (file_type == ".pdf")
+		return ("application/pdf");
+	else if (file_type == ".svg")
+		return ("image/svg+xml");
+	else if (file_type == ".txt")
+		return ("text/plain");
+	else if (file_type == ".wav")
+		return ("audio/wav");
+	else if (file_type == ".xhtml")
+		return ("application/xhtml+xml");
 	else
-		return (""); // what should be the default return?
+	{
+		handler.setStatus(415);
+		throw CustomException("Unsupported Media Type");
+	}
 }
 
 /////////// MAIN METHODS ///////////
