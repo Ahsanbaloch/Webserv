@@ -20,6 +20,8 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	bytes_read = 0;
 	response_ready = 0;
 	request_length = 0;
+	cgi_post_int_redirect = 0;
+	redir_post_int_redirect = 0;
 
 	buf_pos = -1;
 
@@ -130,6 +132,15 @@ std::string	RequestHandler::getTempBodyFilepath() const
 	return (body_extractor->getTempBodyFilepath());
 }
 
+bool	RequestHandler::getCGIPostIntRedirStatus() const
+{
+	return (cgi_post_int_redirect);
+}
+
+bool	RequestHandler::getExtRedirPostIntRedirStatus() const
+{
+	return (redir_post_int_redirect);
+}
 
 
 ///////// SETTERS ///////////
@@ -137,6 +148,16 @@ std::string	RequestHandler::getTempBodyFilepath() const
 void	RequestHandler::setStatus(int status)
 {
 	this->status = status;
+}
+
+void	RequestHandler::setCGIPostIntRedirStatus(bool status)
+{
+	cgi_post_int_redirect = status;
+}
+
+void	RequestHandler::setExtRedirPostIntRedirStatus(bool status)
+{
+	redir_post_int_redirect = status;
 }
 
 

@@ -50,6 +50,8 @@ private:
 
 	// flags
 	bool							response_ready;
+	bool							cgi_post_int_redirect;
+	bool							redir_post_int_redirect;
 	
 	// states
 	enum {
@@ -92,9 +94,13 @@ public:
 	int								getTotalChunkSize() const;
 	bool							getUnchunkingStatus() const;
 	std::string						getTempBodyFilepath() const;
+	bool							getCGIPostIntRedirStatus() const;
+	bool							getExtRedirPostIntRedirStatus() const;
 
 	// setters
 	void							setStatus(int);
+	void							setCGIPostIntRedirStatus(bool);
+	void							setExtRedirPostIntRedirStatus(bool);
 	
 	// buffer TBD
 	unsigned char					buf[BUFFER_SIZE + 1];

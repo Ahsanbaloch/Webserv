@@ -155,17 +155,18 @@ void	GETResponse::checkRedirectedLocationBlock()
 	if (!handler.getLocationConfig().redirect.empty())
 	{
 		std::string redirect_url = removeSchemeFromURL(handler.getLocationConfig().redirect);
-		if (redirect_url == "localhost:" + toString(handler.getServerConfig()[handler.getSelectedServer()].port) + org_path)
+		if (redirect_url == "localhost:" + toString(handler.getServerConfig()[handler.getSelectedServer()].port) + referer_path)
 		{
 			handler.setStatus(508);
 			throw CustomException("Loop Detected");
 		}
 		handler.setStatus(307);
+		handler.setExtRedirPostIntRedirStatus(1);
 	}
 		
 }
 
-void	GETResponse::checkInternalRedirects()
+void	GETResponse::checkInternalRedirect()
 {
 	// if the request is not for a file (otherwise the location has already been found)
 	if (handler.getHeaderInfo().getFileExtension().empty())
@@ -175,12 +176,20 @@ void	GETResponse::checkInternalRedirects()
 		if (access(full_file_path.c_str(), F_OK) == 0)
 		{
 			internal_redirect = 1;
-			org_path = handler.getLocationConfig().path;
+			referer_path = handler.getLocationConfig().path;
 			handler.findLocationBlock();
 			checkRedirectedLocationBlock();
+			if (handler.getExtRedirPostIntRedirStatus())
+				return ;
 			full_file_path = handler.getLocationConfig().root + full_file_path.substr(handler.getLocationConfig().root.length());
-			std::cout << "full file path: " << full_file_path << std::endl;
-			file_type = full_file_path.substr(full_file_path.find_last_of('.') + 1); // create a function for that in case it is not a file type
+			file_type = full_file_path.substr(full_file_path.find_last_of('.')); // create a function for that in case it is not a file type
+			if (handler.getLocationConfig().path == "/cgi-bin" && file_type == ".py")
+			{
+				handler.setCGIPostIntRedirStatus(1);
+				// where to store full file path for cgi --> request handler? --> because GETResponse gets deleted
+				// or overwrite header info?
+				// selected location has already been changed
+			}
 		}
 		else
 		{
@@ -210,11 +219,11 @@ std::string	GETResponse::identifyMIME()
 	// how to best identifyMIME?
 	if (auto_index) // probably also rather going to be html
 		return ("text/plain");
-	else if (file_type == "html")
+	else if (file_type == ".html")
 		return ("text/html");
-	else if (file_type == "jpeg")
+	else if (file_type == ".jpeg")
 		return ("image/jpeg");
-	else if (file_type == "png" || file_type == "ico")
+	else if (file_type == ".png" || file_type == ".ico")
 		return ("image/png");
 	else
 		return (""); // what should be the default return?
@@ -224,18 +233,9 @@ std::string	GETResponse::identifyMIME()
 
 void	GETResponse::createResponse()
 {
-	// check for direct redirects and internal redirects
-	if (!handler.getLocationConfig().redirect.empty())
-		handler.setStatus(307);
-	else
-		checkInternalRedirects();
-
-	// check allowed methods for the selected location
-	// if (!handler.getLocationConfig().GET)
-	// {
-	// 	handler.setStatus(405);
-	// 	throw CustomException("Method Not Allowed");
-	// }
+	checkInternalRedirect();
+	if (handler.getExtRedirPostIntRedirStatus() || handler.getCGIPostIntRedirStatus())
+		return ;
 
 	status_line = createStatusLine();
 	if ((handler.getStatus() >= 100 && handler.getStatus() <= 103) || handler.getStatus() == 204 || handler.getStatus() == 304 || handler.getStatus() == 307)
@@ -250,5 +250,4 @@ void	GETResponse::createResponse()
 
 	// A server MUST NOT send a Transfer-Encoding header field in any response with a status code of 1xx (Informational) or 204 (No Content)
 	// any response with a 1xx (Informational), 204 (No Content), or 304 (Not Modified) status code is always terminated by the first empty line after the header fields --> no body
-	// return (response);
 }
