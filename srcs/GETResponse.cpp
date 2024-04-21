@@ -131,65 +131,15 @@ std::string	GETResponse::createHeaderFields(std::string body) // probably don't 
 	return (header);
 }
 
-// probably can be removed if config file is adjusted
-std::string	GETResponse::removeSchemeFromURL(std::string input)
-{
-	std::string redirect_url;
-
-	std::size_t found_http = input.find("http://");
-	if (found_http == std::string::npos)
-		redirect_url = input;
-	else
-		redirect_url.append(input, 7);
-
-	return (redirect_url);
-}
-
-void	GETResponse::checkRedirectedLocationBlock()
-{
-	if (!handler.getLocationConfig().GET)
-	{
-		handler.setStatus(405);
-		throw CustomException("Method Not Allowed");
-	}
-	if (!handler.getLocationConfig().redirect.empty())
-	{
-		std::string redirect_url = removeSchemeFromURL(handler.getLocationConfig().redirect);
-		if (redirect_url == "localhost:" + toString(handler.getServerConfig()[handler.getSelectedServer()].port) + referer_path)
-		{
-			handler.setStatus(508);
-			throw CustomException("Loop Detected");
-		}
-		handler.setStatus(307);
-		handler.setExtRedirPostIntRedirStatus(1);
-	}
-		
-}
-
-void	GETResponse::checkInternalRedirect()
+void	GETResponse::determineOutput()
 {
 	// if the request is not for a file (otherwise the location has already been found)
 	if (handler.getHeaderInfo().getFileExtension().empty())
 	{
-		full_file_path = buildPathFromLocationIndex();
-		// check if file constructed from root, location path and index exists
-		if (access(full_file_path.c_str(), F_OK) == 0)
+		if (handler.getIntRedirStatus())
 		{
-			internal_redirect = 1;
-			referer_path = handler.getLocationConfig().path;
-			handler.findLocationBlock();
-			checkRedirectedLocationBlock();
-			if (handler.getExtRedirPostIntRedirStatus())
-				return ;
-			full_file_path = handler.getLocationConfig().root + full_file_path.substr(handler.getLocationConfig().root.length());
-			file_type = full_file_path.substr(full_file_path.find_last_of('.')); // create a function for that in case it is not a file type
-			if (handler.getLocationConfig().path == "/cgi-bin" && file_type == ".py")
-			{
-				handler.setCGIPostIntRedirStatus(1);
-				// where to store full file path for cgi --> request handler? --> because GETResponse gets deleted
-				// or overwrite header info?
-				// selected location has already been changed
-			}
+			full_file_path = handler.getNewFilePath();
+			file_type = full_file_path.substr(full_file_path.find_last_of('.')); 
 		}
 		else
 		{
@@ -233,9 +183,7 @@ std::string	GETResponse::identifyMIME()
 
 void	GETResponse::createResponse()
 {
-	checkInternalRedirect();
-	if (handler.getExtRedirPostIntRedirStatus() || handler.getCGIPostIntRedirStatus())
-		return ;
+	determineOutput();
 
 	status_line = createStatusLine();
 	if ((handler.getStatus() >= 100 && handler.getStatus() <= 103) || handler.getStatus() == 204 || handler.getStatus() == 304 || handler.getStatus() == 307)

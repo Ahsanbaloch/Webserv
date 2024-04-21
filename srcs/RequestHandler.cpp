@@ -21,7 +21,7 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	response_ready = 0;
 	request_length = 0;
 	cgi_post_int_redirect = 0;
-	redir_post_int_redirect = 0;
+	internal_redirect = 0;
 
 	buf_pos = -1;
 
@@ -66,6 +66,8 @@ RequestHandler& RequestHandler::operator=(const RequestHandler& src)
 		bytes_read = src.bytes_read;
 		response_ready = src.response_ready;
 		request_length = src.request_length;
+		internal_redirect = src.internal_redirect;
+		cgi_post_int_redirect = src.cgi_post_int_redirect;
 		buf_pos = src.buf_pos;
 		response = src.response;
 		uploader = src.uploader;
@@ -132,32 +134,26 @@ std::string	RequestHandler::getTempBodyFilepath() const
 	return (body_extractor->getTempBodyFilepath());
 }
 
-bool	RequestHandler::getCGIPostIntRedirStatus() const
+bool	RequestHandler::getIntRedirStatus() const
 {
-	return (cgi_post_int_redirect);
+	return (internal_redirect);
 }
 
-bool	RequestHandler::getExtRedirPostIntRedirStatus() const
+std::string	RequestHandler::getIntRedirRefPath() const
 {
-	return (redir_post_int_redirect);
+	return (int_redir_referer_path);
 }
 
+std::string	RequestHandler::getNewFilePath() const
+{
+	return (new_file_path);
+}
 
 ///////// SETTERS ///////////
 
 void	RequestHandler::setStatus(int status)
 {
 	this->status = status;
-}
-
-void	RequestHandler::setCGIPostIntRedirStatus(bool status)
-{
-	cgi_post_int_redirect = status;
-}
-
-void	RequestHandler::setExtRedirPostIntRedirStatus(bool status)
-{
-	redir_post_int_redirect = status;
 }
 
 
@@ -198,6 +194,8 @@ void	RequestHandler::processRequest()
 			{
 				determineLocationBlock();
 				checkAllowedMethods(); // check if method is allowed in selected location
+				if (request_header.getMethod() == "GET")
+					checkInternalRedirect();
 				request_header.parseHeaderFields();
 			}
 		}
@@ -254,8 +252,6 @@ void	RequestHandler::processRequest()
 				// std::cout << "body content: " << request_body.body << std::endl;
 				response = prepareResponse(); // how to handle errors in here?
 				response->createResponse(); // how to handle errors in here?
-				std::cout << "bug?: " << getServerConfig()[0].port << std::endl;
-				// if index directive is cgi, check here again and create cgi object
 				response_ready = 1;
 			}
 		}
@@ -289,6 +285,29 @@ void		RequestHandler::checkAllowedMethods()
 	}
 }
 
+void RequestHandler::checkInternalRedirect()
+{
+	if (request_header.getFileExtension().empty())
+	{
+		new_file_path = getLocationConfig().root + getLocationConfig().path + getLocationConfig().index; // replace after config parsig update
+		if (access(new_file_path.c_str(), F_OK) == 0)
+		{
+			internal_redirect = 1;
+			int_redir_referer_path = "http://localhost:" + toString(getServerConfig()[getSelectedServer()].port) + getLocationConfig().path;
+			findLocationBlock();
+			checkAllowedMethods();
+			if (!getLocationConfig().redirect.empty())
+				return ;
+			// not exactly correct if root does not have the same length --> need to check in a different way
+			new_file_path = getLocationConfig().root + new_file_path.substr(getLocationConfig().root.length()); // replace after config parsig update
+			if (getLocationConfig().path == "/cgi-bin" && new_file_path.substr(new_file_path.find_last_of('.')) == ".py")
+				cgi_post_int_redirect = 1;
+		}
+		else
+			new_file_path.erase();
+	}
+}
+
 void RequestHandler::determineLocationBlock()
 {
 	// find server block if there are multiple that match (this applies to all request types)
@@ -302,6 +321,14 @@ void RequestHandler::determineLocationBlock()
 
 AResponse* RequestHandler::prepareResponse()
 {
+	// when checking for cgi, also check "cgi_post_int_redirect" status
+	// inside cgi should check internal redirect status. If true, then different path has to be selected
+	if (cgi_post_int_redirect)
+	{
+		setStatus(501);
+		throw CustomException("Not implemented");
+	}
+
 	if (!getLocationConfig().redirect.empty())
 		return (new REDIRECTResponse(*this));
 	else if (request_header.getMethod() == "GET")
@@ -353,11 +380,12 @@ AUploadModule*	RequestHandler::checkContentType()
 void	RequestHandler::findLocationBlock()
 {
 	std::vector<std::string> uri_path_items;
-	if (response == NULL || !response->getInternalRedirectStatus())
+	if (response == NULL && !internal_redirect)
 		uri_path_items = splitPath(request_header.getPath(), '/');
 	else
 	{
-		std::string temp = response->getFullFilePath().substr(getLocationConfig().root.length());
+		std::string temp = new_file_path.substr(getLocationConfig().root.length()); // replace after config parser update
+		// std::string temp = response->getFullFilePath().substr(getLocationConfig().root.length());
 		uri_path_items = splitPath(temp, '/');
 	}
 	int	size = server_config[selected_server].locations.size();

@@ -13,9 +13,6 @@
 class GETResponse: public AResponse
 {
 private:
-	// vars
-	std::string			referer_path;
-
 	//flags
 	bool				auto_index;
 
@@ -23,11 +20,9 @@ private:
 	std::string	createBody();
 	std::string createHeaderFields(std::string);
 	std::string	identifyMIME();
-	void		checkInternalRedirect();
+	void		determineOutput();
 	std::string	getBodyFromFile();
 	std::string	getBodyFromDir();
-	void		checkRedirectedLocationBlock();
-	std::string	removeSchemeFromURL(std::string);
 
 	// constructors
 	GETResponse();

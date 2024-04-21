@@ -6,13 +6,11 @@
 AResponse::AResponse()
 	: handler(*new RequestHandler())
 {
-	internal_redirect = 0;
 }
 
 AResponse::AResponse(RequestHandler& request_handler) 
 	: handler(request_handler)
 {
-	internal_redirect = 0;
 }
 
 AResponse::~AResponse()
@@ -27,7 +25,6 @@ AResponse::AResponse(const AResponse& src)
 	body = src.body;
 	status_line = src.status_line;
 	header_fields = src.header_fields;
-	internal_redirect = src.internal_redirect;
 }
 
 AResponse& AResponse::operator=(const AResponse& src)
@@ -40,7 +37,6 @@ AResponse& AResponse::operator=(const AResponse& src)
 		body = src.body;
 		status_line = src.status_line;
 		header_fields = src.header_fields;
-		internal_redirect = src.internal_redirect;
 	}
 	return (*this);
 }
@@ -65,11 +61,6 @@ std::string AResponse::getResponseStatusLine() const
 std::string AResponse::getFullFilePath() const
 {
 	return (full_file_path);
-}
-
-bool	AResponse::getInternalRedirectStatus() const
-{
-	return (internal_redirect);
 }
 
 ///////// METHODS ///////////
