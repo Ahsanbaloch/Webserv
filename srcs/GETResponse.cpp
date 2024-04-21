@@ -39,7 +39,7 @@ std::string	GETResponse::getBodyFromFile()
 {
 	std::string body;
 
-	std::ifstream file(full_file_path); // Open the file
+	std::ifstream file(full_file_path);
 	if (!file.is_open()) 
 	{
 		handler.setStatus(404);
@@ -54,7 +54,7 @@ std::string	GETResponse::getBodyFromFile()
 	return (body);
 }
 
-std::string GETResponse::getBodyFromDir() // probably create some html for it
+std::string GETResponse::getBodyFromDir()
 {
 	std::string body;
 	DIR *directory;
@@ -94,17 +94,11 @@ std::string GETResponse::createBody()
 std::string	GETResponse::createHeaderFields(std::string body) // probably don't need parameter anymore
 {
 	std::string	header;
+	std::string mime_type = identifyMIME();
 
-	// if (!handler.getLocationConfig().redirect.empty())
-	// 	header.append("Location: " + handler.getLocationConfig().redirect + "\r\n");
-	std::string mime_type = identifyMIME(); // should not be called if we have a url redirection
-
-	std::ostringstream length_conversion;
-	length_conversion << body.size();
 	header.append("Content-Type: " + mime_type + "\r\n");
 	header.append("Content-Length: "); // alternatively TE: chunked?
-	header.append(length_conversion.str() + "\r\n");
-	// header.append("Location: url"); // redirect client to a different url or new path 
+	header.append(toString(body.size()) + "\r\n");
 	// what other headers to include?
 	// send Repsonses in Chunks?
 	// header.append("Transfer-Encoding: chunked");
@@ -116,7 +110,6 @@ std::string	GETResponse::createHeaderFields(std::string body) // probably don't 
 	// header.append("ETag: "abc123""); //This header provides a unique identifier for the content being sent in the response. This can be used by clients to determine if the resource has changed since it was last requested, without having to download the entire resource again.
 	// header.append("Keep-Alive: timeout=5, max=100"); // used to enable persistent connections between the client and the server, allowing multiple requests and responses to be sent over a single TCP connection
 	// Access-Control-Allow-Origin; X-Frame-Options; X-XSS-Protection; Referrer-Policy; X-Forwarded-For; X-Powered-By; 
-	// header.append("\r\n");
 
 	header.append("\r\n");
 	return (header);
@@ -129,7 +122,7 @@ void	GETResponse::determineOutput()
 	{
 		if (handler.getIntRedirStatus())
 		{
-			full_file_path = handler.getNewFilePath();
+			full_file_path = handler.getNewFilePath(); // may adjust after config integration
 			file_type = full_file_path.substr(full_file_path.find_last_of('.')); 
 		}
 		else
@@ -151,13 +144,10 @@ void	GETResponse::determineOutput()
 		file_type = handler.getHeaderInfo().getFileExtension();
 		full_file_path = handler.getLocationConfig().root + "/" + handler.getHeaderInfo().getPath();
 	}
-	std::cout << "location selected: " << handler.getSelectedLocation() << std::endl;
 }
 
 std::string	GETResponse::identifyMIME()
-{
-	// also check against accept header? --> return 406 if the requirement cannot be satisfied
-	
+{	
 	if (auto_index) // probably also rather going to be html
 		return ("text/plain");
 	else if (file_type == ".html")
@@ -203,6 +193,7 @@ std::string	GETResponse::identifyMIME()
 	}
 }
 
+
 /////////// MAIN METHODS ///////////
 
 void	GETResponse::createResponse()
@@ -210,16 +201,10 @@ void	GETResponse::createResponse()
 	determineOutput();
 
 	status_line = createStatusLine();
-	if ((handler.getStatus() >= 100 && handler.getStatus() <= 103) || handler.getStatus() == 204 || handler.getStatus() == 304 || handler.getStatus() == 307)
+	if ((handler.getStatus() >= 100 && handler.getStatus() <= 103) || handler.getStatus() == 204 || handler.getStatus() == 304)
 		body = ""; // or just initialize it like that // here no body should be created
 	else
 		body = createBody();
 	
 	header_fields = createHeaderFields(body);
-
-	// The presence of a message body in a response depends on both the request method to which it is responding and the response status code. 
-	// e.g. POST 200 is different from GET 200
-
-	// A server MUST NOT send a Transfer-Encoding header field in any response with a status code of 1xx (Informational) or 204 (No Content)
-	// any response with a 1xx (Informational), 204 (No Content), or 304 (Not Modified) status code is always terminated by the first empty line after the header fields --> no body
 }

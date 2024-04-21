@@ -1,6 +1,7 @@
 #ifndef POSTRESPONSE_H
 # define POSTRESPONSE_H
 
+#include <string>
 #include "RequestHandler.h"
 #include "AResponse.h"
 
@@ -8,7 +9,8 @@ class POSTResponse: public AResponse
 {
 private:
 	// helper methods
-	void	respondFileUpload();
+	void		respondFileUpload();
+	// std::string	createBody();
 
 	// constructors
 	POSTResponse();
@@ -21,7 +23,7 @@ public:
 	~POSTResponse();
 
 	// main method
-	void	createResponse();
+	void		createResponse();
 };
 
 #endif

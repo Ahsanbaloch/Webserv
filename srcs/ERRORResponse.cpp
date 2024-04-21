@@ -43,6 +43,7 @@ std::string	ERRORResponse::getDefaultErrorMessage(std::string status_code)
 	return (body);
 }
 
+// can be removed after config integration
 std::string	ERRORResponse::getErrorPagePath()
 {
 	std::string err_page = handler.getLocationConfig().root + handler.getLocationConfig().path + handler.getLocationConfig().errorPage.html_page;
@@ -68,10 +69,6 @@ std::string	ERRORResponse::createBody(std::string status_code)
 	// check if there is a specific error file specified for a partiuclar error code
 	if (handler.getStatus() == handler.getLocationConfig().errorPage.error_page_status)
 		err_file = getErrorPagePath();
-
-	printf("err page path: %s\n", handler.getLocationConfig().errorPage.html_page.c_str());
-	std::cout << "err page path constructed: " << err_file << std::endl;
-	printf("err code error_page: %i\n", handler.getLocationConfig().errorPage.error_page_status);
 
 	std::ifstream file(err_file);
 	if (!file.is_open()) 
@@ -121,22 +118,15 @@ void	ERRORResponse::appendAllowedMethods()
 }
 
 
-
 ///////// MAIN METHOD //////////
 
 void	ERRORResponse::createResponse()
 {
-	std::ostringstream status_conversion;
-	std::ostringstream length_conversion;
-
-	status_conversion << handler.getStatus();
 	status_line = createStatusLine();
-	body = createBody(status_conversion.str());
-	length_conversion << body.size();
-
+	body = createBody(toString(handler.getStatus()));
 	header_fields.append("Content-Type: text/html\r\n");
 	header_fields.append("Content-Length: ");
-	header_fields.append(length_conversion.str() + "\r\n");
+	header_fields.append(toString(body.size()) + "\r\n");
 	if (handler.getStatus() == 405)
 		appendAllowedMethods();
 	header_fields.append("\r\n");

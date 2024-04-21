@@ -85,6 +85,7 @@ public:
 	// getters
 	std::vector<t_server_config>	getServerConfig() const;
 	s_location_config				getLocationConfig() const;
+	AUploadModule*					getUploader() const;
 	int								getSelectedLocation() const; // only for testing purposes
 	int								getSelectedServer() const;
 	int								getStatus() const;

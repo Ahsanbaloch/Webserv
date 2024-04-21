@@ -13,7 +13,6 @@ private:
 	// helper methods
 	void		deleteFile();
 	void		deleteDir();
-	// std::string	createStatusLine();
 
 	// constructors
 	DELETEResponse();

@@ -149,6 +149,11 @@ std::string	RequestHandler::getNewFilePath() const
 	return (new_file_path);
 }
 
+AUploadModule*	RequestHandler::getUploader() const
+{
+	return (uploader);
+}
+
 ///////// SETTERS ///////////
 
 void	RequestHandler::setStatus(int status)

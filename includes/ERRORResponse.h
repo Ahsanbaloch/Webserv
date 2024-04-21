@@ -2,16 +2,18 @@
 # define ERRORRESPONSE_H
 
 # include <string>
+# include <fstream>
 # include "AResponse.h"
 # include "RequestHandler.h"
+# include "utils.tpp"
 
 class ERRORResponse: public AResponse
 {
 private:
 	// helper methods
-	std::string getDefaultErrorMessage(std::string);
-	std::string	createBody(std::string);
+	std::string	getDefaultErrorMessage(std::string);
 	std::string	getErrorPagePath();
+	std::string	createBody(std::string);
 	void		appendAllowedMethods();
 
 	// constructors
@@ -25,7 +27,7 @@ public:
 	~ERRORResponse();
 
 	// main method
-	void	createResponse();
+	void		createResponse();
 
 };
 
