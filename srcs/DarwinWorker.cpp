@@ -130,16 +130,19 @@ void	DarwinWorker::runEventLoop()
 				else if (connected_clients[event_lst[i].ident]->getResponseStatus() && event_lst[i].filter == EVFILT_WRITE) // how to provide the reponse_ready info? // should this be an "If" OR "Else if"?
 				{
 					connected_clients[event_lst[i].ident]->getRequestHandler()->sendResponse();
-					if (connected_clients[event_lst[i].ident]->getRequestHandler()->getHeaderInfo().getHeaderFields()["connection"] == "close"
+					if (connected_clients[event_lst[i].ident]->getRequestHandler()->getNumResponseChunks() == 0 || connected_clients[event_lst[i].ident]->getRequestHandler()->test_flag == 1)
+					{
+						if (connected_clients[event_lst[i].ident]->getRequestHandler()->getHeaderInfo().getHeaderFields()["connection"] == "close"
 						|| connected_clients[event_lst[i].ident]->getRequestHandler()->getStatus() >= 400)
-					{
-						std::cout << "disconnected by server\n";
-						closeConnection(i);
-					}
-					else
-					{
-						connected_clients[event_lst[i].ident]->removeRequestHandler();
-						connected_clients[event_lst[i].ident]->setResponseStatus(0);
+						{
+							std::cout << "disconnected by server\n";
+							closeConnection(i);
+						}
+						else
+						{
+							connected_clients[event_lst[i].ident]->setResponseStatus(0);
+							connected_clients[event_lst[i].ident]->removeRequestHandler();
+						}
 					}
 				}
 			}

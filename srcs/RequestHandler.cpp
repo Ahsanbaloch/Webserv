@@ -22,6 +22,7 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	request_length = 0;
 	cgi_post_int_redirect = 0;
 	internal_redirect = 0;
+	num_response_chunks = 0;
 
 	buf_pos = -1;
 
@@ -30,6 +31,7 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	total_chunk_size = 0;
 	trailer_exists = 0;
 	body_unchunked = 0;
+	test_flag = 0;
 	te_state = body_start;
 	
 	response = NULL;
@@ -67,6 +69,7 @@ RequestHandler& RequestHandler::operator=(const RequestHandler& src)
 		response_ready = src.response_ready;
 		request_length = src.request_length;
 		internal_redirect = src.internal_redirect;
+		num_response_chunks = src.num_response_chunks;
 		cgi_post_int_redirect = src.cgi_post_int_redirect;
 		buf_pos = src.buf_pos;
 		response = src.response;
@@ -154,6 +157,11 @@ AUploadModule*	RequestHandler::getUploader() const
 	return (uploader);
 }
 
+int				RequestHandler::getNumResponseChunks() const
+{
+	return (num_response_chunks);
+}
+
 ///////// SETTERS ///////////
 
 void	RequestHandler::setStatus(int status)
@@ -161,15 +169,43 @@ void	RequestHandler::setStatus(int status)
 	this->status = status;
 }
 
+void	RequestHandler::incrementResponseChunks()
+{
+	num_response_chunks++;
+}
 
 ///////// METHODS ///////////
 
 void	RequestHandler::sendResponse()
 {
-	std::string resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
-	// std::cout << resp << std::endl;
+	std::string resp;
+	std::string body_chunk;
+	num_response_chunks = response->num_response_chunks2;
+	if (num_response_chunks > 1)
+	{
+		GETResponse* get = dynamic_cast<GETResponse*>(response);
+		if (get)
+		{
+			body_chunk = get->getBodyFromFile();
+			if (get->getResponseCompleteStatus())
+				test_flag = 1;
+		}
+		// resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + body_chunk;
+		resp = body_chunk;
+	}
+	else
+	{
+		resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
+		response->num_response_chunks2++;
+		if (response->getResponseCompleteStatus())
+			test_flag = 1;
+	}
+		
+	std::cout << "num response chunks: " << num_response_chunks << std::endl;
+	// std::cout << "message: " << resp << std::endl;
+	std::cout << resp << std::endl;
 	send(connection_fd, resp.c_str(), resp.length(), 0); 
-	// check for errors when calling send
+	// check for errors when calling send (-1 and 0)
 }
 
 void	RequestHandler::processRequest()

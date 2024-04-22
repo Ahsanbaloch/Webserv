@@ -42,6 +42,7 @@ private:
 	int								connection_fd;
 	int								bytes_read;
 	int								request_length;
+	int								num_response_chunks;
 
 	int								chunk_length;
 	int								total_chunk_size;
@@ -100,9 +101,11 @@ public:
 	std::string						getIntRedirRefPath() const;
 	bool							getIntRedirStatus() const;
 	std::string						getNewFilePath() const;
+	int								getNumResponseChunks() const;
 
 	// setters
 	void							setStatus(int);
+	void							incrementResponseChunks();
 	
 	// buffer TBD
 	unsigned char					buf[BUFFER_SIZE + 1];
@@ -121,6 +124,8 @@ public:
 	std::vector<std::string>		splitPath(std::string input, char delim);
 	AResponse*						prepareResponse();
 	AUploadModule*					checkContentType();
+
+	bool							test_flag;
 
 	// make private?
 	enum {

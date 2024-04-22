@@ -4,12 +4,12 @@
 /////////// CONSTRUCTORS & DESTRUCTORS ///////////
 
 GETResponse::GETResponse()
-	: AResponse(), auto_index(0)
+	: AResponse(), auto_index(0), file_position(0)
 {
 }
 
 GETResponse::GETResponse(RequestHandler& src)
-	: AResponse(src), auto_index(0)
+	: AResponse(src), auto_index(0), file_position(0)
 {
 }
 
@@ -18,7 +18,7 @@ GETResponse::~GETResponse()
 }
 
 GETResponse::GETResponse(const GETResponse& src)
-	: AResponse(src), auto_index(src.auto_index)
+	: AResponse(src), auto_index(src.auto_index), file_position(src.file_position)
 {
 }
 
@@ -28,30 +28,72 @@ GETResponse& GETResponse::operator=(const GETResponse& src)
 	{
 		AResponse::operator=(src);
 		auto_index = src.auto_index;
+		response_complete = src.response_complete;
+		file_position = src.file_position;
 	}
 	return (*this);
 }
+
+/////////// GETTTERS ////////////
+
 
 
 /////////// HELPER METHODS ///////////
 
 std::string	GETResponse::getBodyFromFile()
 {
-	std::string body;
+	// std::string		body;
+	std::streampos		bytes_read;
+	int				buf_test = 500;
+	std::string		chunk_length;
+	std::string		chunk_termination;
 
-	std::ifstream file(full_file_path);
-	if (!file.is_open()) 
+	// std::ifstream file(full_file_path);
+	// if (!file.is_open()) 
+	// {
+	// 	handler.setStatus(404);
+	// 	throw CustomException("Not found");
+	// }
+	
+	file.seekg(file_position);
+
+	// std::stringstream buffer;
+	// buffer.write(reinterpret_cast<const char*>(file.rdbuf()), BUFFER_SIZE);
+
+	char buffer[500];
+	// buffer[300] = '\0';
+	file.read(buffer, buf_test);
+	// std::cout << "buffer: " << std::endl;
+	// for (int i = 0; i < 300; i++)
+	// {
+	// 	std::cout << buffer[i];
+	// }
+	// std::cout << std::endl;
+	std::cout << "file pos post: " << file.tellg() << std::endl;
+	bytes_read = file.gcount();
+
+	// std::string body;
+	// body.append(buffer);
+	std::string body(buffer, bytes_read);
+	file_position += bytes_read;
+	if (static_cast<int>(bytes_read) < buf_test)
 	{
-		handler.setStatus(404);
-		throw CustomException("Not found");
+		std::cout << "closing file" << std::endl;
+		response_complete = 1;
+		chunk_termination = "\r\n0\r\n\r\n";
+		file.close();
 	}
-	std::stringstream buffer;
-	buffer << file.rdbuf();
+	else
+		chunk_termination = "\r\n";
+	num_response_chunks2++;
 
-	body = buffer.str();
+	// body = buffer.str();
+	std::stringstream stream;
+	stream << std::hex << bytes_read;
+	chunk_length = stream.str() + "\r\n";
+	// std::cout << "Body: " << body << std::endl;
 
-	file.close(); 
-	return (body);
+	return (chunk_length + body + chunk_termination);
 }
 
 std::string GETResponse::getBodyFromDir()
@@ -87,7 +129,15 @@ std::string GETResponse::createBody()
 	if (auto_index)
 		body = getBodyFromDir();
 	else
+	{
+		file.open(full_file_path, std::ios::binary);
+		if (!file.is_open()) 
+		{
+			handler.setStatus(404);
+			throw CustomException("Not found");
+		}
 		body = getBodyFromFile();
+	}
 	return (body);
 }
 
@@ -96,12 +146,14 @@ std::string	GETResponse::createHeaderFields(std::string body) // probably don't 
 	std::string	header;
 	std::string mime_type = identifyMIME();
 
+	(void)body;
+
 	header.append("Content-Type: " + mime_type + "\r\n");
-	header.append("Content-Length: "); // alternatively TE: chunked?
-	header.append(toString(body.size()) + "\r\n");
+	// header.append("Content-Length: "); // alternatively TE: chunked?
+	// header.append(toString(body.size()) + "\r\n");
 	// what other headers to include?
 	// send Repsonses in Chunks?
-	// header.append("Transfer-Encoding: chunked");
+	header.append("Transfer-Encoding: chunked\r\n");
 	// header.append("Cache-Control: no-cache");
 	// header.append("Set-Cookie: preference=darkmode; Domain=example.com");
 	// header.append("Server: nginx/1.21.0");

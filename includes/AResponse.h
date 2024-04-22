@@ -20,6 +20,8 @@ protected:
 	std::string 		status_line;
 	std::string 		header_fields;
 
+	bool		response_complete;
+
 	// methods
 	std::string			buildPathFromLocationIndex();
 	std::string			createStatusLine();
@@ -40,8 +42,13 @@ public:
 	std::string			getRespondsHeaderFields() const;
 	std::string			getFullFilePath() const; // needed?
 
+	// getters
+	bool		getResponseCompleteStatus() const;
+
 	// methods
 	virtual void		createResponse() = 0;
+
+	int								num_response_chunks2;
 
 };
 

@@ -6,11 +6,13 @@
 AResponse::AResponse()
 	: handler(*new RequestHandler())
 {
+	num_response_chunks2 = 0;
 }
 
 AResponse::AResponse(RequestHandler& request_handler) 
 	: handler(request_handler)
 {
+	num_response_chunks2 = 0;
 }
 
 AResponse::~AResponse()
@@ -61,6 +63,12 @@ std::string AResponse::getResponseStatusLine() const
 std::string AResponse::getFullFilePath() const
 {
 	return (full_file_path);
+}
+
+
+bool	AResponse::getResponseCompleteStatus() const
+{
+	return (response_complete);
 }
 
 ///////// METHODS ///////////

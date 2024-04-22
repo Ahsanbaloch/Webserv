@@ -15,8 +15,11 @@ private:
 	//flags
 	bool		auto_index;
 
+	std::ifstream file;
+	std::streampos file_position;
+
 	// helper methods
-	std::string	getBodyFromFile();
+	
 	std::string	getBodyFromDir();
 	std::string	createBody();
 	std::string	createHeaderFields(std::string);
@@ -35,6 +38,7 @@ public:
 
 	// main method
 	void		createResponse();
+	std::string	getBodyFromFile();
 	
 };
 
