@@ -34,31 +34,19 @@ POSTResponse& POSTResponse::operator=(const POSTResponse& src)
 void	POSTResponse::respondFileUpload()
 {
 	status_line = createStatusLine();
-	// if (handler.content_type == handler.urlencoded)
-	// {
-	// 	body = createBody(); // tbd
-	// 	// set header fields with content type and length
-	// }
-	// else
-	// {
 
-	// }
-	header_fields = "Content-Type: plain/text\r\nContent-Length: 3\r\n\r\n";
-	header_fields.append("\r\n");
-	body = "201"; // should be gotten from handler.status
-	// send redirection?
-	// header_fields = ""; // send any header fields?
-	// body = "";
+	body = "\n\t\t<!DOCTYPE html>\n\t\t<html lang=\"en\">\n\t\t<head>\n\t\t\t<meta charset=\"UTF-8\">\n\t\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n\t\t\t<title>Error</title>\n\t\t</head>\n\t";
+	body.append("<body><h1>Success</h1></body></html>");
 	
+	header_fields.append("Location: http://localhost:");
+	header_fields.append(toString(handler.getServerConfig()[handler.getSelectedServer()].port));
+	header_fields.append(handler.getUploader()->getRelativeFilePath());
+	header_fields.append("\r\n");
+	header_fields.append("Content-Type: text/html\r\n");
+	header_fields.append("Content-Length: ");
+	header_fields.append(toString(body.size()) + "\r\n");
+	header_fields.append("\r\n");
 }
-
-// std::string	POSTResponse::createBody()
-// {
-// 	std::string	body;
-
-// 	return (body);
-// }
-
 
 ///////// MAIN METHOD //////////
 

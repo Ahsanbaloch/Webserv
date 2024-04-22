@@ -4,13 +4,13 @@
 #include <string>
 #include "RequestHandler.h"
 #include "AResponse.h"
+#include "utils.tpp"
 
 class POSTResponse: public AResponse
 {
 private:
 	// helper methods
 	void		respondFileUpload();
-	// std::string	createBody();
 
 	// constructors
 	POSTResponse();

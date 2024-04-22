@@ -35,6 +35,7 @@ public:
 
 	// getters
 	bool			getUploadStatus() const;
+	std::string		getRelativeFilePath();
 
 	// methods
 	virtual void	uploadData() = 0;

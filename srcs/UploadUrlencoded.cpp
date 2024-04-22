@@ -32,7 +32,6 @@ UploadUrlencoded::UploadUrlencoded(const UploadUrlencoded& src)
 	encoded_key = src.encoded_key;
 	encoded_value = src.encoded_value;
 	body_bytes_consumed = src.body_bytes_consumed;
-	database = src.database;
 	temp_value = src.temp_value;
 	temp_key = src.temp_key;
 	body_state = src.body_state;
@@ -46,7 +45,6 @@ UploadUrlencoded& UploadUrlencoded::operator=(const UploadUrlencoded& src)
 		encoded_key = src.encoded_key;
 		encoded_value = src.encoded_value;
 		body_bytes_consumed = src.body_bytes_consumed;
-		database = src.database;
 		temp_value = src.temp_value;
 		temp_key = src.temp_key;
 		body_state = src.body_state;
@@ -56,6 +54,45 @@ UploadUrlencoded& UploadUrlencoded::operator=(const UploadUrlencoded& src)
 
 
 /////////// HELPER METHODS ///////////
+
+void	UploadUrlencoded::storeInJSON()
+{
+	std::string data = convertToJSON();
+
+	g_num_form++;
+	filepath_outfile = "www/form_data/user" + toString(g_num_form) + ".json";
+
+	
+	std::ofstream file(filepath_outfile.c_str());
+	if (file.is_open())
+	{
+		file << data;
+		file.close();
+	}
+	else
+	{
+		handler.setStatus(500); // or 403 or other code?
+		throw CustomException("Internal Server Error");
+	}
+}
+
+std::string	UploadUrlencoded::convertToJSON()
+{
+	std::string	json;
+	int			database_size = database.size();
+
+	json.append("{\r\n");
+	for (std::map<std::string, std::string>::iterator it = database.begin(); it != database.end(); it++)
+	{
+		json.append("\"" + it->first + "\": \"" + it->second + "\"");
+		database_size--;
+		if (database_size > 0)
+			json.append(",\r\n");
+	}
+	json.append("\r\n}");
+
+	return (json);
+}
 
 void	UploadUrlencoded::storeInDatabase()
 {
@@ -163,13 +200,6 @@ void	UploadUrlencoded::decode(std::string& sequence)
 	}
 }
 
-///////// GETTERS //////////
-
-std::map<std::string, std::string>	UploadUrlencoded::getDatabase() const
-{
-	return (database);
-}
-
 
 /////////// MAIN METHOD ///////////
 
@@ -211,10 +241,5 @@ void	UploadUrlencoded::uploadData()
 			body_read = 1;
 		}
 	}
-	//testing
-	for (std::map<std::string, std::string>::iterator it = database.begin(); it != database.end(); it++)
-	{
-		std::cout << "key: " << it->first << " value: " << it->second << std::endl;
-	}
-	// may want to store in file and then specify filename here?
+	storeInJSON();
 }

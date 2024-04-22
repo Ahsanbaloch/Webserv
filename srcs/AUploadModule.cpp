@@ -50,6 +50,19 @@ bool	AUploadModule::getUploadStatus() const
 	return (body_read);
 }
 
+std::string	AUploadModule::getRelativeFilePath()
+{
+	std::string relative_path;
+	if (handler.content_type == handler.urlencoded)
+	{
+		std::string temp_root = "www";
+		relative_path = filepath_outfile.substr(temp_root.length());
+	}
+	else
+		relative_path = filepath_outfile.substr(handler.getLocationConfig().root.length());
+	return (relative_path);
+}
+
 
 ///////// METHODS ///////////
 
