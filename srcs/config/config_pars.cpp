@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/04/21 20:39:45 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/04/22 21:14:32 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -145,9 +145,6 @@ void config_pars::extractErrorPage(int &status, std::string &page, std::string s
     		{
 				status = -1;
 				page = "";
-			/* 	page = merge_str + "";
-				page = removeMultipleSlashes(page);
-				removLSlashes(page); */
 			}
 		}
 		else
@@ -157,9 +154,6 @@ void config_pars::extractErrorPage(int &status, std::string &page, std::string s
 	{
 		status = -1;
 		page = "";
-		/* page = merge_str + "";
-		page = removeMultipleSlashes(page);
-		removLSlashes(page); */
 	}
 }
 
@@ -297,6 +291,25 @@ void config_pars::cgiOp(t_location_config &location_config, const std::string &l
 		location_config.cgi_ext.clear();
 }
 
+void config_pars::uploadProcess(t_location_config &location_config, const std::string &location_block, std::string merge_string)
+{
+	std::string upload = extractVariables("uploadDir", location_block);
+	if (upload.empty() && _upload.empty())
+		location_config.uploadDir = "";
+	else if (!upload.empty())
+	{
+		SlashConvert(upload, merge_string, location_config.uploadDir);
+		if (access(location_config.uploadDir.c_str(), F_OK) != 0)
+			location_config.uploadDir = ""; // how to create the directory or it should return empty?
+	}
+	else
+	{
+		SlashConvert(_upload, merge_string, location_config.uploadDir);
+		if (access(location_config.uploadDir.c_str(), F_OK) != 0)
+			location_config.uploadDir = ""; // how to create the directory or it should return empty?
+	}
+}
+
 void	config_pars::parseLocationBlock(t_location_config &location_config, const std::string &location_block)
 {
 	std::string merge_string = parseRootPath(location_config, location_block);
@@ -314,12 +327,7 @@ void	config_pars::parseLocationBlock(t_location_config &location_config, const s
 		location_config.index = merge_string + "index.html";
 	else if (location_config.index.empty())
 		SlashConvert(index, merge_string, location_config.index);
-	std::string upload = extractVariables("uploadDir", location_block);
-	if (!upload.empty())
-		SlashConvert(upload, merge_string, location_config.uploadDir); // if (access(path.c_str(), F_OK) != 0) // how to create the directory or it should return empty?
-	else
-		location_config.uploadDir = _upload; // we have to add path with empty upload directory or not???
-	
+	uploadProcess(location_config, location_block, merge_string);
 	std::string error_page_string = extractVariables("error_page", location_block); //TODO: make another function for readability Error page
 	if (!error_page_string.empty())
 		extractErrorPage(location_config.errorPage.error_page_status, location_config.errorPage.html_page, error_page_string, merge_string);
