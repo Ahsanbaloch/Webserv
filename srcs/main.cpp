@@ -38,13 +38,17 @@ int	main(int argc, char **argv)
 				std::cout << "port and server name: " << it2->port << " " << it2->serverName << std::endl;
 				for (std::vector<t_location_config>::iterator it3 = it2->locations.begin(); it3 != it2->locations.end(); it3++)
 				{
-					/* std::cout << "error status : " << it3->errorPage.error_page_status << std::endl;
-					std::cout << "error page : "  << it3->errorPage.html_page << std::endl; */
-					//std::cout << "upload: " << it3->uploadDir << std::endl;
-					/* std::cout << "Path : " << it3->path << std::endl;
-					std::cout << "GET : " << std::boolalpha << it3->GET << 
-					"\tPOST : " << std::boolalpha << it3->POST <<
-					"\tDELETE : " << std::boolalpha << it3->DELETE << std::endl; */
+					/* std::cout << "error page : "  << it3->errorPage.html_page << std::endl;
+					std::cout << "upload: " << it3->uploadDir << std::endl;
+					std::cout << "root : " << it3->root << std::endl;
+					std::cout << "url : " << it3->redirect << std::endl; */
+					std::cout << "Path : " << it3->path << std::endl;
+					//std::cout << "cgi_ext size: " << it3->cgi_ext.size() << std::endl;
+					for (std::vector<std::string>::iterator it4 = it3->cgi_ext.begin(); it4 != it3->cgi_ext.end(); ++it4)
+					{
+						std::cout << "cgi-ext : " << *it4 << std::endl;
+
+					}
 				}
 			}
 		}

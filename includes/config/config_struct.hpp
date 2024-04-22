@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 14:14:51 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/04/18 16:10:49 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/04/21 18:43:06 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,7 @@ typedef struct s_location_config {
 	std::string									path;
 	std::string									root;
 	std::string									index;
-	std::string									cgi_ex;
+	std::vector<std::string>					cgi_ext;
 	std::string									redirect;
 	std::string									uploadDir;
 	bool										GET;
