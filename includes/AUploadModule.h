@@ -1,10 +1,10 @@
 #ifndef AUPLOADMODULE_H
 # define AUPLOADMODULE_H
 
-#include <string>
-#include <map>
-#include <fstream>
-#include "defines.h"
+# include <string>
+# include <map>
+# include <fstream>
+# include "defines.h"
 
 class RequestHandler;
 

@@ -62,6 +62,7 @@ void	ConnectionHandler::setResponseStatus(bool response_status)
 
 void	ConnectionHandler::removeRequestHandler()
 {
-	delete handler;
+	if (handler != NULL)
+		delete handler;
 	handler = NULL;
 }

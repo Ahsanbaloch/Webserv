@@ -33,9 +33,6 @@ GETResponse& GETResponse::operator=(const GETResponse& src)
 	return (*this);
 }
 
-/////////// GETTTERS ////////////
-
-
 
 /////////// HELPER METHODS ///////////
 

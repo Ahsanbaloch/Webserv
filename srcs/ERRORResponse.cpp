@@ -49,7 +49,6 @@ std::string	ERRORResponse::createBody(std::string status_code)
 	std::string html_var = "ERROR_CODE";
 	std::string err_file = "./www/default_error.html";
 
-	// check if there is a specific error file specified for a partiuclar error code
 	if (handler.getStatus() == handler.getLocationConfig().errorPage.error_page_status)
 		err_file = handler.getLocationConfig().errorPage.html_page;
 

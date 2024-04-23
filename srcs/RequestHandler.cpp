@@ -538,10 +538,8 @@ void	RequestHandler::storeChunkedData()
 {
 	if (temp_filename_unchunked.empty())
 	{
-		std::ostringstream num_conversion;
 		g_num_temp_unchunked_files++;
-		num_conversion << g_num_temp_unchunked_files;
-		temp_filename_unchunked = "www/temp/" + num_conversion.str() + ".bin";
+		temp_filename_unchunked = "www/temp/" + toString(g_num_temp_unchunked_files) + ".bin";
 	}
 
 	temp_unchunked.open(temp_filename_unchunked, std::ios::app | std::ios::binary);

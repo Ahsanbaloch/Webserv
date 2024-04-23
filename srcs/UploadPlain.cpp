@@ -63,10 +63,8 @@ void	UploadPlain::uploadData()
 		}
 		else
 		{
-			std::ostringstream num_conversion;
 			g_num_temp_files++;
-			num_conversion << g_num_temp_files;
-			filepath_outfile = handler.getLocationConfig().uploadDir + "/" + "textfile" + num_conversion.str() + ".txt"; // add the upload location dir to path
+			filepath_outfile = handler.getLocationConfig().uploadDir + "/" + "textfile" + toString(g_num_temp_files) + ".txt";
 		}
 	}
 

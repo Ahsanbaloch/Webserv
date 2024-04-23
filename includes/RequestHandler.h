@@ -1,28 +1,29 @@
 #ifndef REQUESTHANDLER_H
 # define REQUESTHANDLER_H
 
-#include <sys/socket.h>
-#include <string>
-#include <map>
-#include <vector>
-#include <sstream>
-#include <cstdio>
-#include "CustomException.h"
-#include "RequestHeader.h"
-#include "AUploadModule.h"
-#include "UploadMultipart.h"
-#include "UploadPlain.h"
-#include "UploadUrlencoded.h"
-#include "AResponse.h"
-#include "GETResponse.h"
-#include "DELETEResponse.h"
-#include "ERRORResponse.h"
-#include "CgiResponse.hpp"
-#include "POSTResponse.h"
-#include "REDIRECTResponse.h"
-#include "BodyExtractor.h"
-#include "config/config_pars.hpp"
-#include "defines.h"
+# include <sys/socket.h>
+# include <string>
+# include <map>
+# include <vector>
+# include <sstream>
+# include <cstdio>
+# include "CustomException.h"
+# include "RequestHeader.h"
+# include "AUploadModule.h"
+# include "UploadMultipart.h"
+# include "UploadPlain.h"
+# include "UploadUrlencoded.h"
+# include "AResponse.h"
+# include "GETResponse.h"
+# include "DELETEResponse.h"
+# include "ERRORResponse.h"
+# include "CgiResponse.hpp"
+# include "POSTResponse.h"
+# include "REDIRECTResponse.h"
+# include "BodyExtractor.h"
+# include "config/config_pars.hpp"
+# include "defines.h"
+# include "utils.tpp"
 
 
 class RequestHandler

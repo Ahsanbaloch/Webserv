@@ -63,10 +63,8 @@ void	BodyExtractor::extractBody()
 	{
 		if (temp_body_filepath.empty())
 		{
-			std::ostringstream num_conversion;
 			g_num_temp_raw_body++;
-			num_conversion << g_num_temp_raw_body;
-			temp_body_filepath = "www/temp_body/temp" + num_conversion.str() + ".bin";
+			temp_body_filepath = "www/temp_body/temp" + toString(g_num_temp_raw_body) + ".bin";
 		}
 
 		handler.buf_pos++;
