@@ -6,7 +6,7 @@
 /*   By: mamesser <mamesser@student.42wolfsburg.    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/04/23 12:06:30 by mamesser         ###   ########.fr       */
+/*   Updated: 2024/04/23 12:11:24 by mamesser         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -136,13 +136,10 @@ void config_pars::extractErrorPage(int &status, std::string &page, std::string s
 				throw MissingValueException("Error Page value...");
 			else
 			{
-				std::cout << "merger string: " << merge_str << std::endl;
-				std::cout << "page: " << page << std::endl;
  				page = merge_str + page;
 				page = removeMultipleSlashes(page);
 				removLSlashes(page);
 			}
-			std::cout << "error path: " << page << std::endl;
 			if (access(page.c_str() , F_OK) != 0)
     		{
 				status = -1;
