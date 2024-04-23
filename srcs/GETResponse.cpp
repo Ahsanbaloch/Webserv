@@ -44,7 +44,7 @@ std::string	GETResponse::getBodyFromFile()
 {
 	// std::string		body;
 	std::streampos		bytes_read;
-	int				buf_test = 500;
+	int				buf_test = 8000;
 	std::string		chunk_length;
 	std::string		chunk_termination;
 
@@ -60,7 +60,7 @@ std::string	GETResponse::getBodyFromFile()
 	// std::stringstream buffer;
 	// buffer.write(reinterpret_cast<const char*>(file.rdbuf()), BUFFER_SIZE);
 
-	char buffer[500];
+	char buffer[8000];
 	// buffer[300] = '\0';
 	file.read(buffer, buf_test);
 	// std::cout << "buffer: " << std::endl;

@@ -89,7 +89,7 @@ public:
 	s_location_config				getLocationConfig() const;
 	AUploadModule*					getUploader() const;
 	int								getSelectedLocation() const; // only for testing purposes
-	int								getSelectedServer() const;
+	int								getSelectedServer() const; /// should probably return t_server_config
 	int								getStatus() const;
 	bool							getResponseStatus() const;
 	int								getBytesRead() const;
