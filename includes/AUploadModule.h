@@ -20,9 +20,6 @@ protected:
 	bool				body_read;
 	bool				body_parsing_done; // only needed in Multipart class
 
-	// methods
-	std::string			getUploadDir();
-
 	// constructors
 	AUploadModule();
 	AUploadModule(const AUploadModule&);

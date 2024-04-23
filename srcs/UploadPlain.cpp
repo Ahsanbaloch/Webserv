@@ -6,12 +6,22 @@
 UploadPlain::UploadPlain()
 	: AUploadModule()
 {
+	if (handler.getLocationConfig().uploadDir.empty())
+	{
+		handler.setStatus(404);
+		throw CustomException("Not found");
+	}
 	body_bytes_consumed = 0;
 }
 
 UploadPlain::UploadPlain(RequestHandler& src)
 	: AUploadModule(src)
 {
+	if (handler.getLocationConfig().uploadDir.empty())
+	{
+		handler.setStatus(404);
+		throw CustomException("Not found");
+	}
 	body_bytes_consumed = 0;
 }
 
@@ -44,7 +54,7 @@ void	UploadPlain::uploadData()
 	{
 		if (!handler.getHeaderInfo().getFilename().empty())
 		{
-			filepath_outfile = getUploadDir() + handler.getHeaderInfo().getFilename();
+			filepath_outfile = handler.getLocationConfig().uploadDir + "/" + handler.getHeaderInfo().getFilename();
 			if (access(filepath_outfile.c_str(), F_OK) == 0)
 			{
 				handler.setStatus(403);
@@ -56,7 +66,7 @@ void	UploadPlain::uploadData()
 			std::ostringstream num_conversion;
 			g_num_temp_files++;
 			num_conversion << g_num_temp_files;
-			filepath_outfile = getUploadDir() + "textfile" + num_conversion.str() + ".txt"; // add the upload location dir to path
+			filepath_outfile = handler.getLocationConfig().uploadDir + "/" + "textfile" + num_conversion.str() + ".txt"; // add the upload location dir to path
 		}
 	}
 

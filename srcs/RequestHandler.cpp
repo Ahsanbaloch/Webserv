@@ -31,7 +31,6 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	total_chunk_size = 0;
 	trailer_exists = 0;
 	body_unchunked = 0;
-	test_flag = 0;
 	te_state = body_start;
 	
 	response = NULL;
@@ -206,8 +205,12 @@ void	RequestHandler::sendResponse()
 	
 	std::cout << "num response chunks: " << num_response_chunks_sent << std::endl;
 
-	send(connection_fd, resp.c_str(), resp.length(), 0); 
-	// check for errors when calling send (-1 and 0)
+	int bytes_sent = send(connection_fd, resp.c_str(), resp.length(), 0);
+	if (bytes_sent == -1)
+	{
+		// handle properly (also check for bytes_sent == 0)
+		std::cout << "error when sending data" << std::endl;
+	}
 }
 
 void	RequestHandler::processRequest()
