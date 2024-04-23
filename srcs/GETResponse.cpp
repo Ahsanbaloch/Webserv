@@ -4,12 +4,12 @@
 /////////// CONSTRUCTORS & DESTRUCTORS ///////////
 
 GETResponse::GETResponse()
-	: AResponse(), file_position(0), auto_index(0)
+	: AResponse(), file_position(0), file_size(0), auto_index(0)
 {
 }
 
 GETResponse::GETResponse(RequestHandler& src)
-	: AResponse(src), file_position(0), auto_index(0)
+	: AResponse(src), file_position(0), file_size(0), auto_index(0)
 {
 }
 
@@ -18,7 +18,7 @@ GETResponse::~GETResponse()
 }
 
 GETResponse::GETResponse(const GETResponse& src)
-	: AResponse(src), file_position(src.file_position), auto_index(src.auto_index)
+	: AResponse(src), file_position(src.file_position),  file_size(src.file_size), auto_index(src.auto_index)
 {
 }
 
@@ -28,6 +28,7 @@ GETResponse& GETResponse::operator=(const GETResponse& src)
 	{
 		AResponse::operator=(src);
 		file_position = src.file_position;
+		file_size = src.file_size;
 		auto_index = src.auto_index;
 	}
 	return (*this);
@@ -38,7 +39,7 @@ GETResponse& GETResponse::operator=(const GETResponse& src)
 
 std::string	GETResponse::getBodyFromFile()
 {
-	std::string			chunk_termination;
+	// std::string			chunk_termination;
 	char 				buffer[BUFFER_SIZE];
 	
 	input_file.seekg(file_position);
@@ -56,17 +57,18 @@ std::string	GETResponse::getBodyFromFile()
 	file_position += bytes_read;
 	std::string chunk_content(buffer, bytes_read);
 
-	if (static_cast<int>(bytes_read) < BUFFER_SIZE)
+	if (file_position == file_size)
 	{
 		response_complete = 1;
-		chunk_termination = "\r\n0\r\n\r\n";
+		// chunk_termination = "\r\n0\r\n\r\n";
 		input_file.close();
 	}
-	else
-		chunk_termination = "\r\n";
+	// else
+	// 	chunk_termination = "\r\n";
 	
-	std::string chunk_length = toHex(bytes_read) + "\r\n";
-	return (chunk_length + chunk_content + chunk_termination);
+	// std::string chunk_length = toHex(bytes_read) + "\r\n";
+	// return (chunk_length + chunk_content + chunk_termination);
+	return (chunk_content);
 }
 
 std::string GETResponse::getBodyFromDir()
@@ -109,7 +111,12 @@ std::string GETResponse::createBody()
 			handler.setStatus(404);
 			throw CustomException("Not found");
 		}
+		input_file.seekg(0, std::ios::end);
+		file_size = input_file.tellg();
+		input_file.seekg(std::ios::beg);
+		
 		body = getBodyFromFile();
+		chunked_body = 1;
 	}
 	return (body);
 }
@@ -119,20 +126,22 @@ std::string	GETResponse::createHeaderFields(std::string body) // probably don't 
 	std::string	header;
 	std::string mime_type = identifyMIME();
 
-	(void)body;
 
 	header.append("Content-Type: " + mime_type + "\r\n");
 	// header.append("Content-Length: "); // alternatively TE: chunked?
 	// header.append(toString(body.size()) + "\r\n");
 	// what other headers to include?
-	// send Repsonses in Chunks?
+	// send Repsonses in Chunks
 	if (auto_index)
 	{
 		header.append("Content-Length: "); // alternatively TE: chunked?
 		header.append(toString(body.size()) + "\r\n");
 	}
 	else
-		header.append("Transfer-Encoding: chunked\r\n");
+	{
+		// header.append("Transfer-Encoding: chunked\r\n");
+		header.append("Content-Length: " + std::to_string(file_size) + "\r\n");
+	}
 	// header.append("Cache-Control: no-cache");
 	// header.append("Set-Cookie: preference=darkmode; Domain=example.com");
 	// header.append("Server: nginx/1.21.0");
@@ -238,6 +247,4 @@ void	GETResponse::createResponse()
 		body = createBody();
 	
 	header_fields = createHeaderFields(body);
-	if (auto_index) /// change this
-		response_complete = 1;
 }

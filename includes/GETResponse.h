@@ -15,6 +15,7 @@ private:
 	//vars
 	std::ifstream	input_file;
 	std::streampos	file_position;
+	std::streampos	file_size;
 
 	//flags
 	bool			auto_index;

@@ -65,10 +65,14 @@ std::string AResponse::getFullFilePath() const
 	return (full_file_path);
 }
 
-
 bool	AResponse::getResponseCompleteStatus() const
 {
 	return (response_complete);
+}
+
+bool	AResponse::getChunkedBodyStatus() const
+{
+	return (chunked_body);
 }
 
 ///////// METHODS ///////////

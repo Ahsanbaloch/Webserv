@@ -180,7 +180,7 @@ void	RequestHandler::sendResponse()
 {
 	std::string resp;
 
-	if (request_header.getMethod() == "GET" && getLocationConfig().redirect.empty() && status < 400) // other conditions?
+	if (request_header.getMethod() == "GET" && response->getChunkedBodyStatus() && status < 400)
 	{
 		if (num_response_chunks_sent > 0)
 		{
@@ -204,7 +204,7 @@ void	RequestHandler::sendResponse()
 	
 	
 	std::cout << "num response chunks: " << num_response_chunks_sent << std::endl;
-	std::cout << "message:" << resp << std::endl;
+	// std::cout << "message:" << resp << std::endl;
 
 	int bytes_sent = send(connection_fd, resp.c_str(), resp.length(), 0);
 	if (bytes_sent == -1)
