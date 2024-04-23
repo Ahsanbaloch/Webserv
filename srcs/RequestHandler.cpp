@@ -101,9 +101,9 @@ int	RequestHandler::getSelectedLocation() const
 	return (selected_location);
 }
 
-int	RequestHandler::getSelectedServer() const
+t_server_config	RequestHandler::getSelectedServer() const
 {
-	return (selected_server);
+	return (server_config[selected_server]);
 }
 
 bool	RequestHandler::getResponseStatus() const
@@ -340,7 +340,7 @@ void RequestHandler::checkInternalRedirect()
 		if (access(new_file_path.c_str(), F_OK) == 0)
 		{
 			internal_redirect = 1;
-			int_redir_referer_path = "http://localhost:" + toString(getServerConfig()[getSelectedServer()].port) + getLocationConfig().path;
+			int_redir_referer_path = "http://localhost:" + toString(getSelectedServer().port) + getLocationConfig().path;
 			std::string	orig_root = getLocationConfig().root;
 			findLocationBlock();
 			checkAllowedMethods();

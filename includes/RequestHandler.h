@@ -91,7 +91,7 @@ public:
 	AUploadModule*					getUploader() const;
 	AResponse*						getResponseObj() const;
 	int								getSelectedLocation() const; // only for testing purposes
-	int								getSelectedServer() const; /// should probably return t_server_config
+	t_server_config					getSelectedServer() const; /// should probably return t_server_config
 	int								getStatus() const;
 	bool							getResponseStatus() const;
 	int								getBytesRead() const;

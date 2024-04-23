@@ -82,7 +82,7 @@ void CgiResponse::_setEnv() {
 	_env.push_back("REQUEST_METHOD=" + handler.getHeaderInfo().getMethod());
 	_env.push_back("REQUEST_URI=" + handler.getHeaderInfo().getPath());
 	_env.push_back("SCRIPT_NAME=" + _scriptPath);
-	_env.push_back("SERVER_NAME=" + handler.getServerConfig()[handler.getSelectedServer()].serverName);
+	_env.push_back("SERVER_NAME=" + handler.getSelectedServer().serverName);
 	//_env.push_back("SERVER_PORT=" + handler.getSelectedServer().port);
 	_env.push_back("SERVER_PROTOCOL=" + handler.getHeaderInfo().getHttpVersion());
 	_env.push_back("SERVER_SOFTWARE=webserv");
