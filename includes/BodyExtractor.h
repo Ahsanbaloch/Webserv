@@ -31,7 +31,7 @@ public:
 	bool		getExtractionStatus() const;
 
 	// methods
-	void	extractBody();
+	void			extractBody();
 };
 
 

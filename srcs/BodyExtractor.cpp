@@ -3,14 +3,13 @@
 #include "RequestHandler.h"
 
 BodyExtractor::BodyExtractor()
-	: handler(*new RequestHandler())
+	: handler(*new RequestHandler()), body_bytes_consumed(0), extraction_status(0)
 {
 }
 
 BodyExtractor::BodyExtractor(RequestHandler& src)
-	: handler(src)
+	: handler(src), body_bytes_consumed(0), extraction_status(0)
 {
-	body_bytes_consumed = 0;
 }
 
 BodyExtractor::~BodyExtractor()
@@ -20,6 +19,9 @@ BodyExtractor::~BodyExtractor()
 BodyExtractor::BodyExtractor(const BodyExtractor& src)
 	: handler(src.handler)
 {
+	temp_body_filepath = src.temp_body_filepath;
+	body_bytes_consumed = src.body_bytes_consumed;
+	extraction_status = src.extraction_status;
 }
 
 BodyExtractor& BodyExtractor::operator=(const BodyExtractor& src)
@@ -27,9 +29,13 @@ BodyExtractor& BodyExtractor::operator=(const BodyExtractor& src)
 	if (this != &src)
 	{
 		handler = src.handler;
+		temp_body_filepath = src.temp_body_filepath;
+		body_bytes_consumed = src.body_bytes_consumed;
+		extraction_status = src.extraction_status;
 	}
 	return (*this);
 }
+
 
 //// GETTERS ////
 
@@ -50,9 +56,7 @@ void	BodyExtractor::extractBody()
 {
 	if (handler.getUnchunkingStatus())
 	{
-		printf("Here\n");
-		// may move to other location then --> temp_body
-		temp_body_filepath = handler.getUnchunkedDataFile(); // we already have the file just need to set it
+		temp_body_filepath = handler.getUnchunkedDataFile();
 		extraction_status = 1;
 	}
 	else
