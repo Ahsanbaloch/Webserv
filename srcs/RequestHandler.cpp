@@ -373,6 +373,12 @@ AResponse* RequestHandler::prepareResponse()
 
 	if (!getLocationConfig().redirect.empty())
 		return (new REDIRECTResponse(*this));
+	if (request_header.getFileExtension() == "py")
+	{
+		
+		return (new CgiResponse(*this)); // need to free this somewhere
+	}
+	//CGi Extension Check to be done here
 	else if (request_header.getMethod() == "GET")
 		return (new GETResponse(*this)); // need to free this somewhere
 	else if (request_header.getMethod() == "DELETE")
