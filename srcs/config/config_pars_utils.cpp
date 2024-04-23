@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 16:53:25 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/19 16:42:25 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/04/21 19:50:24 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -134,4 +134,82 @@ void	checkport(const std::string &port_str, int &port)
 	}
 	else
 		throw InvalidPortException();
+}
+
+//root insertion and  valueCheck for root
+std::string rootValueCheck(t_location_config &location_config, std::string rootValue, std::string &_server_root)
+{
+	rootValue = removeMultipleSlashes(rootValue);
+	_server_root = removeMultipleSlashes(_server_root);
+	(void)location_config;
+	if (rootValue.empty() && _server_root.empty())
+		throw MissingValueException("Root : ");
+	else if (!rootValue.empty())
+		location_config.root = removeFndLSlashes(rootValue);
+	else
+		location_config.root = removeFndLSlashes(_server_root);
+	return (location_config.root);
+}
+
+void removeFSlashes(std::string &input)
+{
+	if (input[0] == '/')
+		input = input.substr(1);
+}
+
+void removLSlashes(std::string &input)
+{
+	if (input[input.length() - 1] == '/')
+		input = input.substr(0, (input.length() - 1));
+}
+std::string removeFndLSlashes(std::string & input)
+{
+	removeFSlashes(input);
+	removLSlashes(input);
+	return (input);
+}
+
+void SlashConvert(std::string real_str, std::string merge_str, std::string &store_str)
+{
+	real_str = merge_str + real_str;
+	real_str = removeMultipleSlashes(real_str);
+	removLSlashes(real_str);
+	store_str = real_str;
+}
+
+std::string removeMultipleSlashes(const std::string& input) 
+{
+    std::string result;
+    char lastChar = 0;
+    for (std::string::const_iterator it = input.begin(); it != input.end(); ++it) 
+	{
+        char c = *it;
+        if (c != '/' || lastChar != '/')
+            result += c;
+        lastChar = c;
+    }
+    return (result);
+}
+
+void extractMultipleCgi(std::vector<std::string> &cgi_ext, const std::string cgi_str)
+{
+	std::istringstream ss(cgi_str);
+	std::string token;
+	while (ss >> token)
+	{
+		if (token[0] == '.')
+		{
+			std::string newToken;
+			for (std::string::iterator it = token.begin(); it != token.end(); ++it)
+			{
+				if (*it != ' ')
+					newToken += *it; 
+			}
+			cgi_ext.push_back(newToken);
+		}
+	}
+	for (std::vector<std::string>::iterator it = cgi_ext.begin(); it != cgi_ext.end(); ++it)
+    {
+        std::cout << *it << std::endl;
+    }
 }
