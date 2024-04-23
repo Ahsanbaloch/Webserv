@@ -27,8 +27,8 @@ public:
 	~BodyExtractor();
 
 	// getters
-	std::string	getTempBodyFilepath() const;
-	bool		getExtractionStatus() const;
+	std::string		getTempBodyFilepath() const;
+	bool			getExtractionStatus() const;
 
 	// methods
 	void			extractBody();
