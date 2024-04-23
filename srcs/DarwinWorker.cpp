@@ -88,7 +88,8 @@ void	DarwinWorker::runEventLoop()
 			if (event_lst[i].flags & EV_EOF)
 			{
 				std::cout << "client disconnected\n";
-				closeConnection(i);
+				if (connected_clients[event_lst[i].ident] != NULL)
+					closeConnection(i);
 			}
 			// event came from listening socket --> we have to create a connection
 			else if (*reinterpret_cast<int*>(event_lst[i].udata) == Q.getListeningSocketIdent())
