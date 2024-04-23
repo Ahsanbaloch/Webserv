@@ -35,6 +35,11 @@ GETResponse& GETResponse::operator=(const GETResponse& src)
 }
 
 
+void	GETResponse::decrementFilePosition(std::streampos bytes_not_read)
+{
+	file_position -= bytes_not_read;
+}
+
 /////////// HELPER METHODS ///////////
 
 std::string	GETResponse::getBodyFromFile()
@@ -68,6 +73,7 @@ std::string	GETResponse::getBodyFromFile()
 	
 	// std::string chunk_length = toHex(bytes_read) + "\r\n";
 	// return (chunk_length + chunk_content + chunk_termination);
+	handler.bytes_to_send = bytes_read;
 	return (chunk_content);
 }
 
@@ -248,5 +254,5 @@ void	GETResponse::createResponse()
 		body = createBody();
 	
 	header_fields = createHeaderFields(body);
-	// handler.total_bytes_sent -= status_line.size() + header_fields.size();
+	handler.bytes_to_send = status_line.size() + body.size() + header_fields.size();
 }

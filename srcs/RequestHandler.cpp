@@ -206,19 +206,38 @@ void	RequestHandler::sendResponse()
 	
 	// std::cout << "num response chunks: " << num_response_chunks_sent << std::endl;
 	// std::cout << "message:" << resp << std::endl;
-	size_t total_bytes_sent = 0;
-	int bytes_sent = 0;
-	while (total_bytes_sent < resp.length())
+	int bytes_sent = send(connection_fd, resp.c_str(), resp.length(), 0);
+	if (bytes_sent == -1)
 	{
-		bytes_sent = send(connection_fd, resp.c_str(), resp.length() - total_bytes_sent, 0);
-		if (bytes_sent == -1)
-		{
-			// handle properly (also check for bytes_sent == 0)
-			std::cout << "error when sending data" << std::endl;
-			// break;
-		}
-		total_bytes_sent += bytes_sent;
+		// handle properly (also check for bytes_sent == 0)
+		std::cout << "error when sending data" << std::endl;
+		// break;
 	}
+	if (response->getChunkedBodyStatus() && (bytes_sent != bytes_to_send))
+	{
+		GETResponse* get = dynamic_cast<GETResponse*>(response);
+		if (get)
+			get->decrementFilePosition(bytes_to_send - bytes_sent);
+		else
+		{
+			// need to send a error response in this case
+			std::cout << "error resetting file position" << std::endl;
+		}
+	}
+
+	// size_t total_bytes_sent = 0;
+	// int bytes_sent = 0;
+	// while (total_bytes_sent < resp.length())
+	// {
+	// 	bytes_sent = send(connection_fd, resp.c_str(), resp.length() - total_bytes_sent, 0);
+	// 	if (bytes_sent == -1)
+	// 	{
+	// 		// handle properly (also check for bytes_sent == 0)
+	// 		std::cout << "error when sending data" << std::endl;
+	// 		// break;
+	// 	}
+	// 	total_bytes_sent += bytes_sent;
+	// }
 	
 	// total_bytes_sent += bytes_sent;
 	// std::cout << "chunk sent: " << bytes_sent << std::endl;

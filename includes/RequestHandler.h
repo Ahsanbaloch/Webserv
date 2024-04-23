@@ -136,6 +136,7 @@ public:
 	} content_type;
 
 	// int							total_bytes_sent;
+	int								bytes_to_send;
 };
 
 #endif
