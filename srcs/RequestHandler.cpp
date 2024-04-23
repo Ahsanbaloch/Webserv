@@ -180,7 +180,7 @@ void	RequestHandler::sendResponse()
 {
 	std::string resp;
 
-	if (request_header.getMethod() == "GET" && getLocationConfig().redirect.empty())
+	if (request_header.getMethod() == "GET" && getLocationConfig().redirect.empty() && status < 400) // other conditions?
 	{
 		if (num_response_chunks_sent > 0)
 		{

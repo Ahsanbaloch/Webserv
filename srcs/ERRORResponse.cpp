@@ -43,23 +43,6 @@ std::string	ERRORResponse::getDefaultErrorMessage(std::string status_code)
 	return (body);
 }
 
-// can be removed after config integration
-std::string	ERRORResponse::getErrorPagePath()
-{
-	std::string err_page = handler.getLocationConfig().root + handler.getLocationConfig().path + handler.getLocationConfig().errorPage.html_page;
-
-	for (std::string::iterator it = err_page.begin(); it != err_page.end(); it++)
-	{
-		if (*it == '/')
-		{
-			it++;
-			while (*it == '/')
-				it = err_page.erase(it);
-		}
-	}
-	return (err_page);
-}
-
 std::string	ERRORResponse::createBody(std::string status_code)
 {
 	std::string body;
@@ -68,7 +51,7 @@ std::string	ERRORResponse::createBody(std::string status_code)
 
 	// check if there is a specific error file specified for a partiuclar error code
 	if (handler.getStatus() == handler.getLocationConfig().errorPage.error_page_status)
-		err_file = getErrorPagePath();
+		err_file = handler.getLocationConfig().errorPage.html_page;
 
 	std::ifstream file(err_file);
 	if (!file.is_open()) 
