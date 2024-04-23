@@ -13,18 +13,18 @@ protected:
 	RequestHandler&	handler;
 
 	// vars
-	std::string			file_type;
-	std::string			full_file_path;
-	std::string			body;
-	std::string 		status_line;
-	std::string 		header_fields;
+	std::string		file_type;
+	std::string		full_file_path;
+	
+	std::string		body;
+	std::string		status_line;
+	std::string		header_fields;
 
 	// flags
-	bool				response_complete;
+	bool			response_complete;
 
 	// methods
-	std::string			buildPathFromLocationIndex();
-	std::string			createStatusLine();
+	std::string		createStatusLine();
 
 	// constructors
 	AResponse();
@@ -37,18 +37,14 @@ public:
 	virtual ~AResponse();
 
 	// getters
-	std::string			getResponseBody() const;
-	std::string			getResponseStatusLine() const;
-	std::string			getRespondsHeaderFields() const;
-	std::string			getFullFilePath() const; // needed?
-
-	// getters
-	bool				getResponseCompleteStatus() const;
+	std::string		getResponseBody() const;
+	std::string		getResponseStatusLine() const;
+	std::string		getRespondsHeaderFields() const;
+	std::string		getFullFilePath() const; // needed?
+	bool			getResponseCompleteStatus() const;
 
 	// methods
-	virtual void		createResponse() = 0;
-
-	int								num_response_chunks2;
+	virtual void	createResponse() = 0;
 
 };
 
