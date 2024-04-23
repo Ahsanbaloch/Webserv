@@ -41,8 +41,6 @@ private:
 	bool								expect_exists;
 	
 	// main methods
-	void								parseRequestLine();
-	void								parseHeaderFields();
 	void								removeDots();
 	void								checkFields();
 	void								identifyFileName();
@@ -95,6 +93,7 @@ public:
 	std::map<std::string, std::string>	getHeaderFields() const;
 	std::string							getFilename() const;
 	std::string							getFileExtension() const;
+	bool								getRequestLineStatus() const;
 	bool								getHeaderStatus() const;
 	bool								getBodyStatus() const;
 	bool								getHeaderExpectedStatus() const;
@@ -103,7 +102,8 @@ public:
 	int									getBodyLength() const;
 
 	// methods
-	void								parseHeader();
+	void								parseRequestLine();
+	void								parseHeaderFields();
 	void								checkHeader();
 
 };

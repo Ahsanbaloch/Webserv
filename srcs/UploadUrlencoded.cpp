@@ -1,10 +1,10 @@
 
-#include "URLENCODEDBody.h"
+#include "UploadUrlencoded.h"
 
 /////////// CONSTRUCTORS & DESTRUCTORS ///////////
 
-URLENCODEDBody::URLENCODEDBody()
-	: ARequestBody()
+UploadUrlencoded::UploadUrlencoded()
+	: AUploadModule()
 {
 	encoded_key = 0;
 	encoded_value = 0;
@@ -12,8 +12,8 @@ URLENCODEDBody::URLENCODEDBody()
 	body_state = key;
 }
 
-URLENCODEDBody::URLENCODEDBody(RequestHandler& src)
-	: ARequestBody(src)
+UploadUrlencoded::UploadUrlencoded(RequestHandler& src)
+	: AUploadModule(src)
 {
 	encoded_key = 0;
 	encoded_value = 0;
@@ -21,12 +21,12 @@ URLENCODEDBody::URLENCODEDBody(RequestHandler& src)
 	body_state = key;
 }
 
-URLENCODEDBody::~URLENCODEDBody()
+UploadUrlencoded::~UploadUrlencoded()
 {
 }
 
-URLENCODEDBody::URLENCODEDBody(const URLENCODEDBody& src)
-	: ARequestBody(src)
+UploadUrlencoded::UploadUrlencoded(const UploadUrlencoded& src)
+	: AUploadModule(src)
 {
 	// copy input filestream --> how?
 	encoded_key = src.encoded_key;
@@ -38,11 +38,11 @@ URLENCODEDBody::URLENCODEDBody(const URLENCODEDBody& src)
 	body_state = src.body_state;
 }
 
-URLENCODEDBody& URLENCODEDBody::operator=(const URLENCODEDBody& src)
+UploadUrlencoded& UploadUrlencoded::operator=(const UploadUrlencoded& src)
 {
 	if (this != &src)
 	{
-		ARequestBody::operator=(src);
+		AUploadModule::operator=(src);
 		encoded_key = src.encoded_key;
 		encoded_value = src.encoded_value;
 		body_bytes_consumed = src.body_bytes_consumed;
@@ -57,7 +57,7 @@ URLENCODEDBody& URLENCODEDBody::operator=(const URLENCODEDBody& src)
 
 /////////// HELPER METHODS ///////////
 
-void	URLENCODEDBody::storeInDatabase()
+void	UploadUrlencoded::storeInDatabase()
 {
 	if (encoded_key)
 	{
@@ -75,7 +75,7 @@ void	URLENCODEDBody::storeInDatabase()
 	body_state = key;
 }
 
-void	URLENCODEDBody::parseBody(char ch)
+void	UploadUrlencoded::parseBody(char ch)
 {
 	switch (body_state)
 	{
@@ -127,7 +127,7 @@ void	URLENCODEDBody::parseBody(char ch)
 	}
 }
 
-void	URLENCODEDBody::decode(std::string& sequence)
+void	UploadUrlencoded::decode(std::string& sequence)
 {
 	for (std::string::iterator it = sequence.begin(); it != sequence.end(); it++)  // allowed values #01 - #FF (although ASCII only goes till #7F/7E)
 	{
@@ -163,17 +163,24 @@ void	URLENCODEDBody::decode(std::string& sequence)
 	}
 }
 
+///////// GETTERS //////////
+
+std::map<std::string, std::string>	UploadUrlencoded::getDatabase() const
+{
+	return (database);
+}
+
 
 /////////// MAIN METHOD ///////////
 
-void	URLENCODEDBody::readBody()
+void	UploadUrlencoded::uploadData()
 {
 	if (handler.getHeaderInfo().getTEStatus())
 	{
-		unchunkBody();
-		if (body_read)
-		{
-			input.open(filename, std::ios::ate);
+		// unchunkBody();
+		// if (body_read)
+		// {
+			input.open(handler.getUnchunkedDataFile(), std::ios::ate);
 			std::streamsize file_size = input.tellg();
 			input.seekg(0, std::ios::beg);
 			char ch;
@@ -183,9 +190,10 @@ void	URLENCODEDBody::readBody()
 				parseBody(ch);
 			}
 			storeInDatabase();
+			body_read = 1;
 			input.close();
-			remove(filename.c_str());
-		}
+			// remove(handler.getUnchunkedDataFile().c_str());
+		// }
 	}
 	else
 	{
@@ -201,11 +209,11 @@ void	URLENCODEDBody::readBody()
 			storeInDatabase();
 			body_read = 1;
 		}
-
-		//testing
-		for (std::map<std::string, std::string>::iterator it = database.begin(); it != database.end(); it++)
-		{
-			std::cout << "key: " << it->first << " value: " << it->second << std::endl;
-		}
 	}
+	//testing
+	for (std::map<std::string, std::string>::iterator it = database.begin(); it != database.end(); it++)
+	{
+		std::cout << "key: " << it->first << " value: " << it->second << std::endl;
+	}
+	// may want to store in file and then specify filename here?
 }

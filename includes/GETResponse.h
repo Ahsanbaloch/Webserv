@@ -13,9 +13,6 @@
 class GETResponse: public AResponse
 {
 private:
-	// var
-	std::string			full_file_path;
-
 	//flags
 	bool				auto_index;
 
@@ -26,6 +23,7 @@ private:
 	void		checkInternalRedirects();
 	std::string	getBodyFromFile();
 	std::string	getBodyFromDir();
+	void		checkRedirectedLocationBlock();
 
 	// constructors
 	GETResponse();
@@ -38,6 +36,7 @@ public:
 
 	// main method
 	void	createResponse();
+
 };
 
 #endif

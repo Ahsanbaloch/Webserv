@@ -47,15 +47,6 @@ void	POSTResponse::respondFileUpload()
 
 void	POSTResponse::createResponse()
 {
-	if (!handler.getLocationConfig().POST)
-	{
-		handler.setStatus(405);
-		throw CustomException("Method Not Allowed");
-	}
-	else
-	{
-		// differentiate for different content types?
-		handler.setStatus(201);
-		respondFileUpload();
-	}
+	handler.setStatus(201);
+	respondFileUpload();
 }

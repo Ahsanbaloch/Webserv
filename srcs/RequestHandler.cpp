@@ -21,21 +21,32 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	request_length = 0;
 
 	buf_pos = -1;
+
+	 // also add in copy constructor etc.
+	chunk_length = 0;
+	total_chunk_size = 0;
+	trailer_exists = 0;
+	body_unchunked = 0;
+	te_state = body_start;
 	
 	response = NULL;
-	request_body = NULL;
+	uploader = NULL;
+	body_extractor = NULL;
 	memset(&buf, 0, sizeof(buf));
 }
 
 RequestHandler::~RequestHandler()
 {
 	delete response;
-	delete request_body;
+	delete uploader;
+	if (body_extractor != NULL) // needed?
+		delete body_extractor;
 }
 
 RequestHandler::RequestHandler(const RequestHandler& src)
 	: request_header(src.request_header)
 {
+	// tbd
 }
 
 RequestHandler& RequestHandler::operator=(const RequestHandler& src)
@@ -53,7 +64,8 @@ RequestHandler& RequestHandler::operator=(const RequestHandler& src)
 		request_length = src.request_length;
 		buf_pos = src.buf_pos;
 		response = src.response;
-		request_body = src.request_body;
+		uploader = src.uploader;
+		body_extractor = src.body_extractor;
 	}
 	return (*this);
 }
@@ -101,6 +113,17 @@ const RequestHeader&	RequestHandler::getHeaderInfo()
 	return (request_header);
 }
 
+bool	RequestHandler::getUnchunkingStatus() const
+{
+	return (body_unchunked);
+}
+
+std::string	RequestHandler::getTempBodyFilepath() const
+{
+	return (body_extractor->getTempBodyFilepath());
+}
+
+
 
 ///////// SETTERS ///////////
 
@@ -115,6 +138,7 @@ void	RequestHandler::setStatus(int status)
 void	RequestHandler::sendResponse()
 {
 	std::string resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
+	// std::cout << resp << std::endl;
 	send(connection_fd, resp.c_str(), resp.length(), 0); 
 	// check for errors when calling send
 }
@@ -139,10 +163,21 @@ void	RequestHandler::processRequest()
 	{
 		// check if headers have already been read
 		if (!request_header.getHeaderStatus())
-			request_header.parseHeader();
+		{
+			if (!request_header.getRequestLineStatus())
+				request_header.parseRequestLine();
+			if (request_header.getRequestLineStatus())
+			{
+				determineLocationBlock();
+				checkAllowedMethods(); // check if method is allowed in selected location
+				request_header.parseHeaderFields();
+			}
+		}
+
 		if (request_header.getHeaderStatus())
 		{
 			request_header.checkHeader();
+
 			//for testing: print received headers
 			printf("\nheaders\n");
 			std::map<std::string, std::string> headers = request_header.getHeaderFields();
@@ -160,19 +195,38 @@ void	RequestHandler::processRequest()
 				// make reponse
 				// in this case we don't want to destroy the requesthandler object
 			}
-			// if body is expected, read the body
-			if (request_header.getBodyStatus())
+			// if body is expected, read the body (unless the selected location demands a redirect or it is not a POST request) 
+			if (request_header.getBodyStatus() && request_header.getMethod() == "POST" && getLocationConfig().redirect.empty())
 			{
-				if (request_body == NULL)
-					request_body = checkContentType(); // needs to be deleted/freed somewhere
-				request_body->readBody();
+				// unchunk body if needed
+				if (getHeaderInfo().getTEStatus() && !body_unchunked)
+					unchunkBody();
+				if (!getHeaderInfo().getTEStatus() || body_unchunked)
+				{
+					if (request_header.getFileExtension() == "py") // what if other cgi extension?
+					{
+						if (body_extractor == NULL)
+							body_extractor = new BodyExtractor(*this);
+						body_extractor->extractBody();
+						std::cout << body_extractor->getTempBodyFilepath() << std::endl;
+					}
+					else
+					{
+						if (uploader == NULL)
+							uploader = checkContentType(); // needs to be deleted/freed somewhere
+						uploader->uploadData();
+					}
+				}
 			}
 			// if no body is expected OR end of body has been reached
-			if (!request_header.getBodyStatus() || (request_body != NULL && request_body->getBodyProcessed()))
+			// check how getBodyStatus() gets set (does it already check for request method?)
+			if (!request_header.getBodyStatus() || (uploader != NULL && uploader->getUploadStatus())
+				|| !getLocationConfig().redirect.empty() || (body_extractor != NULL && body_extractor->getExtractionStatus()))
 			{
 				// std::cout << "body content: " << request_body.body << std::endl;
 				response = prepareResponse(); // how to handle errors in here?
 				response->createResponse(); // how to handle errors in here?
+				// if index directive is cgi, check here again and create cgi object
 				response_ready = 1;
 			}
 		}
@@ -186,8 +240,26 @@ void	RequestHandler::processRequest()
 	}
 }
 
+void		RequestHandler::checkAllowedMethods()
+{
+	if (request_header.getMethod() == "GET" && !getLocationConfig().GET)
+	{
+		setStatus(405);
+		throw CustomException("Method Not Allowed");
+	}
+	else if (request_header.getMethod() == "POST" && !getLocationConfig().POST)
+	{
+		setStatus(405);
+		throw CustomException("Method Not Allowed");
+	}
+	else if (request_header.getMethod() == "DELETE" && !getLocationConfig().DELETE)
+	{
+		setStatus(405);
+		throw CustomException("Method Not Allowed");
+	}
+}
 
-AResponse* RequestHandler::prepareResponse()
+void RequestHandler::determineLocationBlock()
 {
 	// find server block if there are multiple that match (this applies to all request types)
 	if (server_config.size() > 1)
@@ -196,18 +268,34 @@ AResponse* RequestHandler::prepareResponse()
 	// find location block within server block if multiple exist (this applies to all request types; for GET requests there might be an internal redirect happening later on)
 	if (server_config[selected_server].locations.size() > 1)
 		findLocationBlock();
+}
 
-	if (request_header.getMethod() == "GET")
+AResponse* RequestHandler::prepareResponse()
+{
+	if (!getLocationConfig().redirect.empty())
+		return (new REDIRECTResponse(*this));
+	if (request_header.getFileExtension() == "py")
+	{
+		
+		return (new CgiResponse(*this)); // need to free this somewhere
+	}
+	//CGi Extension Check to be done here
+	else if (request_header.getMethod() == "GET")
 		return (new GETResponse(*this)); // need to free this somewhere
 	else if (request_header.getMethod() == "DELETE")
 		return (new DELETEResponse(*this)); // need to free this somewhere
 	else if (request_header.getMethod() == "POST")
 		return (new POSTResponse(*this));
-	return (NULL);
+	else
+	{
+		setStatus(501);
+		throw CustomException("Not implemented");
+	}
+		
 }
 
 
-ARequestBody*	RequestHandler::checkContentType()
+AUploadModule*	RequestHandler::checkContentType()
 {
 	std::string value = getHeaderInfo().getHeaderFields()["content-type"];
 	std::string type;
@@ -222,18 +310,18 @@ ARequestBody*	RequestHandler::checkContentType()
 	if (type == "multipart/form-data")
 	{
 		content_type = multipart_form;
-		return (new MULTIPARTBody(*this));
+		return (new UploadMultipart(*this));
 	}
 	else if (type == "application/x-www-form-urlencoded")
 	{
 		content_type = urlencoded;
-		return (new URLENCODEDBody(*this));
+		return (new UploadUrlencoded(*this));
 	}
 	else
 	{
 		// or throwException if type is not supported?
 		content_type = text_plain;
-		return (new PLAINBody(*this));
+		return (new UploadPlain(*this));
 	}
 }
 
@@ -245,12 +333,7 @@ void	RequestHandler::findLocationBlock() // double check if this is entirely cor
 		uri_path_items = splitPath(request_header.getPath(), '/');
 	else
 	{
-		std::string temp;
-		if (!getLocationConfig().index.empty() && getLocationConfig().index[0] != '/')
-			temp = "/" +  getLocationConfig().index;
-		else
-			temp = getLocationConfig().index;
-		std::cout << "temp: " << temp << std::endl;
+		std::string temp = response->getFullFilePath().substr(getLocationConfig().root.length());
 		uri_path_items = splitPath(temp, '/');
 	}
 	int	size = server_config[selected_server].locations.size();
@@ -336,6 +419,297 @@ void	RequestHandler::findServerBlock()
 
 
 
+std::string	RequestHandler::getUnchunkedDataFile() const
+{
+	return (temp_filename_unchunked);
+}
+
+int			RequestHandler::getTotalChunkSize() const
+{
+	return (total_chunk_size);
+}
+
+void	RequestHandler::storeChunkedData()
+{
+	if (temp_filename_unchunked.empty())
+	{
+		std::ostringstream num_conversion;
+		g_num_temp_unchunked_files++;
+		num_conversion << g_num_temp_unchunked_files;
+		temp_filename_unchunked = "www/temp/" + num_conversion.str() + ".bin";
+	}
+
+	temp_unchunked.open(temp_filename_unchunked, std::ios::app | std::ios::binary);
+	int to_write = std::min(getBytesRead() - buf_pos, chunk_length);
+	temp_unchunked.write(reinterpret_cast<const char*>(&buf[buf_pos]), to_write);
+	buf_pos += to_write;
+	chunk_length -= to_write;
+	temp_unchunked.close();
+
+}
+
+void	RequestHandler::unchunkBody()
+{
+	while (!body_unchunked && buf_pos++ < getBytesRead())
+	{
+		unsigned char ch = buf[buf_pos];
+
+		switch (te_state)
+		{
+			case body_start:
+				if ((ch >= '0' && ch <= '9'))
+				{
+					chunk_length = ch - '0';
+					te_state = chunk_size;
+					break;
+				}
+				else if (ch >= 'a' && ch <= 'f')
+				{
+					chunk_length = ch - 'a' + 10;
+					te_state = chunk_size;
+					break;
+				}
+				else if (ch >= 'A' && ch <= 'F')
+				{
+					chunk_length = ch - 'A' + 10;
+					te_state = chunk_size;
+					break;
+				}
+				else
+				{
+					setStatus(400); // what is the correct error code?
+					throw CustomException("Bad request 1"); // other exception?
+				}
+
+			case chunk_size:
+				if (ch >= '0' && ch <= '9')
+				{
+					chunk_length = chunk_length * 16 + (ch - '0');
+					break;
+				}
+				else if (ch >= 'a' && ch <= 'f')
+				{
+					chunk_length = chunk_length * 16 + (ch - 'a' + 10);
+					break;
+				}
+				else if (ch >= 'A' && ch <= 'F')
+				{
+					chunk_length = chunk_length * 16 + (ch - 'A' + 10);
+					break;
+				}
+				else if (chunk_length == 0) // how to end if body is distributed over multiple requests?
+				{
+					if (ch == CR)
+					{
+						te_state = chunk_size_cr;
+						break;
+					}
+					else if (ch == LF)
+					{
+						te_state = chunk_trailer;
+						break;
+					}
+					else if (ch == ';')
+					{
+						te_state = chunk_extension; // are there more seperators? // seperate state for last extension?
+						break;
+					}
+					else
+					{
+						setStatus(400); // what is the correct error code?
+						throw CustomException("Bad request 2"); // other exception?
+					}
+				}
+				else if (ch == CR)
+				{
+					total_chunk_size += chunk_length;
+					te_state = chunk_size_cr;
+					break;
+				}
+				else if (ch == LF)
+				{
+					total_chunk_size += chunk_length;
+					te_state = chunk_data;
+					break;
+				}
+				else if (ch == ';')
+				{
+					total_chunk_size += chunk_length;
+					te_state = chunk_extension;
+					break;
+				}
+				else
+				{
+					setStatus(400); // what is the correct error code?
+					throw CustomException("Bad request 3"); // other exception?
+				}
+			
+			case chunk_size_cr:
+				if (ch == LF && chunk_length > 0)
+				{
+					te_state = chunk_data;
+					break;
+				}
+				else if (ch == LF && chunk_length == 0)
+				{
+					te_state = chunk_trailer;
+					break;
+				}
+				else
+				{
+					setStatus(400); // what is the correct error code?
+					throw CustomException("Bad request 4"); // other exception?
+				}
+
+			case chunk_extension: // skip over chunk_extension // could also be done in a for loop // limit max size of chunk extension -- vulnerabilities
+			// A server ought to limit the total length of chunk extensions received in a request to an amount reasonable for the services provided, in the same way that it applies length limitations and timeouts for other parts of a message, and generate an appropriate 4xx (Client Error) response if that amount is exceeded
+				if (ch == CR)
+				{
+					te_state = chunk_size_cr;
+					break;
+				}
+				else if (ch == LF && chunk_length > 0)
+				{
+					te_state = chunk_data;
+					break;
+				}
+				else if (ch == LF && chunk_length == 0)
+				{
+					te_state = chunk_trailer;
+					break;
+				}
+				else
+					break;
+
+			case chunk_data: // Limit for chunk length?
+				storeChunkedData();
+				ch = buf[buf_pos];
+				if (ch == CR)
+				{
+					te_state = chunk_data_cr;
+					break;
+				}
+				else if (ch == LF)
+				{
+					te_state = body_start;
+					break;
+				}
+				break;
+				// else
+				// {
+				// 	handler.setStatus(400); // what is the correct error code?
+				// 	throw CustomException("Bad request 5"); // other exception?
+				// }
+
+			case chunk_data_cr:
+				if (ch == LF)
+				{
+					te_state = body_start;
+					break;
+				}
+				else
+				{
+					setStatus(400); // what is the correct error code?
+					throw CustomException("Bad request 6"); // other exception?
+				}
+			
+			// is the existence of trailers indicated in the headers
+			case chunk_trailer:
+				if (ch == CR)
+				{
+					te_state = chunk_trailer_cr;
+					break;
+				}
+				else if (ch == LF)
+				{
+					te_state = body_end;
+					break;
+				}
+				else // maybe skip trailer in a for loop? // limit size of trailer?
+				{
+					trailer_exists = 1; // create loop so that this is not set every time
+					break;
+				}
+				// trailer fields can be useful for supplying message integrity checks, digital signatures, delivery metrics, or post-processing status information
+				// probably can just discard this section --> how to identify end?
+
+			case chunk_trailer_cr:
+				if (ch == LF)
+				{
+					te_state = body_end;
+					break;
+				}
+				else
+				{
+					setStatus(400); // what is the correct error code?
+					throw CustomException("Bad request 7"); // other exception?
+				}
+
+			case body_end_cr:
+				if (ch == LF)
+				{
+					// body_parsing_done = 1;
+					// body_read = 1;
+					body_unchunked = 1;
+					break;
+				}
+				else
+				{
+					setStatus(400); // what is the correct error code?
+					throw CustomException("Bad request 8"); // other exception?
+				}
+
+			case body_end:
+				if (ch == CR)
+				{
+					te_state = body_end_cr;
+					break;
+				}
+				else if (ch == LF || !trailer_exists)
+				{
+					// body_parsing_done = 1;
+					// body_read = 1;
+					body_unchunked = 1;
+					break;
+				}
+				else
+				{
+					setStatus(400); // what is the correct error code?
+					throw CustomException("Bad request 9"); // other exception?
+				}
+		}
+	}
+
+	// The chunked coding does not define any parameters. Their presence SHOULD be treated as an error. --> what is meant by that?
+
+
+	// A server that receives a request message with a transfer coding it does not understand SHOULD respond with 501 (Not Implemented)
+	// This is why Transfer-Encoding is defined as overriding Content-Length, as opposed to them being mutually incompatible.
+	// A server MAY reject a request that contains both Content-Length and Transfer-Encoding or process such a request in accordance with the 
+	// Transfer-Encoding alone. Regardless, the server MUST close the connection after responding to such a request to avoid the potential attacks.
+
+	// If a valid Content-Length header field is present without Transfer-Encoding, its decimal value defines the expected message body length in octets. 
+	//If the sender closes the connection or the recipient times out before the indicated number of octets are received, the recipient MUST 
+	// consider the message to be incomplete and close the connection.
+
+	// A recipient MUST ignore unrecognized chunk extensions. A server ought to limit the total length of chunk extensions received in a request 
+	// to an amount reasonable for the services provided, in the same way that it applies length limitations and timeouts for other parts of a 
+	// message, and generate an appropriate 4xx (Client Error) response if that amount is exceeded
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // std::cout << "identified method: " << request_header.getMethod() << '\n';
@@ -368,4 +742,6 @@ void	RequestHandler::findServerBlock()
 	// notes
 		// video: 2h mark --> set stringstream flags
 		// use uint8_t or unsigned char for storing the incoming data
+
+
 

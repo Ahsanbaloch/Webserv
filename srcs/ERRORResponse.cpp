@@ -87,6 +87,29 @@ std::string	ERRORResponse::createBody(std::string status_code)
 	return (body);
 }
 
+void	ERRORResponse::appendAllowedMethods()
+{
+	std::vector<std::string> methods;
+
+	if (handler.getLocationConfig().GET)
+		methods.push_back("GET");
+	if (handler.getLocationConfig().POST)
+		methods.push_back("POST");
+	if (handler.getLocationConfig().DELETE)
+		methods.push_back("DELETE");
+
+	header_fields.append("Allow: ");
+	for (std::vector<std::string>::const_iterator it = methods.begin(); it != methods.end(); ++it)
+	{
+		if (it != methods.begin())
+			header_fields.append(", ");
+		header_fields.append(*it);
+	}
+	header_fields.append("\r\n");
+}
+
+
+
 ///////// MAIN METHOD //////////
 
 void	ERRORResponse::createResponse()
@@ -102,5 +125,7 @@ void	ERRORResponse::createResponse()
 	header_fields.append("Content-Type: text/html\r\n");
 	header_fields.append("Content-Length: ");
 	header_fields.append(length_conversion.str() + "\r\n");
+	if (handler.getStatus() == 405)
+		appendAllowedMethods();
 	header_fields.append("\r\n");
 }
