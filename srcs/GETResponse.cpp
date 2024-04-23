@@ -40,10 +40,10 @@ GETResponse& GETResponse::operator=(const GETResponse& src)
 std::string	GETResponse::getBodyFromFile()
 {
 	// std::string			chunk_termination;
-	char 				buffer[BUFFER_SIZE];
+	char 				buffer[BUFFER_SIZE * 10];
 	
 	input_file.seekg(file_position);
-	input_file.read(buffer, BUFFER_SIZE);
+	input_file.read(buffer, BUFFER_SIZE * 10);
 	if (input_file.fail())
 	{
 		if (!input_file.eof())
@@ -114,6 +114,7 @@ std::string GETResponse::createBody()
 		input_file.seekg(0, std::ios::end);
 		file_size = input_file.tellg();
 		input_file.seekg(std::ios::beg);
+		std::cout << "file size: " << file_size << std::endl;
 		
 		body = getBodyFromFile();
 		chunked_body = 1;
@@ -247,4 +248,5 @@ void	GETResponse::createResponse()
 		body = createBody();
 	
 	header_fields = createHeaderFields(body);
+	// handler.total_bytes_sent -= status_line.size() + header_fields.size();
 }

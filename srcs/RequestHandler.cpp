@@ -23,6 +23,7 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	cgi_post_int_redirect = 0;
 	internal_redirect = 0;
 	num_response_chunks_sent = 0;
+	// total_bytes_sent = 0;
 
 	buf_pos = -1;
 
@@ -203,15 +204,35 @@ void	RequestHandler::sendResponse()
 		resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
 	
 	
-	std::cout << "num response chunks: " << num_response_chunks_sent << std::endl;
+	// std::cout << "num response chunks: " << num_response_chunks_sent << std::endl;
 	// std::cout << "message:" << resp << std::endl;
-
-	int bytes_sent = send(connection_fd, resp.c_str(), resp.length(), 0);
-	if (bytes_sent == -1)
+	size_t total_bytes_sent = 0;
+	int bytes_sent = 0;
+	while (total_bytes_sent < resp.length())
 	{
-		// handle properly (also check for bytes_sent == 0)
-		std::cout << "error when sending data" << std::endl;
+		bytes_sent = send(connection_fd, resp.c_str(), resp.length() - total_bytes_sent, 0);
+		if (bytes_sent == -1)
+		{
+			// handle properly (also check for bytes_sent == 0)
+			std::cout << "error when sending data" << std::endl;
+			// break;
+		}
+		total_bytes_sent += bytes_sent;
 	}
+	
+	// total_bytes_sent += bytes_sent;
+	// std::cout << "chunk sent: " << bytes_sent << std::endl;
+	// std::cout << "total bytes sent: " << total_bytes_sent << std::endl;
+	// if (bytes_sent == -1)
+	// {
+	// 	// handle properly (also check for bytes_sent == 0)
+	// 	std::cout << "error when sending data" << std::endl;
+	// }
+	// if (bytes_sent == 0)
+	// {
+	// 	// handle properly
+	// 	std::cout << "no bytes sent" << std::endl;
+	// }
 }
 
 void	RequestHandler::processRequest()

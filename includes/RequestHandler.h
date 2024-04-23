@@ -134,6 +134,8 @@ public:
 		text_plain,
 		urlencoded
 	} content_type;
+
+	// int							total_bytes_sent;
 };
 
 #endif
