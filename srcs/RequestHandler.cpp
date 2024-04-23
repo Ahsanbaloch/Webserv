@@ -180,7 +180,7 @@ void	RequestHandler::sendResponse()
 {
 	std::string resp;
 
-	if (request_header.getMethod() == "GET")
+	if (request_header.getMethod() == "GET" && getLocationConfig().redirect.empty())
 	{
 		if (num_response_chunks_sent > 0)
 		{
@@ -336,17 +336,17 @@ void RequestHandler::checkInternalRedirect()
 {
 	if (request_header.getFileExtension().empty())
 	{
-		new_file_path = getLocationConfig().root + getLocationConfig().path + getLocationConfig().index; // replace after config parsig update
+		new_file_path = getLocationConfig().index;
 		if (access(new_file_path.c_str(), F_OK) == 0)
 		{
 			internal_redirect = 1;
 			int_redir_referer_path = "http://localhost:" + toString(getServerConfig()[getSelectedServer()].port) + getLocationConfig().path;
+			std::string	orig_root = getLocationConfig().root;
 			findLocationBlock();
 			checkAllowedMethods();
 			if (!getLocationConfig().redirect.empty())
 				return ;
-			// not exactly correct if root does not have the same length --> need to check in a different way // needs to have the new root
-			new_file_path = getLocationConfig().root + new_file_path.substr(getLocationConfig().root.length()); // replace after config parsig update
+			new_file_path = getLocationConfig().root + new_file_path.substr(orig_root.length());
 			if (getLocationConfig().path == "/cgi-bin" && new_file_path.substr(new_file_path.find_last_of('.')) == ".py")
 				cgi_post_int_redirect = 1;
 		}
