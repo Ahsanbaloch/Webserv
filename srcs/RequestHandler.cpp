@@ -203,7 +203,7 @@ void	RequestHandler::sendResponse()
 		
 	std::cout << "num response chunks: " << num_response_chunks << std::endl;
 	// std::cout << "message: " << resp << std::endl;
-	std::cout << resp << std::endl;
+	// std::cout << resp << std::endl;
 	send(connection_fd, resp.c_str(), resp.length(), 0); 
 	// check for errors when calling send (-1 and 0)
 }
