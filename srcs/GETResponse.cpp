@@ -126,7 +126,13 @@ std::string	GETResponse::createHeaderFields(std::string body) // probably don't 
 	// header.append(toString(body.size()) + "\r\n");
 	// what other headers to include?
 	// send Repsonses in Chunks?
-	header.append("Transfer-Encoding: chunked\r\n");
+	if (auto_index)
+	{
+		header.append("Content-Length: "); // alternatively TE: chunked?
+		header.append(toString(body.size()) + "\r\n");
+	}
+	else
+		header.append("Transfer-Encoding: chunked\r\n");
 	// header.append("Cache-Control: no-cache");
 	// header.append("Set-Cookie: preference=darkmode; Domain=example.com");
 	// header.append("Server: nginx/1.21.0");
@@ -232,4 +238,6 @@ void	GETResponse::createResponse()
 		body = createBody();
 	
 	header_fields = createHeaderFields(body);
+	if (auto_index) /// change this
+		response_complete = 1;
 }

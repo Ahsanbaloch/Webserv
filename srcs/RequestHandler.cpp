@@ -204,6 +204,7 @@ void	RequestHandler::sendResponse()
 	
 	
 	std::cout << "num response chunks: " << num_response_chunks_sent << std::endl;
+	std::cout << "message:" << resp << std::endl;
 
 	int bytes_sent = send(connection_fd, resp.c_str(), resp.length(), 0);
 	if (bytes_sent == -1)
@@ -464,22 +465,12 @@ std::vector<std::string>	RequestHandler::splitPath(std::string input, char delim
 	
 	while (std::getline(iss, item, delim))
 		result.push_back("/" + item); // does adding "/" work in all cases?
-	// if (result.size() == 1 && result[0].empty())
-	// 	result[0] = '/';
+
 	return (result);
 }
 
 int	RequestHandler::calcMatches(std::vector<std::string>& uri_path_items, std::vector<std::string>& location_path_items)
 {
-	// printf("splitted string\n");
-	// for (std::vector<std::string>::iterator it = uri_path_items.begin(); it != uri_path_items.end(); it++)
-	// {
-	// 	std::cout << "string uri: " << *it << std::endl;
-	// }
-	// for (std::vector<std::string>::iterator it = location_path_items.begin(); it != location_path_items.end(); it++)
-	// {
-	// 	std::cout << "string location: " << *it << std::endl;
-	// }
 	int	matches = 0;
 	int num_path_items = uri_path_items.size();
 	for (std::vector<std::string>::iterator it = location_path_items.begin(); it != location_path_items.end(); it++)
@@ -507,19 +498,6 @@ void	RequestHandler::findServerBlock()
 			break;
 		}
 	}
-	// std::vector<t_server_config>::iterator it = handler.getServerConfig().begin();
-	// for (std::vector<t_server_config>::iterator it2 = handler.getServerConfig().begin(); it2 != handler.getServerConfig().end(); it2++)
-	// {
-	// 	if (it2 == it || it2->serverName == handler.header.header_fields["host"])
-	// 		it = it2;
-	// 	else
-	// 	{
-	// 		handler.getServerConfig().erase(it2);
-	// 		it2--;
-	// 	}
-	// }
-	// if (it != handler.getServerConfig().begin())
-	// 	handler.getServerConfig().erase(handler.getServerConfig().begin());
 }
 
 
@@ -796,7 +774,7 @@ void	RequestHandler::unchunkBody()
 				}
 		}
 	}
-
+}
 	// The chunked coding does not define any parameters. Their presence SHOULD be treated as an error. --> what is meant by that?
 
 
@@ -812,38 +790,6 @@ void	RequestHandler::unchunkBody()
 	// A recipient MUST ignore unrecognized chunk extensions. A server ought to limit the total length of chunk extensions received in a request 
 	// to an amount reasonable for the services provided, in the same way that it applies length limitations and timeouts for other parts of a 
 	// message, and generate an appropriate 4xx (Client Error) response if that amount is exceeded
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// std::cout << "identified method: " << request_header.getMethod() << '\n';
-// std::cout << "identified path: " << request_header.getPath() << '\n';
-// std::cout << "identified query: " << request_header.getQuery() << '\n';
-// std::cout << "identified version: " << request_header.getHttpVersion() << '\n';
-
-// for testing if correct configuration info reaches RequestHandler
-	// for (std::vector<t_server_config>::iterator it = server_config.begin(); it != server_config.end(); it++)
-	// {
-	// 	std::cout << "port and server name: " << it->port << " " << it->serverName << std::endl;
-	// 	for (std::vector<t_location_config>::iterator it2 = it->locations.begin(); it2 != it->locations.end(); it2++)
-	// 	{
-	// 		std::cout << "location: " << it2->path << std::endl;
-	// 	}
-	// }
-
 
 
 	// The presence of a message body in a request is signaled by a Content-Length or Transfer-Encoding header field. Request message framing is independent of method semantics.
