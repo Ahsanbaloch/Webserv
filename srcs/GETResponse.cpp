@@ -45,10 +45,10 @@ void	GETResponse::decrementFilePosition(std::streampos bytes_not_read)
 std::string	GETResponse::getBodyFromFile()
 {
 	// std::string			chunk_termination;
-	char 				buffer[BUFFER_SIZE * 10];
+	char 				buffer[BUFFER_SIZE];
 	
 	input_file.seekg(file_position);
-	input_file.read(buffer, BUFFER_SIZE * 10);
+	input_file.read(buffer, BUFFER_SIZE);
 	if (input_file.fail())
 	{
 		if (!input_file.eof())
