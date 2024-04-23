@@ -44,9 +44,8 @@ std::string	GETResponse::getBodyFromFile()
 {
 	// std::string		body;
 	std::streampos		bytes_read;
-	int				buf_test = 8000;
-	std::string		chunk_length;
-	std::string		chunk_termination;
+	std::string			chunk_length;
+	std::string			chunk_termination;
 
 	// std::ifstream file(full_file_path);
 	// if (!file.is_open()) 
@@ -60,9 +59,9 @@ std::string	GETResponse::getBodyFromFile()
 	// std::stringstream buffer;
 	// buffer.write(reinterpret_cast<const char*>(file.rdbuf()), BUFFER_SIZE);
 
-	char buffer[8000];
+	char buffer[BUFFER_SIZE];
 	// buffer[300] = '\0';
-	file.read(buffer, buf_test);
+	file.read(buffer, BUFFER_SIZE);
 	// std::cout << "buffer: " << std::endl;
 	// for (int i = 0; i < 300; i++)
 	// {
@@ -76,7 +75,7 @@ std::string	GETResponse::getBodyFromFile()
 	// body.append(buffer);
 	std::string body(buffer, bytes_read);
 	file_position += bytes_read;
-	if (static_cast<int>(bytes_read) < buf_test)
+	if (static_cast<int>(bytes_read) < BUFFER_SIZE)
 	{
 		std::cout << "closing file" << std::endl;
 		response_complete = 1;
