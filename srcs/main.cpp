@@ -43,7 +43,8 @@ int	main(int argc, char **argv)
 					// std::cout << "url : " << it3->redirect << std::endl;
 					//std::cout << "Path : " << it3->path << std::endl;
 					//std::cout << "cgi_ext size: " << it3->cgi_ext.size() << std::endl;
-					std::cout << "upload: " << it3->uploadDir << std::endl;
+					//std::cout << "upload: " << it3->uploadDir << std::endl;
+					std::cout << "GET : " << it3->GET << " POST : " << it3->POST << std::endl;
 					// for (std::vector<std::string>::iterator it4 = it3->cgi_ext.begin(); it4 != it3->cgi_ext.end(); ++it4)
 					// {
 					// 	std::cout << "cgi-ext : " << *it4 << std::endl;
