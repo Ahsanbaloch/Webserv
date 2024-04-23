@@ -11,4 +11,11 @@ template<typename T> std::string toString(const T& value)
 	return (oss.str());
 }
 
+template<typename T> std::string toHex(const T& value)
+{
+	std::stringstream oss;
+	oss << std::hex << value;
+	return (oss.str());
+}
+
 #endif

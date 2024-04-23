@@ -13,14 +13,14 @@ protected:
 	RequestHandler&	handler;
 
 	// vars
-	std::string			file_type; // may move to GETResponse
+	std::string			file_type;
 	std::string			full_file_path;
-
 	std::string			body;
 	std::string 		status_line;
 	std::string 		header_fields;
 
-	bool		response_complete;
+	// flags
+	bool				response_complete;
 
 	// methods
 	std::string			buildPathFromLocationIndex();
@@ -43,7 +43,7 @@ public:
 	std::string			getFullFilePath() const; // needed?
 
 	// getters
-	bool		getResponseCompleteStatus() const;
+	bool				getResponseCompleteStatus() const;
 
 	// methods
 	virtual void		createResponse() = 0;

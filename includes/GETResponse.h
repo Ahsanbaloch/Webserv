@@ -12,19 +12,20 @@
 class GETResponse: public AResponse
 {
 private:
-	//flags
-	bool		auto_index;
+	//vars
+	std::ifstream	input_file;
+	std::streampos	file_position;
 
-	std::ifstream file;
-	std::streampos file_position;
+	//flags
+	bool			auto_index;
 
 	// helper methods
 	
-	std::string	getBodyFromDir();
-	std::string	createBody();
-	std::string	createHeaderFields(std::string);
-	std::string	identifyMIME();
-	void		determineOutput();
+	std::string		getBodyFromDir();
+	std::string		createBody();
+	std::string		createHeaderFields(std::string);
+	std::string		identifyMIME();
+	void			determineOutput();
 
 	// constructors
 	GETResponse();
@@ -37,8 +38,8 @@ public:
 	~GETResponse();
 
 	// main method
-	void		createResponse();
-	std::string	getBodyFromFile();
+	void			createResponse();
+	std::string		getBodyFromFile();
 	
 };
 

@@ -4,12 +4,12 @@
 /////////// CONSTRUCTORS & DESTRUCTORS ///////////
 
 GETResponse::GETResponse()
-	: AResponse(), auto_index(0), file_position(0)
+	: AResponse(), file_position(0), auto_index(0)
 {
 }
 
 GETResponse::GETResponse(RequestHandler& src)
-	: AResponse(src), auto_index(0), file_position(0)
+	: AResponse(src), file_position(0), auto_index(0)
 {
 }
 
@@ -18,7 +18,7 @@ GETResponse::~GETResponse()
 }
 
 GETResponse::GETResponse(const GETResponse& src)
-	: AResponse(src), auto_index(src.auto_index), file_position(src.file_position)
+	: AResponse(src), file_position(src.file_position), auto_index(src.auto_index)
 {
 }
 
@@ -27,9 +27,8 @@ GETResponse& GETResponse::operator=(const GETResponse& src)
 	if (this != &src)
 	{
 		AResponse::operator=(src);
-		auto_index = src.auto_index;
-		response_complete = src.response_complete;
 		file_position = src.file_position;
+		auto_index = src.auto_index;
 	}
 	return (*this);
 }
@@ -42,57 +41,35 @@ GETResponse& GETResponse::operator=(const GETResponse& src)
 
 std::string	GETResponse::getBodyFromFile()
 {
-	// std::string		body;
-	std::streampos		bytes_read;
-	std::string			chunk_length;
 	std::string			chunk_termination;
-
-	// std::ifstream file(full_file_path);
-	// if (!file.is_open()) 
-	// {
-	// 	handler.setStatus(404);
-	// 	throw CustomException("Not found");
-	// }
+	char 				buffer[BUFFER_SIZE];
 	
-	file.seekg(file_position);
-
-	// std::stringstream buffer;
-	// buffer.write(reinterpret_cast<const char*>(file.rdbuf()), BUFFER_SIZE);
-
-	char buffer[BUFFER_SIZE];
-	// buffer[300] = '\0';
-	file.read(buffer, BUFFER_SIZE);
-	// std::cout << "buffer: " << std::endl;
-	// for (int i = 0; i < 300; i++)
-	// {
-	// 	std::cout << buffer[i];
-	// }
-	// std::cout << std::endl;
-	std::cout << "file pos post: " << file.tellg() << std::endl;
-	bytes_read = file.gcount();
-
-	// std::string body;
-	// body.append(buffer);
-	std::string body(buffer, bytes_read);
+	input_file.seekg(file_position);
+	input_file.read(buffer, BUFFER_SIZE);
+	if (input_file.fail())
+	{
+		if (!input_file.eof())
+		{
+			handler.setStatus(500);
+			input_file.close();
+			throw CustomException("Internal Server Error");
+		}
+	}
+	std::streampos bytes_read = input_file.gcount();
 	file_position += bytes_read;
+	std::string chunk_content(buffer, bytes_read);
+
 	if (static_cast<int>(bytes_read) < BUFFER_SIZE)
 	{
-		std::cout << "closing file" << std::endl;
 		response_complete = 1;
 		chunk_termination = "\r\n0\r\n\r\n";
-		file.close();
+		input_file.close();
 	}
 	else
 		chunk_termination = "\r\n";
-	num_response_chunks2++;
-
-	// body = buffer.str();
-	std::stringstream stream;
-	stream << std::hex << bytes_read;
-	chunk_length = stream.str() + "\r\n";
-	// std::cout << "Body: " << body << std::endl;
-
-	return (chunk_length + body + chunk_termination);
+	
+	std::string chunk_length = toHex(bytes_read) + "\r\n";
+	return (chunk_length + chunk_content + chunk_termination);
 }
 
 std::string GETResponse::getBodyFromDir()
@@ -129,8 +106,8 @@ std::string GETResponse::createBody()
 		body = getBodyFromDir();
 	else
 	{
-		file.open(full_file_path, std::ios::binary);
-		if (!file.is_open()) 
+		input_file.open(full_file_path, std::ios::binary);
+		if (!input_file.is_open()) 
 		{
 			handler.setStatus(404);
 			throw CustomException("Not found");

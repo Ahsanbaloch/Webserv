@@ -22,7 +22,7 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	request_length = 0;
 	cgi_post_int_redirect = 0;
 	internal_redirect = 0;
-	num_response_chunks = 0;
+	num_response_chunks_sent = 0;
 
 	buf_pos = -1;
 
@@ -69,7 +69,7 @@ RequestHandler& RequestHandler::operator=(const RequestHandler& src)
 		response_ready = src.response_ready;
 		request_length = src.request_length;
 		internal_redirect = src.internal_redirect;
-		num_response_chunks = src.num_response_chunks;
+		num_response_chunks_sent = src.num_response_chunks_sent;
 		cgi_post_int_redirect = src.cgi_post_int_redirect;
 		buf_pos = src.buf_pos;
 		response = src.response;
@@ -157,9 +157,14 @@ AUploadModule*	RequestHandler::getUploader() const
 	return (uploader);
 }
 
-int				RequestHandler::getNumResponseChunks() const
+AResponse*	RequestHandler::getResponseObj() const
 {
-	return (num_response_chunks);
+	return (response);
+}
+
+int	RequestHandler::getNumResponseChunks() const
+{
+	return (num_response_chunks_sent);
 }
 
 ///////// SETTERS ///////////
@@ -169,41 +174,38 @@ void	RequestHandler::setStatus(int status)
 	this->status = status;
 }
 
-void	RequestHandler::incrementResponseChunks()
-{
-	num_response_chunks++;
-}
 
 ///////// METHODS ///////////
 
 void	RequestHandler::sendResponse()
 {
 	std::string resp;
-	std::string body_chunk;
-	num_response_chunks = response->num_response_chunks2;
-	if (num_response_chunks > 1)
+
+	if (request_header.getMethod() == "GET")
 	{
-		GETResponse* get = dynamic_cast<GETResponse*>(response);
-		if (get)
+		if (num_response_chunks_sent > 0)
 		{
-			body_chunk = get->getBodyFromFile();
-			if (get->getResponseCompleteStatus())
-				test_flag = 1;
+			std::string body_chunk;
+			GETResponse* get = dynamic_cast<GETResponse*>(response);
+			if (get)
+				body_chunk = get->getBodyFromFile(); // need to catch errors thrown in here also somewhere and provide error response
+			else
+			{
+				// need to send a error response in this case
+				throw CustomException("failed when reading from file");
+			}
+			resp = body_chunk;
 		}
-		// resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + body_chunk;
-		resp = body_chunk;
+		else
+			resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
+		num_response_chunks_sent++;
 	}
 	else
-	{
 		resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
-		response->num_response_chunks2++;
-		if (response->getResponseCompleteStatus())
-			test_flag = 1;
-	}
-		
-	std::cout << "num response chunks: " << num_response_chunks << std::endl;
-	// std::cout << "message: " << resp << std::endl;
-	// std::cout << resp << std::endl;
+	
+	
+	std::cout << "num response chunks: " << num_response_chunks_sent << std::endl;
+
 	send(connection_fd, resp.c_str(), resp.length(), 0); 
 	// check for errors when calling send (-1 and 0)
 }
