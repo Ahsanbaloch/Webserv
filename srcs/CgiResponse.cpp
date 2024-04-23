@@ -17,7 +17,6 @@ CgiResponse &CgiResponse::operator=(const CgiResponse &other) {
 		_env = other._env;
 		handler = other.handler;
 		header_fields = other.header_fields;
-		redirected_path = other.redirected_path;
 	}
 	return *this;
 }
@@ -32,7 +31,7 @@ void CgiResponse::createResponse()
 }
 
 void CgiResponse::_getScriptPath() {
-	std::string path = handler.request_header.getPath();
+	std::string path = handler.getHeaderInfo().getPath();
 	size_t pos = path.find('.');
 	size_t pathInfo = path.find('/', pos);
 	size_t queryString = path.find('?', pos);
@@ -50,14 +49,14 @@ void CgiResponse::_getScriptPath() {
 }
 
 void CgiResponse::_getQueryString() {
-	std::string path = handler.request_header.getPath();
+	std::string path = handler.getHeaderInfo().getPath();
 	size_t pos = path.find('?');
 	if (pos != std::string::npos)
 		_queryString = path.substr(pos + 1);
 }
 
 void CgiResponse::_getPathInfo() {
-	std::string path = handler.request_header.getPath();
+	std::string path = handler.getHeaderInfo().getPath();
 	size_t pos = path.find('.');
 	size_t pathInfo = path.find('/', pos);
 	size_t queryString = path.find('?', pos);
@@ -71,7 +70,7 @@ void CgiResponse::_getPathInfo() {
 
 void CgiResponse::_setEnv() {
 	_env.push_back("AUTH_TYPE=" + handler.getHeaderInfo().getHeaderFields()["Authorization"]);
-	_env.push_back("CONTENT_LENGTH=" + std::to_string(handler.request_header.getBodyLength()));
+	_env.push_back("CONTENT_LENGTH=" + std::to_string(handler.getHeaderInfo().getBodyLength()));
 	_env.push_back("CONTENT_TYPE=" + handler.getHeaderInfo().getHeaderFields()["Content-Type"]);
 	_env.push_back("GATEWAY_INTERFACE=CGI/1.1");
 	_env.push_back("PATH_INFO=" + _pathInfo);
@@ -80,10 +79,10 @@ void CgiResponse::_setEnv() {
 	_env.push_back("REMOTE_ADDR=");
 	_env.push_back("REMOTE_IDENT=");
 	_env.push_back("REMOTE_USER=");
-	_env.push_back("REQUEST_METHOD=" + handler.request_header.getMethod());
-	_env.push_back("REQUEST_URI=" + handler.request_header.getPath());
+	_env.push_back("REQUEST_METHOD=" + handler.getHeaderInfo().getMethod());
+	_env.push_back("REQUEST_URI=" + handler.getHeaderInfo().getPath());
 	_env.push_back("SCRIPT_NAME=" + _scriptPath);
-	_env.push_back("SERVER_NAME=" + handler.getSelectedServer().serverName);
+	_env.push_back("SERVER_NAME=" + handler.getServerConfig()[handler.getSelectedServer()].serverName);
 	//_env.push_back("SERVER_PORT=" + handler.getSelectedServer().port);
 	_env.push_back("SERVER_PROTOCOL=" + handler.getHeaderInfo().getHttpVersion());
 	_env.push_back("SERVER_SOFTWARE=webserv");
