@@ -13,6 +13,7 @@
 int g_num_temp_files = 0;
 int g_num_temp_unchunked_files = 0;
 int g_num_temp_raw_body = 0;
+int g_num_form = 0;
 
 
 // next:
@@ -31,6 +32,7 @@ int	main(int argc, char **argv)
 		config_pars config(argc, argv);
 		std::map<std::string, std::vector<t_server_config> > serverConfigsMap = config.getServerConfigsMap();
 
+		
 		// for testing
 		for (std::map<std::string, std::vector<t_server_config> >::iterator it = serverConfigsMap.begin(); it != serverConfigsMap.end(); it++)
 		{

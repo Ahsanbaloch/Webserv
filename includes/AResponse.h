@@ -20,8 +20,7 @@ protected:
 	std::string 		status_line;
 	std::string 		header_fields;
 
-	// flags
-	bool				internal_redirect; // may move to GETResponse
+	bool		response_complete;
 
 	// methods
 	std::string			buildPathFromLocationIndex();
@@ -41,11 +40,15 @@ public:
 	std::string			getResponseBody() const;
 	std::string			getResponseStatusLine() const;
 	std::string			getRespondsHeaderFields() const;
-	std::string			getFullFilePath() const;
-	bool				getInternalRedirectStatus() const; // may move to GETResponse
+	std::string			getFullFilePath() const; // needed?
+
+	// getters
+	bool		getResponseCompleteStatus() const;
 
 	// methods
 	virtual void		createResponse() = 0;
+
+	int								num_response_chunks2;
 
 };
 

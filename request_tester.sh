@@ -1,7 +1,4 @@
-# curl -X POST \
-#   -H "Content-Type: application/json" \
-#   -d '{"key1":"value1", "key2":"value2"}' \
-#   http://localhost:4141
+# curl -X GET \ http://localhost:4040/index.html
 
 # curl -X POST http://localhost:4141 \
 #      -H "Transfer-Encoding: chunked" \

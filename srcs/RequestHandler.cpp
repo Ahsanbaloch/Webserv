@@ -11,6 +11,7 @@ RequestHandler::RequestHandler()
 RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_config)
 	: request_header(*this)
 {
+	std::cout << "request handler constructed" << std::endl;
 	this->server_config = server_config;
 	connection_fd = fd;
 	status = 200;
@@ -19,6 +20,9 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	bytes_read = 0;
 	response_ready = 0;
 	request_length = 0;
+	cgi_post_int_redirect = 0;
+	internal_redirect = 0;
+	num_response_chunks = 0;
 
 	buf_pos = -1;
 
@@ -27,6 +31,7 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	total_chunk_size = 0;
 	trailer_exists = 0;
 	body_unchunked = 0;
+	test_flag = 0;
 	te_state = body_start;
 	
 	response = NULL;
@@ -37,6 +42,7 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 
 RequestHandler::~RequestHandler()
 {
+	std::cout << "request handler destroyed" << std::endl;
 	delete response;
 	delete uploader;
 	if (body_extractor != NULL) // needed?
@@ -62,6 +68,9 @@ RequestHandler& RequestHandler::operator=(const RequestHandler& src)
 		bytes_read = src.bytes_read;
 		response_ready = src.response_ready;
 		request_length = src.request_length;
+		internal_redirect = src.internal_redirect;
+		num_response_chunks = src.num_response_chunks;
+		cgi_post_int_redirect = src.cgi_post_int_redirect;
 		buf_pos = src.buf_pos;
 		response = src.response;
 		uploader = src.uploader;
@@ -91,6 +100,11 @@ s_location_config	RequestHandler::getLocationConfig() const
 int	RequestHandler::getSelectedLocation() const
 {
 	return (selected_location);
+}
+
+int	RequestHandler::getSelectedServer() const
+{
+	return (selected_server);
 }
 
 bool	RequestHandler::getResponseStatus() const
@@ -123,7 +137,30 @@ std::string	RequestHandler::getTempBodyFilepath() const
 	return (body_extractor->getTempBodyFilepath());
 }
 
+bool	RequestHandler::getIntRedirStatus() const
+{
+	return (internal_redirect);
+}
 
+std::string	RequestHandler::getIntRedirRefPath() const
+{
+	return (int_redir_referer_path);
+}
+
+std::string	RequestHandler::getNewFilePath() const
+{
+	return (new_file_path);
+}
+
+AUploadModule*	RequestHandler::getUploader() const
+{
+	return (uploader);
+}
+
+int				RequestHandler::getNumResponseChunks() const
+{
+	return (num_response_chunks);
+}
 
 ///////// SETTERS ///////////
 
@@ -132,15 +169,43 @@ void	RequestHandler::setStatus(int status)
 	this->status = status;
 }
 
+void	RequestHandler::incrementResponseChunks()
+{
+	num_response_chunks++;
+}
 
 ///////// METHODS ///////////
 
 void	RequestHandler::sendResponse()
 {
-	std::string resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
+	std::string resp;
+	std::string body_chunk;
+	num_response_chunks = response->num_response_chunks2;
+	if (num_response_chunks > 1)
+	{
+		GETResponse* get = dynamic_cast<GETResponse*>(response);
+		if (get)
+		{
+			body_chunk = get->getBodyFromFile();
+			if (get->getResponseCompleteStatus())
+				test_flag = 1;
+		}
+		// resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + body_chunk;
+		resp = body_chunk;
+	}
+	else
+	{
+		resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
+		response->num_response_chunks2++;
+		if (response->getResponseCompleteStatus())
+			test_flag = 1;
+	}
+		
+	std::cout << "num response chunks: " << num_response_chunks << std::endl;
+	// std::cout << "message: " << resp << std::endl;
 	// std::cout << resp << std::endl;
 	send(connection_fd, resp.c_str(), resp.length(), 0); 
-	// check for errors when calling send
+	// check for errors when calling send (-1 and 0)
 }
 
 void	RequestHandler::processRequest()
@@ -168,8 +233,11 @@ void	RequestHandler::processRequest()
 				request_header.parseRequestLine();
 			if (request_header.getRequestLineStatus())
 			{
+				request_header.identifyFileName();
 				determineLocationBlock();
 				checkAllowedMethods(); // check if method is allowed in selected location
+				if (request_header.getMethod() == "GET")
+					checkInternalRedirect();
 				request_header.parseHeaderFields();
 			}
 		}
@@ -203,7 +271,7 @@ void	RequestHandler::processRequest()
 					unchunkBody();
 				if (!getHeaderInfo().getTEStatus() || body_unchunked)
 				{
-					if (request_header.getFileExtension() == "py") // what if other cgi extension?
+					if (request_header.getFileExtension() == ".py") // what if other cgi extension?
 					{
 						if (body_extractor == NULL)
 							body_extractor = new BodyExtractor(*this);
@@ -226,13 +294,13 @@ void	RequestHandler::processRequest()
 				// std::cout << "body content: " << request_body.body << std::endl;
 				response = prepareResponse(); // how to handle errors in here?
 				response->createResponse(); // how to handle errors in here?
-				// if index directive is cgi, check here again and create cgi object
 				response_ready = 1;
 			}
 		}
 	}
 	catch(const std::exception& e)
 	{
+		// delete response before reassigning if response != NULL ?
 		response = new ERRORResponse(*this); // need to free this somewhere
 		response->createResponse();
 		response_ready = 1;
@@ -259,6 +327,29 @@ void		RequestHandler::checkAllowedMethods()
 	}
 }
 
+void RequestHandler::checkInternalRedirect()
+{
+	if (request_header.getFileExtension().empty())
+	{
+		new_file_path = getLocationConfig().root + getLocationConfig().path + getLocationConfig().index; // replace after config parsig update
+		if (access(new_file_path.c_str(), F_OK) == 0)
+		{
+			internal_redirect = 1;
+			int_redir_referer_path = "http://localhost:" + toString(getServerConfig()[getSelectedServer()].port) + getLocationConfig().path;
+			findLocationBlock();
+			checkAllowedMethods();
+			if (!getLocationConfig().redirect.empty())
+				return ;
+			// not exactly correct if root does not have the same length --> need to check in a different way // needs to have the new root
+			new_file_path = getLocationConfig().root + new_file_path.substr(getLocationConfig().root.length()); // replace after config parsig update
+			if (getLocationConfig().path == "/cgi-bin" && new_file_path.substr(new_file_path.find_last_of('.')) == ".py")
+				cgi_post_int_redirect = 1;
+		}
+		else
+			new_file_path.erase();
+	}
+}
+
 void RequestHandler::determineLocationBlock()
 {
 	// find server block if there are multiple that match (this applies to all request types)
@@ -272,6 +363,14 @@ void RequestHandler::determineLocationBlock()
 
 AResponse* RequestHandler::prepareResponse()
 {
+	// when checking for cgi, also check "cgi_post_int_redirect" status
+	// inside cgi should check internal redirect status. If true, then different path has to be selected
+	if (cgi_post_int_redirect)
+	{
+		setStatus(501);
+		throw CustomException("Not implemented");
+	}
+
 	if (!getLocationConfig().redirect.empty())
 		return (new REDIRECTResponse(*this));
 	if (request_header.getFileExtension() == "py")
@@ -326,14 +425,15 @@ AUploadModule*	RequestHandler::checkContentType()
 }
 
 
-void	RequestHandler::findLocationBlock() // double check if this is entirely correct approach
+void	RequestHandler::findLocationBlock()
 {
 	std::vector<std::string> uri_path_items;
-	if (response == NULL || !response->getInternalRedirectStatus())
+	if (response == NULL && !internal_redirect)
 		uri_path_items = splitPath(request_header.getPath(), '/');
 	else
 	{
-		std::string temp = response->getFullFilePath().substr(getLocationConfig().root.length());
+		std::string temp = new_file_path.substr(getLocationConfig().root.length()); // replace after config parser update
+		// std::string temp = response->getFullFilePath().substr(getLocationConfig().root.length());
 		uri_path_items = splitPath(temp, '/');
 	}
 	int	size = server_config[selected_server].locations.size();
@@ -448,6 +548,17 @@ void	RequestHandler::storeChunkedData()
 
 }
 
+void	RequestHandler::checkMaxBodySize()
+{
+	if (total_chunk_size > getServerConfig()[selected_server].bodySize)
+	{
+		setStatus(413);
+		if (!temp_filename_unchunked.empty())
+			remove(temp_filename_unchunked.c_str());
+		throw CustomException("Content Too Large");
+	}
+}
+
 void	RequestHandler::unchunkBody()
 {
 	while (!body_unchunked && buf_pos++ < getBytesRead())
@@ -523,18 +634,21 @@ void	RequestHandler::unchunkBody()
 				else if (ch == CR)
 				{
 					total_chunk_size += chunk_length;
+					checkMaxBodySize();
 					te_state = chunk_size_cr;
 					break;
 				}
 				else if (ch == LF)
 				{
 					total_chunk_size += chunk_length;
+					checkMaxBodySize();
 					te_state = chunk_data;
 					break;
 				}
 				else if (ch == ';')
 				{
 					total_chunk_size += chunk_length;
+					checkMaxBodySize();
 					te_state = chunk_extension;
 					break;
 				}

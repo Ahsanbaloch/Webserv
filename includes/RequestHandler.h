@@ -35,12 +35,15 @@ private:
 
 	// vars
 	std::vector<t_server_config>	server_config;
+	std::string						new_file_path; // add to header?
+	std::string						int_redir_referer_path;
 	int								status;
 	int								selected_location;
 	int								selected_server;
 	int								connection_fd;
 	int								bytes_read;
 	int								request_length;
+	int								num_response_chunks;
 
 	int								chunk_length;
 	int								total_chunk_size;
@@ -51,6 +54,8 @@ private:
 
 	// flags
 	bool							response_ready;
+	bool							internal_redirect;
+	bool							cgi_post_int_redirect;
 	
 	// states
 	enum {
@@ -83,8 +88,10 @@ public:
 	// getters
 	std::vector<t_server_config>	getServerConfig() const;
 	s_location_config				getLocationConfig() const;
+	AUploadModule*					getUploader() const;
 	t_server_config					getSelectedServer() const;	
 	int								getSelectedLocation() const; // only for testing purposes
+	int								getSelectedServer() const;
 	int								getStatus() const;
 	bool							getResponseStatus() const;
 	int								getBytesRead() const;
@@ -94,9 +101,14 @@ public:
 	int								getTotalChunkSize() const;
 	bool							getUnchunkingStatus() const;
 	std::string						getTempBodyFilepath() const;
+	std::string						getIntRedirRefPath() const;
+	bool							getIntRedirStatus() const;
+	std::string						getNewFilePath() const;
+	int								getNumResponseChunks() const;
 
 	// setters
 	void							setStatus(int);
+	void							incrementResponseChunks();
 	
 	// buffer TBD
 	unsigned char					buf[BUFFER_SIZE + 1];
@@ -109,10 +121,14 @@ public:
 	void							findServerBlock();
 	void							findLocationBlock();
 	void							checkAllowedMethods();
+	void							checkInternalRedirect();
+	void							checkMaxBodySize();
 	int								calcMatches(std::vector<std::string>&, std::vector<std::string>&); // make private?
 	std::vector<std::string>		splitPath(std::string input, char delim);
 	AResponse*						prepareResponse();
 	AUploadModule*					checkContentType();
+
+	bool							test_flag;
 
 	// make private?
 	enum {

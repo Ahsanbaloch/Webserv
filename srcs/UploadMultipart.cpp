@@ -322,7 +322,22 @@ void	UploadMultipart::storeFileData()
 		mp_state = mp_boundary_end;
 	}
 
-	outfile.open(content_disposition["filename"], std::ios::app | std::ios::binary);
+	if (filepath_outfile.empty())
+	{
+		filepath_outfile = getUploadDir() + content_disposition["filename"];
+		if (access(filepath_outfile.c_str(), F_OK) == 0)
+		{
+			handler.setStatus(403);
+			throw CustomException("Forbidden");
+		}
+	}
+
+	outfile.open(filepath_outfile, std::ios::app | std::ios::binary);
+	if (!outfile.is_open())
+	{
+		handler.setStatus(500); // or 403 or other code?
+		throw CustomException("Internal Server Error");
+	}
 
 	std::cout << "body_beginning: " << handler.getHeaderInfo().getBodyBeginning() << std::endl;
 	std::cout << "total_read " << handler.getRequestLength() << std::endl;
@@ -350,7 +365,23 @@ void	UploadMultipart::storeFileData()
 
 void	UploadMultipart::storeUnchunkedFileData()
 {
-	outfile.open(content_disposition["filename"], std::ios::app | std::ios::binary);
+	if (filepath_outfile.empty())
+	{
+		filepath_outfile = getUploadDir() + content_disposition["filename"];
+		if (access(filepath_outfile.c_str(), F_OK) == 0)
+		{
+			handler.setStatus(403);
+			throw CustomException("Forbidden");
+		}
+	}
+	
+	outfile.open(filepath_outfile, std::ios::app | std::ios::binary);
+	if (!outfile.is_open())
+	{
+		handler.setStatus(500); // or 403 or other code?
+		throw CustomException("Internal Server Error");
+	}
+
 	char buffer[BUFFER_SIZE];
 
 	while (file_data_size > 0)
@@ -447,21 +478,21 @@ void	UploadMultipart::uploadData()
 {
 	if (handler.getHeaderInfo().getTEStatus())
 	{
-		// unchunkBody();
-		// if (body_read)
-		// {
-			// body_parsing_done = 0;
-			input.open(handler.getUnchunkedDataFile(), std::ios::binary);
-			char ch;
-			while (!body_parsing_done)
-			{
-				input.read(&ch, 1);
-				meta_data_size++;
-				parseBody(ch);
-			}
-			input.close();
-			// remove(handler.getUnchunkedDataFile().c_str()); // check if file was removed
-		// }
+		input.open(handler.getUnchunkedDataFile(), std::ios::binary);
+		if (!input.is_open())
+		{
+			handler.setStatus(500); // or 403 or other code?
+			throw CustomException("Internal Server Error");
+		}
+		char ch;
+		while (!body_parsing_done)
+		{
+			input.read(&ch, 1);
+			meta_data_size++;
+			parseBody(ch);
+		}
+		input.close();
+		remove(handler.getUnchunkedDataFile().c_str()); // check if file was removed
 	}
 	else
 	{
@@ -472,5 +503,6 @@ void	UploadMultipart::uploadData()
 			parseBody(ch);
 		}
 	}
-	// might what to set filename here
+	std::cout << "filepath: " << filepath_outfile << std::endl;
+	// might what to store filename here
 }

@@ -47,8 +47,20 @@ std::string	REDIRECTResponse::createHeaderFields()
 
 void	REDIRECTResponse::createResponse()
 {
-	handler.setStatus(307);
-	status_line = createStatusLine();
-	body = ""; // or just initialize it like that // here no body should be created
-	header_fields = createHeaderFields();
+	std::string referer = handler.getHeaderInfo().getHeaderFields()["referer"];
+
+	if (referer == "http://localhost:" + toString(handler.getServerConfig()[handler.getSelectedServer()].port) + handler.getLocationConfig().path
+		|| referer == handler.getLocationConfig().redirect
+		|| handler.getIntRedirRefPath() == handler.getLocationConfig().redirect)
+	{
+		handler.setStatus(508);
+		throw CustomException("Loop Detected");
+	}
+	else
+	{
+		handler.setStatus(307);
+		status_line = createStatusLine();
+		body = ""; // or just initialize it like that // here no body should be created
+		header_fields = createHeaderFields();
+	}
 }

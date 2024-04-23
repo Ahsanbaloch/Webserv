@@ -14,11 +14,14 @@ protected:
 	RequestHandler&	handler;
 
 	// vars
-	std::string			filename; // move to children? (if not needed in all sub-classes)
+	std::string			filepath_outfile;
 
 	// flags
 	bool				body_read;
 	bool				body_parsing_done; // only needed in Multipart class
+
+	// methods
+	std::string			getUploadDir();
 
 	// constructors
 	AUploadModule();
@@ -32,6 +35,7 @@ public:
 
 	// getters
 	bool			getUploadStatus() const;
+	std::string		getRelativeFilePath();
 
 	// methods
 	virtual void	uploadData() = 0;

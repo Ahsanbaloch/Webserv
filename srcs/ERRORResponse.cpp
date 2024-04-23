@@ -43,6 +43,23 @@ std::string	ERRORResponse::getDefaultErrorMessage(std::string status_code)
 	return (body);
 }
 
+// can be removed after config integration
+std::string	ERRORResponse::getErrorPagePath()
+{
+	std::string err_page = handler.getLocationConfig().root + handler.getLocationConfig().path + handler.getLocationConfig().errorPage.html_page;
+
+	for (std::string::iterator it = err_page.begin(); it != err_page.end(); it++)
+	{
+		if (*it == '/')
+		{
+			it++;
+			while (*it == '/')
+				it = err_page.erase(it);
+		}
+	}
+	return (err_page);
+}
+
 std::string	ERRORResponse::createBody(std::string status_code)
 {
 	std::string body;
@@ -50,16 +67,8 @@ std::string	ERRORResponse::createBody(std::string status_code)
 	std::string err_file = "./www/default_error.html";
 
 	// check if there is a specific error file specified for a partiuclar error code
-	// if (handler.getStatus() == handler.getLocationConfig().errorPage.error_page_status)
-	// {
-	// 	if (handler.getLocationConfig().errorPage.html_page[0] == '/')
-	// 		err_file = "." + handler.getLocationConfig().errorPage.html_page;
-	// 	else
-	// 		err_file = "./" + handler.getLocationConfig().errorPage.html_page;
-	// }
-
-	printf("err page path: %s\n", handler.getLocationConfig().errorPage.html_page.c_str());
-	printf("err code error_page: %i\n", handler.getLocationConfig().errorPage.error_page_status);
+	if (handler.getStatus() == handler.getLocationConfig().errorPage.error_page_status)
+		err_file = getErrorPagePath();
 
 	std::ifstream file(err_file);
 	if (!file.is_open()) 
@@ -73,17 +82,17 @@ std::string	ERRORResponse::createBody(std::string status_code)
 	body = buffer.str();
 	file.close(); 
 
-	// if (handler.getStatus() != handler.getLocationConfig().errorPage.error_page_status)
-	// {
-	size_t pos = body.find(html_var);
-	if (pos != std::string::npos)
-		body.replace(pos, html_var.size(), status_code);
-	else
+	if (handler.getStatus() != handler.getLocationConfig().errorPage.error_page_status)
 	{
-		body = getDefaultErrorMessage(status_code);
-		return (body);
+		size_t pos = body.find(html_var);
+		if (pos != std::string::npos)
+			body.replace(pos, html_var.size(), status_code);
+		else
+		{
+			body = getDefaultErrorMessage(status_code);
+			return (body);
+		}
 	}
-	// }
 	return (body);
 }
 
@@ -109,22 +118,15 @@ void	ERRORResponse::appendAllowedMethods()
 }
 
 
-
 ///////// MAIN METHOD //////////
 
 void	ERRORResponse::createResponse()
 {
-	std::ostringstream status_conversion;
-	std::ostringstream length_conversion;
-
-	status_conversion << handler.getStatus();
 	status_line = createStatusLine();
-	body = createBody(status_conversion.str());
-	length_conversion << body.size();
-
+	body = createBody(toString(handler.getStatus()));
 	header_fields.append("Content-Type: text/html\r\n");
 	header_fields.append("Content-Length: ");
-	header_fields.append(length_conversion.str() + "\r\n");
+	header_fields.append(toString(body.size()) + "\r\n");
 	if (handler.getStatus() == 405)
 		appendAllowedMethods();
 	header_fields.append("\r\n");

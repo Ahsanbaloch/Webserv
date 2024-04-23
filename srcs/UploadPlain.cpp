@@ -40,45 +40,67 @@ UploadPlain& UploadPlain::operator=(const UploadPlain& src)
 
 void	UploadPlain::uploadData()
 {
-	filename = handler.getHeaderInfo().getFilename(); // add the upload location dir to path
-	if (filename.empty())
+	if (filepath_outfile.empty())
 	{
-		std::ostringstream num_conversion;
-		g_num_temp_files++;
-		num_conversion << g_num_temp_files;
-		filename = "www/" + num_conversion.str() + ".txt"; // add the upload location dir to path
+		if (!handler.getHeaderInfo().getFilename().empty())
+		{
+			filepath_outfile = getUploadDir() + handler.getHeaderInfo().getFilename();
+			if (access(filepath_outfile.c_str(), F_OK) == 0)
+			{
+				handler.setStatus(403);
+				throw CustomException("Forbidden");
+			}
+		}
+		else
+		{
+			std::ostringstream num_conversion;
+			g_num_temp_files++;
+			num_conversion << g_num_temp_files;
+			filepath_outfile = getUploadDir() + "textfile" + num_conversion.str() + ".txt"; // add the upload location dir to path
+		}
 	}
-	// check for file existence
+
 	if (handler.getHeaderInfo().getTEStatus())
 	{
-		// unchunkBody();
+		input.open(handler.getUnchunkedDataFile(), std::ios::ate);
+		if (!input.is_open())
+		{
+			handler.setStatus(500); // or 403 or other code?
+			throw CustomException("Internal Server Error");
+		}
+		std::streamsize file_size = input.tellg();
+		input.seekg(0, std::ios::beg);
+		outfile.open(filepath_outfile, std::ios::app);
+		if (!outfile.is_open())
+		{
+			handler.setStatus(500); // or 403 or other code?
+			throw CustomException("Internal Server Error");
+		}
 
-		// if (handler.body_read)
-		// {
-			input.open(handler.getUnchunkedDataFile(), std::ios::ate);
-			std::streamsize file_size = input.tellg();
-			input.seekg(0, std::ios::beg);
-			outfile.open(filename, std::ios::app);
-			char buffer[BUFFER_SIZE];
+		char buffer[BUFFER_SIZE];
 
-			while (file_size > 0)
-			{
-				int write_size = std::min(BUFFER_SIZE, static_cast<int>(file_size));
-				input.read(buffer, write_size);
-				outfile.write(buffer, input.gcount());
-				file_size -= input.gcount();
-			}
-			body_read = 1;
-			input.close();
-			// remove(handler.getUnchunkedDataFile().c_str()); // check if file was removed
-			outfile.close();
-		// }
+		while (file_size > 0)
+		{
+			int write_size = std::min(BUFFER_SIZE, static_cast<int>(file_size));
+			input.read(buffer, write_size);
+			outfile.write(buffer, input.gcount());
+			file_size -= input.gcount();
+		}
+		body_read = 1;
+		input.close();
+		remove(handler.getUnchunkedDataFile().c_str()); // check if file was removed
+		outfile.close();
 	}
 	else
 	{
 		handler.buf_pos++;
 		int to_write = std::min(handler.getBytesRead() - handler.buf_pos, handler.getHeaderInfo().getBodyLength());
-		outfile.open(filename, std::ios::app);
+		outfile.open(filepath_outfile, std::ios::app);
+		if (!outfile.is_open())
+		{
+			handler.setStatus(500); // or 403 or other code?
+			throw CustomException("Internal Server Error");
+		}
 		outfile.write(reinterpret_cast<const char*>(&handler.buf[handler.buf_pos]), to_write);
 		handler.buf_pos += to_write;
 		body_bytes_consumed += to_write;
