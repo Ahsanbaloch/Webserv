@@ -1,28 +1,29 @@
 #ifndef REQUESTHANDLER_H
 # define REQUESTHANDLER_H
 
-#include <sys/socket.h>
-#include <string>
-#include <map>
-#include <vector>
-#include <sstream>
-#include <cstdio>
-#include "CustomException.h"
-#include "RequestHeader.h"
-#include "AUploadModule.h"
-#include "UploadMultipart.h"
-#include "UploadPlain.h"
-#include "UploadUrlencoded.h"
-#include "AResponse.h"
-#include "GETResponse.h"
-#include "DELETEResponse.h"
-#include "ERRORResponse.h"
-#include "CgiResponse.hpp"
-#include "POSTResponse.h"
-#include "REDIRECTResponse.h"
-#include "BodyExtractor.h"
-#include "config/config_pars.hpp"
-#include "defines.h"
+# include <sys/socket.h>
+# include <string>
+# include <map>
+# include <vector>
+# include <sstream>
+# include <cstdio>
+# include "CustomException.h"
+# include "RequestHeader.h"
+# include "AUploadModule.h"
+# include "UploadMultipart.h"
+# include "UploadPlain.h"
+# include "UploadUrlencoded.h"
+# include "AResponse.h"
+# include "GETResponse.h"
+# include "DELETEResponse.h"
+# include "ERRORResponse.h"
+# include "CgiResponse.hpp"
+# include "POSTResponse.h"
+# include "REDIRECTResponse.h"
+# include "BodyExtractor.h"
+# include "config/config_pars.hpp"
+# include "defines.h"
+# include "utils.tpp"
 
 
 class RequestHandler
@@ -43,7 +44,7 @@ private:
 	int								connection_fd;
 	int								bytes_read;
 	int								request_length;
-	int								num_response_chunks;
+	int								num_response_chunks_sent;
 
 	int								chunk_length;
 	int								total_chunk_size;
@@ -88,8 +89,9 @@ public:
 	std::vector<t_server_config>	getServerConfig() const;
 	s_location_config				getLocationConfig() const;
 	AUploadModule*					getUploader() const;
+	AResponse*						getResponseObj() const;
 	int								getSelectedLocation() const; // only for testing purposes
-	int								getSelectedServer() const; /// should probably return t_server_config
+	t_server_config					getSelectedServer() const; /// should probably return t_server_config
 	int								getStatus() const;
 	bool							getResponseStatus() const;
 	int								getBytesRead() const;
@@ -106,7 +108,6 @@ public:
 
 	// setters
 	void							setStatus(int);
-	void							incrementResponseChunks();
 	
 	// buffer TBD
 	unsigned char					buf[BUFFER_SIZE + 1];
@@ -125,8 +126,6 @@ public:
 	std::vector<std::string>		splitPath(std::string input, char delim);
 	AResponse*						prepareResponse();
 	AUploadModule*					checkContentType();
-
-	bool							test_flag;
 
 	// make private?
 	enum {

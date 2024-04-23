@@ -62,25 +62,3 @@ std::string	AUploadModule::getRelativeFilePath()
 		relative_path = filepath_outfile.substr(handler.getLocationConfig().root.length());
 	return (relative_path);
 }
-
-
-///////// METHODS ///////////
-
-std::string	AUploadModule::getUploadDir()
-{
-	std::string upload_dir = handler.getLocationConfig().root + handler.getLocationConfig().path + handler.getLocationConfig().uploadDir;
-
-	// this would be ideally done by configParser for improved efficiency
-	for (std::string::iterator it = upload_dir.begin(); it != upload_dir.end(); it++)
-	{
-		if (*it == '/')
-		{
-			it++;
-			while (*it == '/')
-				it = upload_dir.erase(it);
-		}
-	}
-	if (upload_dir[upload_dir.length() - 1] != '/')
-		upload_dir.append("/");
-	return (upload_dir);
-}

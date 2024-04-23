@@ -39,7 +39,7 @@ void	POSTResponse::respondFileUpload()
 	body.append("<body><h1>Success</h1></body></html>");
 	
 	header_fields.append("Location: http://localhost:");
-	header_fields.append(toString(handler.getServerConfig()[handler.getSelectedServer()].port));
+	header_fields.append(toString(handler.getSelectedServer().port));
 	header_fields.append(handler.getUploader()->getRelativeFilePath());
 	header_fields.append("\r\n");
 	header_fields.append("Content-Type: text/html\r\n");

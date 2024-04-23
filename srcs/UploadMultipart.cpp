@@ -6,6 +6,11 @@
 UploadMultipart::UploadMultipart()
 	: AUploadModule()
 {
+	if (handler.getLocationConfig().uploadDir.empty())
+	{
+		handler.setStatus(404);
+		throw CustomException("Not found");
+	}
 	identifyBoundary();
 	meta_data_size = 0;
 	file_data_size = 0;
@@ -19,6 +24,11 @@ UploadMultipart::UploadMultipart()
 UploadMultipart::UploadMultipart(RequestHandler& src)
 	: AUploadModule(src)
 {
+	if (handler.getLocationConfig().uploadDir.empty())
+	{
+		handler.setStatus(404);
+		throw CustomException("Not found");
+	}
 	identifyBoundary();
 	meta_data_size = 0;
 	file_data_size = 0;
@@ -324,7 +334,7 @@ void	UploadMultipart::storeFileData()
 
 	if (filepath_outfile.empty())
 	{
-		filepath_outfile = getUploadDir() + content_disposition["filename"];
+		filepath_outfile = handler.getLocationConfig().uploadDir + "/" + content_disposition["filename"];
 		if (access(filepath_outfile.c_str(), F_OK) == 0)
 		{
 			handler.setStatus(403);
@@ -367,7 +377,7 @@ void	UploadMultipart::storeUnchunkedFileData()
 {
 	if (filepath_outfile.empty())
 	{
-		filepath_outfile = getUploadDir() + content_disposition["filename"];
+		filepath_outfile = handler.getLocationConfig().uploadDir + "/" + content_disposition["filename"];
 		if (access(filepath_outfile.c_str(), F_OK) == 0)
 		{
 			handler.setStatus(403);

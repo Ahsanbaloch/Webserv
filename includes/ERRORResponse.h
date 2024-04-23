@@ -12,7 +12,6 @@ class ERRORResponse: public AResponse
 private:
 	// helper methods
 	std::string	getDefaultErrorMessage(std::string);
-	std::string	getErrorPagePath();
 	std::string	createBody(std::string);
 	void		appendAllowedMethods();
 

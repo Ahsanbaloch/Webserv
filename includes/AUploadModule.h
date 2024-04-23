@@ -1,10 +1,10 @@
 #ifndef AUPLOADMODULE_H
 # define AUPLOADMODULE_H
 
-#include <string>
-#include <map>
-#include <fstream>
-#include "defines.h"
+# include <string>
+# include <map>
+# include <fstream>
+# include "defines.h"
 
 class RequestHandler;
 
@@ -19,9 +19,6 @@ protected:
 	// flags
 	bool				body_read;
 	bool				body_parsing_done; // only needed in Multipart class
-
-	// methods
-	std::string			getUploadDir();
 
 	// constructors
 	AUploadModule();

@@ -22,7 +22,7 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	request_length = 0;
 	cgi_post_int_redirect = 0;
 	internal_redirect = 0;
-	num_response_chunks = 0;
+	num_response_chunks_sent = 0;
 
 	buf_pos = -1;
 
@@ -31,7 +31,6 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	total_chunk_size = 0;
 	trailer_exists = 0;
 	body_unchunked = 0;
-	test_flag = 0;
 	te_state = body_start;
 	
 	response = NULL;
@@ -69,7 +68,7 @@ RequestHandler& RequestHandler::operator=(const RequestHandler& src)
 		response_ready = src.response_ready;
 		request_length = src.request_length;
 		internal_redirect = src.internal_redirect;
-		num_response_chunks = src.num_response_chunks;
+		num_response_chunks_sent = src.num_response_chunks_sent;
 		cgi_post_int_redirect = src.cgi_post_int_redirect;
 		buf_pos = src.buf_pos;
 		response = src.response;
@@ -102,9 +101,9 @@ int	RequestHandler::getSelectedLocation() const
 	return (selected_location);
 }
 
-int	RequestHandler::getSelectedServer() const
+t_server_config	RequestHandler::getSelectedServer() const
 {
-	return (selected_server);
+	return (server_config[selected_server]);
 }
 
 bool	RequestHandler::getResponseStatus() const
@@ -157,9 +156,14 @@ AUploadModule*	RequestHandler::getUploader() const
 	return (uploader);
 }
 
-int				RequestHandler::getNumResponseChunks() const
+AResponse*	RequestHandler::getResponseObj() const
 {
-	return (num_response_chunks);
+	return (response);
+}
+
+int	RequestHandler::getNumResponseChunks() const
+{
+	return (num_response_chunks_sent);
 }
 
 ///////// SETTERS ///////////
@@ -169,43 +173,45 @@ void	RequestHandler::setStatus(int status)
 	this->status = status;
 }
 
-void	RequestHandler::incrementResponseChunks()
-{
-	num_response_chunks++;
-}
 
 ///////// METHODS ///////////
 
 void	RequestHandler::sendResponse()
 {
 	std::string resp;
-	std::string body_chunk;
-	num_response_chunks = response->num_response_chunks2;
-	if (num_response_chunks > 1)
+
+	if (request_header.getMethod() == "GET" && getLocationConfig().redirect.empty() && status < 400) // other conditions?
 	{
-		GETResponse* get = dynamic_cast<GETResponse*>(response);
-		if (get)
+		if (num_response_chunks_sent > 0)
 		{
-			body_chunk = get->getBodyFromFile();
-			if (get->getResponseCompleteStatus())
-				test_flag = 1;
+			std::string body_chunk;
+			GETResponse* get = dynamic_cast<GETResponse*>(response);
+			if (get)
+				body_chunk = get->getBodyFromFile(); // need to catch errors thrown in here also somewhere and provide error response
+			else
+			{
+				// need to send a error response in this case
+				throw CustomException("failed when reading from file");
+			}
+			resp = body_chunk;
 		}
-		// resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + body_chunk;
-		resp = body_chunk;
+		else
+			resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
+		num_response_chunks_sent++;
 	}
 	else
-	{
 		resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
-		response->num_response_chunks2++;
-		if (response->getResponseCompleteStatus())
-			test_flag = 1;
+	
+	
+	std::cout << "num response chunks: " << num_response_chunks_sent << std::endl;
+	std::cout << "message:" << resp << std::endl;
+
+	int bytes_sent = send(connection_fd, resp.c_str(), resp.length(), 0);
+	if (bytes_sent == -1)
+	{
+		// handle properly (also check for bytes_sent == 0)
+		std::cout << "error when sending data" << std::endl;
 	}
-		
-	std::cout << "num response chunks: " << num_response_chunks << std::endl;
-	// std::cout << "message: " << resp << std::endl;
-	// std::cout << resp << std::endl;
-	send(connection_fd, resp.c_str(), resp.length(), 0); 
-	// check for errors when calling send (-1 and 0)
 }
 
 void	RequestHandler::processRequest()
@@ -331,17 +337,17 @@ void RequestHandler::checkInternalRedirect()
 {
 	if (request_header.getFileExtension().empty())
 	{
-		new_file_path = getLocationConfig().root + getLocationConfig().path + getLocationConfig().index; // replace after config parsig update
+		new_file_path = getLocationConfig().index;
 		if (access(new_file_path.c_str(), F_OK) == 0)
 		{
 			internal_redirect = 1;
-			int_redir_referer_path = "http://localhost:" + toString(getServerConfig()[getSelectedServer()].port) + getLocationConfig().path;
+			int_redir_referer_path = "http://localhost:" + toString(getSelectedServer().port) + getLocationConfig().path;
+			std::string	orig_root = getLocationConfig().root;
 			findLocationBlock();
 			checkAllowedMethods();
 			if (!getLocationConfig().redirect.empty())
 				return ;
-			// not exactly correct if root does not have the same length --> need to check in a different way // needs to have the new root
-			new_file_path = getLocationConfig().root + new_file_path.substr(getLocationConfig().root.length()); // replace after config parsig update
+			new_file_path = getLocationConfig().root + new_file_path.substr(orig_root.length());
 			if (getLocationConfig().path == "/cgi-bin" && new_file_path.substr(new_file_path.find_last_of('.')) == ".py")
 				cgi_post_int_redirect = 1;
 		}
@@ -459,22 +465,12 @@ std::vector<std::string>	RequestHandler::splitPath(std::string input, char delim
 	
 	while (std::getline(iss, item, delim))
 		result.push_back("/" + item); // does adding "/" work in all cases?
-	// if (result.size() == 1 && result[0].empty())
-	// 	result[0] = '/';
+
 	return (result);
 }
 
 int	RequestHandler::calcMatches(std::vector<std::string>& uri_path_items, std::vector<std::string>& location_path_items)
 {
-	// printf("splitted string\n");
-	// for (std::vector<std::string>::iterator it = uri_path_items.begin(); it != uri_path_items.end(); it++)
-	// {
-	// 	std::cout << "string uri: " << *it << std::endl;
-	// }
-	// for (std::vector<std::string>::iterator it = location_path_items.begin(); it != location_path_items.end(); it++)
-	// {
-	// 	std::cout << "string location: " << *it << std::endl;
-	// }
 	int	matches = 0;
 	int num_path_items = uri_path_items.size();
 	for (std::vector<std::string>::iterator it = location_path_items.begin(); it != location_path_items.end(); it++)
@@ -502,19 +498,6 @@ void	RequestHandler::findServerBlock()
 			break;
 		}
 	}
-	// std::vector<t_server_config>::iterator it = handler.getServerConfig().begin();
-	// for (std::vector<t_server_config>::iterator it2 = handler.getServerConfig().begin(); it2 != handler.getServerConfig().end(); it2++)
-	// {
-	// 	if (it2 == it || it2->serverName == handler.header.header_fields["host"])
-	// 		it = it2;
-	// 	else
-	// 	{
-	// 		handler.getServerConfig().erase(it2);
-	// 		it2--;
-	// 	}
-	// }
-	// if (it != handler.getServerConfig().begin())
-	// 	handler.getServerConfig().erase(handler.getServerConfig().begin());
 }
 
 
@@ -533,10 +516,8 @@ void	RequestHandler::storeChunkedData()
 {
 	if (temp_filename_unchunked.empty())
 	{
-		std::ostringstream num_conversion;
 		g_num_temp_unchunked_files++;
-		num_conversion << g_num_temp_unchunked_files;
-		temp_filename_unchunked = "www/temp/" + num_conversion.str() + ".bin";
+		temp_filename_unchunked = "www/temp/" + toString(g_num_temp_unchunked_files) + ".bin";
 	}
 
 	temp_unchunked.open(temp_filename_unchunked, std::ios::app | std::ios::binary);
@@ -793,7 +774,7 @@ void	RequestHandler::unchunkBody()
 				}
 		}
 	}
-
+}
 	// The chunked coding does not define any parameters. Their presence SHOULD be treated as an error. --> what is meant by that?
 
 
@@ -809,38 +790,6 @@ void	RequestHandler::unchunkBody()
 	// A recipient MUST ignore unrecognized chunk extensions. A server ought to limit the total length of chunk extensions received in a request 
 	// to an amount reasonable for the services provided, in the same way that it applies length limitations and timeouts for other parts of a 
 	// message, and generate an appropriate 4xx (Client Error) response if that amount is exceeded
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// std::cout << "identified method: " << request_header.getMethod() << '\n';
-// std::cout << "identified path: " << request_header.getPath() << '\n';
-// std::cout << "identified query: " << request_header.getQuery() << '\n';
-// std::cout << "identified version: " << request_header.getHttpVersion() << '\n';
-
-// for testing if correct configuration info reaches RequestHandler
-	// for (std::vector<t_server_config>::iterator it = server_config.begin(); it != server_config.end(); it++)
-	// {
-	// 	std::cout << "port and server name: " << it->port << " " << it->serverName << std::endl;
-	// 	for (std::vector<t_location_config>::iterator it2 = it->locations.begin(); it2 != it->locations.end(); it2++)
-	// 	{
-	// 		std::cout << "location: " << it2->path << std::endl;
-	// 	}
-	// }
-
 
 
 	// The presence of a message body in a request is signaled by a Content-Length or Transfer-Encoding header field. Request message framing is independent of method semantics.

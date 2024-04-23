@@ -88,7 +88,8 @@ void	DarwinWorker::runEventLoop()
 			if (event_lst[i].flags & EV_EOF)
 			{
 				std::cout << "client disconnected\n";
-				closeConnection(i);
+				if (connected_clients[event_lst[i].ident] != NULL)
+					closeConnection(i);
 			}
 			// event came from listening socket --> we have to create a connection
 			else if (*reinterpret_cast<int*>(event_lst[i].udata) == Q.getListeningSocketIdent())
@@ -127,10 +128,10 @@ void	DarwinWorker::runEventLoop()
 					connected_clients[event_lst[i].ident]->getRequestHandler()->processRequest();
 					connected_clients[event_lst[i].ident]->setResponseStatus(connected_clients[event_lst[i].ident]->getRequestHandler()->getResponseStatus());
 				}
-				else if (connected_clients[event_lst[i].ident]->getResponseStatus() && event_lst[i].filter == EVFILT_WRITE) // how to provide the reponse_ready info? // should this be an "If" OR "Else if"?
+				else if (connected_clients[event_lst[i].ident]->getRequestHandler() != NULL && connected_clients[event_lst[i].ident]->getResponseStatus() && event_lst[i].filter == EVFILT_WRITE)
 				{
 					connected_clients[event_lst[i].ident]->getRequestHandler()->sendResponse();
-					if (connected_clients[event_lst[i].ident]->getRequestHandler()->getNumResponseChunks() == 0 || connected_clients[event_lst[i].ident]->getRequestHandler()->test_flag == 1)
+					if (connected_clients[event_lst[i].ident]->getRequestHandler()->getNumResponseChunks() == 0 || connected_clients[event_lst[i].ident]->getRequestHandler()->getResponseObj()->getResponseCompleteStatus() == 1)
 					{
 						if (connected_clients[event_lst[i].ident]->getRequestHandler()->getHeaderInfo().getHeaderFields()["connection"] == "close"
 						|| connected_clients[event_lst[i].ident]->getRequestHandler()->getStatus() >= 400)

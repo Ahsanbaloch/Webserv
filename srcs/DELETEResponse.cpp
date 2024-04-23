@@ -54,7 +54,10 @@ void	DELETEResponse::deleteDir()
 {
 	std::string	dir = handler.getLocationConfig().root + handler.getHeaderInfo().getPath();
 	
-	if (handler.getHeaderInfo().getPath() == "/" || access(dir.c_str(), F_OK | W_OK) == -1)
+	if (handler.getHeaderInfo().getPath() == "/" || handler.getHeaderInfo().getPath() == "/cgi-bin"
+		|| handler.getHeaderInfo().getPath() == "/form_data" || handler.getHeaderInfo().getPath() == "/temp"
+		|| handler.getHeaderInfo().getPath() == "/temp_body" || handler.getHeaderInfo().getPath() == "/upload"
+		|| access(dir.c_str(), F_OK | W_OK) == -1)
 	{
 		handler.setStatus(404);
 		throw CustomException("Not found");

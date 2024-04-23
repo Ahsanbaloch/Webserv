@@ -1,13 +1,13 @@
 #ifndef UPLOADURLENCODED_H
 # define UPLOADURLENCODED_H
 
-#include <map>
-#include <fstream>
-#include <string>
-#include "AUploadModule.h"
-#include "RequestHandler.h"
-#include "defines.h"
-#include "utils.tpp"
+# include <map>
+# include <fstream>
+# include <string>
+# include "AUploadModule.h"
+# include "RequestHandler.h"
+# include "defines.h"
+# include "utils.tpp"
 
 class UploadUrlencoded: public AUploadModule
 {
@@ -52,7 +52,7 @@ public:
 	~UploadUrlencoded();	
 
 	// main method
-	void	uploadData();
+	void								uploadData();
 
 };
 

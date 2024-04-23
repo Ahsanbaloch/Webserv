@@ -222,7 +222,7 @@ void	RequestHeader::checkFields()
 		handler.setStatus(411);
 		throw CustomException("Length Required");
 	}
-	if (content_length_exists && body_length > handler.getServerConfig()[handler.getSelectedServer()].bodySize)
+	if (content_length_exists && body_length > handler.getSelectedServer().bodySize)
 	{
 		handler.setStatus(413);
 		throw CustomException("Content Too Large");
