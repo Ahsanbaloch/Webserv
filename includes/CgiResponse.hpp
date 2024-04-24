@@ -29,18 +29,15 @@ private:
     void _exportEnv();
     void _execCgi();
     void createResponse();
+    std::string identifyPathInfo();
+    void setEnv();
 
     char **_envp;
-    std::vector<std::string> _env;
-    std::string _scriptPath;   
-    std::string _queryString;
-    std::string _pathInfo;
-    std::string _boundary;
 
-    std::string _cgiOutputStr;
 
     int _cgiOutputFd[2];
     int _cgiInputFd[2];
+    std::string _cgiOutputStr;
 };
 
 #endif

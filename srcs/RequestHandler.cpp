@@ -103,11 +103,6 @@ int	RequestHandler::getSelectedLocation() const
 	return (selected_location);
 }
 
-t_server_config	RequestHandler::getSelectedServer() const
-{
-	return (server_config[selected_server]);
-}
-
 bool	RequestHandler::getResponseStatus() const
 {
 	return (response_ready);
@@ -126,6 +121,11 @@ int		RequestHandler::getRequestLength() const
 const RequestHeader&	RequestHandler::getHeaderInfo()
 {
 	return (request_header);
+}
+
+t_server_config	RequestHandler::getSelectedServer() const
+{
+	return (server_config[selected_server]);
 }
 
 bool	RequestHandler::getUnchunkingStatus() const
@@ -400,9 +400,9 @@ AResponse* RequestHandler::prepareResponse()
 
 	if (!getLocationConfig().redirect.empty())
 		return (new REDIRECTResponse(*this));
-	if (request_header.getFileExtension() == "py")
+	if (request_header.getFileExtension() == ".py")
 	{
-		
+		std::cout << "CGI response" << std::endl;
 		return (new CgiResponse(*this)); // need to free this somewhere
 	}
 	//CGi Extension Check to be done here
