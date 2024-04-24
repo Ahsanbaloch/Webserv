@@ -40,7 +40,7 @@ void CgiResponse::createResponse()
 }
 
 void CgiResponse::_getScriptPath() {
-	std::string path = handler.request_header.getPath();
+	std::string path = handler.getHeaderInfo().getPath();
 	size_t pos = path.find('.');
 	size_t pathInfo = path.find('/', pos);
 	size_t queryString = path.find('?', pos);
@@ -58,14 +58,14 @@ void CgiResponse::_getScriptPath() {
 }
 
 void CgiResponse::_getQueryString() {
-	std::string path = handler.request_header.getPath();
+	std::string path = handler.getHeaderInfo().getPath();
 	size_t pos = path.find('?');
 	if (pos != std::string::npos)
 		_queryString = path.substr(pos + 1);
 }
 
 void CgiResponse::_getPathInfo() {
-	std::string path = handler.request_header.getPath();
+	std::string path = handler.getHeaderInfo().getPath();
 	size_t pos = path.find('.');
 	size_t pathInfo = path.find('/', pos);
 	size_t queryString = path.find('?', pos);
@@ -88,8 +88,8 @@ void CgiResponse::_setEnv() {
 	_env.push_back("REMOTE_ADDR=");
 	_env.push_back("REMOTE_IDENT=");
 	_env.push_back("REMOTE_USER=");
-	_env.push_back("REQUEST_METHOD=" + handler.request_header.getMethod());
-	_env.push_back("REQUEST_URI=" + handler.request_header.getPath());
+	_env.push_back("REQUEST_METHOD=" + handler.getHeaderInfo().getMethod());
+	_env.push_back("REQUEST_URI=" + handler.getHeaderInfo().getPath());
 	_env.push_back("SCRIPT_NAME=" + _scriptPath);
 	_env.push_back("SERVER_NAME=" + handler.getSelectedServer().serverName);
 	//_env.push_back("SERVER_PORT=" + handler.getSelectedServer().port);

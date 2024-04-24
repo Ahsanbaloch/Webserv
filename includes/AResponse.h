@@ -4,6 +4,7 @@
 # include <string>
 # include <map>
 # include <vector>
+# include "utils.tpp"
 
 class RequestHandler;
 
@@ -13,19 +14,18 @@ protected:
 	RequestHandler&	handler;
 
 	// vars
-	std::string			file_type; // may move to GETResponse
-	std::string			full_file_path;
-
-	std::string			body;
-	std::string 		status_line;
-	std::string 		header_fields;
+	std::string		file_type;
+	std::string		full_file_path;
+	
+	std::string		body;
+	std::string		status_line;
+	std::string		header_fields;
 
 	// flags
-	bool				internal_redirect; // may move to GETResponse
+	bool			chunked_body;
 
 	// methods
-	std::string			buildPathFromLocationIndex();
-	std::string			createStatusLine();
+	std::string		createStatusLine();
 
 	// constructors
 	AResponse();
@@ -38,14 +38,14 @@ public:
 	virtual ~AResponse();
 
 	// getters
-	std::string			getResponseBody() const;
-	std::string			getResponseStatusLine() const;
-	std::string			getRespondsHeaderFields() const;
-	std::string			getFullFilePath() const;
-	bool				getInternalRedirectStatus() const; // may move to GETResponse
+	std::string		getResponseBody() const;
+	std::string		getResponseStatusLine() const;
+	std::string		getRespondsHeaderFields() const;
+	std::string		getFullFilePath() const; // needed?
+	bool			getChunkedBodyStatus() const;
 
 	// methods
-	virtual void		createResponse() = 0;
+	virtual void	createResponse() = 0;
 
 };
 

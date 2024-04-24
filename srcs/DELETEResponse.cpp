@@ -36,46 +36,40 @@ void	DELETEResponse::deleteFile()
 {
 	std::string file = handler.getLocationConfig().root + handler.getHeaderInfo().getPath();
 
-	std::cout << "file to be deleted: " << file << std::endl;
-
+	if (access(file.c_str(), F_OK | W_OK) == -1)
+	{
+		handler.setStatus(404);
+		throw CustomException("Not found");
+	}
 	if (remove(file.c_str()) != 0)
 	{
-		handler.setStatus(404); // different error code?
-		throw CustomException("Not Found");
+		handler.setStatus(409);
+		throw CustomException("Conflict");
 	}
 	else
-		handler.setStatus(200);
-	
-	// send 409 if the file is in use and thus cannot be deleted?
+		handler.setStatus(204);
 }
 
 void	DELETEResponse::deleteDir()
 {
 	std::string	dir = handler.getLocationConfig().root + handler.getHeaderInfo().getPath();
 	
-	std::cout << "directory to be deleted " << dir << std::endl;
-
-	if (handler.getHeaderInfo().getPath() == "/" || rmdir(dir.c_str()) != 0)
+	if (handler.getHeaderInfo().getPath() == "/" || handler.getHeaderInfo().getPath() == "/cgi-bin"
+		|| handler.getHeaderInfo().getPath() == "/form_data" || handler.getHeaderInfo().getPath() == "/temp"
+		|| handler.getHeaderInfo().getPath() == "/temp_body" || handler.getHeaderInfo().getPath() == "/upload"
+		|| access(dir.c_str(), F_OK | W_OK) == -1)
 	{
-		// indicate that it is forbidden to delete directories if they are empty or are the root
-		handler.setStatus(403);
-		throw CustomException("Forbidden");
+		handler.setStatus(404);
+		throw CustomException("Not found");
+	}
+	if (rmdir(dir.c_str()) != 0)
+	{
+		handler.setStatus(409);
+		throw CustomException("Conflict");
 	}
 	else
-		handler.setStatus(200);
+		handler.setStatus(204);
 }
-
-// std::string	DELETEResponse::createStatusLine() // make Response method? --> set?
-// {
-// 	std::string status_line;
-// 	std::ostringstream status_conversion;
-
-// 	status_line.append("HTTP/1.1 "); // alternative handler.head.version
-// 	status_conversion << handler.getStatus();
-// 	status_line.append(status_conversion.str());
-// 	status_line.append(" \r\n");  //A server MUST send the space that separates the status-code from the reason-phrase even when the reason-phrase is absent (i.e., the status-line would end with the space)
-// 	return (status_line);
-// }
 
 
 ///////// MAIN METHODS //////////
@@ -88,16 +82,6 @@ void	DELETEResponse::createResponse()
 	else
 		deleteDir();
 
-	// create extra function for this
 	status_line = createStatusLine();
-	header_fields = "Content-Type: plain/text\r\nContent-Length: 3\r\n\r\n"; // maybe send a html response here instead
-	body = "200"; // should be gotten from handler.status
-
-	// What if there is a deletion request; while a file is in the process of being rendered?
-
-	// send a 202 (Accepted) status code if the action will likely succeed but has not yet been enacted
-
-	// send a 204 (No Content) status code if the action has been enacted and no further information is to be supplied
-
-	// send a 200 (OK) status code if the action has been enacted and the response message includes a representation describing the status
+	header_fields = "\r\n\r\n";
 }

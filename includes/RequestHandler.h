@@ -1,28 +1,29 @@
 #ifndef REQUESTHANDLER_H
 # define REQUESTHANDLER_H
 
-#include <sys/socket.h>
-#include <string>
-#include <map>
-#include <vector>
-#include <sstream>
-#include <cstdio>
-#include "CustomException.h"
-#include "RequestHeader.h"
-#include "AUploadModule.h"
-#include "UploadMultipart.h"
-#include "UploadPlain.h"
-#include "UploadUrlencoded.h"
-#include "AResponse.h"
-#include "GETResponse.h"
-#include "DELETEResponse.h"
-#include "ERRORResponse.h"
-#include "CgiResponse.hpp"
-#include "POSTResponse.h"
-#include "REDIRECTResponse.h"
-#include "BodyExtractor.h"
-#include "config/config_pars.hpp"
-#include "defines.h"
+# include <sys/socket.h>
+# include <string>
+# include <map>
+# include <vector>
+# include <sstream>
+# include <cstdio>
+# include "CustomException.h"
+# include "RequestHeader.h"
+# include "AUploadModule.h"
+# include "UploadMultipart.h"
+# include "UploadPlain.h"
+# include "UploadUrlencoded.h"
+# include "AResponse.h"
+# include "GETResponse.h"
+# include "DELETEResponse.h"
+# include "ERRORResponse.h"
+# include "CgiResponse.hpp"
+# include "POSTResponse.h"
+# include "REDIRECTResponse.h"
+# include "BodyExtractor.h"
+# include "config/config_pars.hpp"
+# include "defines.h"
+# include "utils.tpp"
 
 
 class RequestHandler
@@ -34,12 +35,15 @@ private:
 
 	// vars
 	std::vector<t_server_config>	server_config;
+	std::string						new_file_path; // add to header?
+	std::string						int_redir_referer_path;
 	int								status;
 	int								selected_location;
 	int								selected_server;
 	int								connection_fd;
 	int								bytes_read;
 	int								request_length;
+	int								num_response_chunks_sent;
 
 	int								chunk_length;
 	int								total_chunk_size;
@@ -50,6 +54,9 @@ private:
 
 	// flags
 	bool							response_ready;
+	bool							internal_redirect;
+	bool							cgi_post_int_redirect;
+	bool							all_chunks_sent;
 	
 	// states
 	enum {
@@ -72,7 +79,6 @@ private:
 	RequestHandler(const RequestHandler&);
 
 public:
-	RequestHeader					request_header;
 	// constructors & destructors
 	RequestHandler();
 	RequestHandler& operator=(const RequestHandler&);
@@ -82,8 +88,9 @@ public:
 	// getters
 	std::vector<t_server_config>	getServerConfig() const;
 	s_location_config				getLocationConfig() const;
-	t_server_config					getSelectedServer() const;	
+	AUploadModule*					getUploader() const;
 	int								getSelectedLocation() const; // only for testing purposes
+	t_server_config					getSelectedServer() const; /// should probably return t_server_config
 	int								getStatus() const;
 	bool							getResponseStatus() const;
 	int								getBytesRead() const;
@@ -93,6 +100,12 @@ public:
 	int								getTotalChunkSize() const;
 	bool							getUnchunkingStatus() const;
 	std::string						getTempBodyFilepath() const;
+	std::string						getIntRedirRefPath() const;
+	bool							getIntRedirStatus() const;
+	std::string						getNewFilePath() const;
+	int								getNumResponseChunks() const;
+
+	bool							getChunksSentCompleteStatus() const;
 
 	// setters
 	void							setStatus(int);
@@ -108,6 +121,8 @@ public:
 	void							findServerBlock();
 	void							findLocationBlock();
 	void							checkAllowedMethods();
+	void							checkInternalRedirect();
+	void							checkMaxBodySize();
 	int								calcMatches(std::vector<std::string>&, std::vector<std::string>&); // make private?
 	std::vector<std::string>		splitPath(std::string input, char delim);
 	AResponse*						prepareResponse();
@@ -120,6 +135,7 @@ public:
 		text_plain,
 		urlencoded
 	} content_type;
+
 };
 
 #endif

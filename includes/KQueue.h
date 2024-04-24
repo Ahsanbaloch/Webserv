@@ -1,12 +1,11 @@
-
 #ifndef KQUEUE_H
 # define KQUEUE_H
 
-#include <sys/event.h>
-#include <unistd.h>
-#include <vector>
-#include "CustomException.h"
-#include "ListeningSocketsBlock.h"
+# include <sys/event.h>
+# include <unistd.h>
+# include <vector>
+# include "CustomException.h"
+# include "ListeningSocketsBlock.h"
 
 class KQueue
 {

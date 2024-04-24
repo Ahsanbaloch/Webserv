@@ -1,22 +1,23 @@
 #ifndef UPLOADURLENCODED_H
 # define UPLOADURLENCODED_H
 
-#include <map>
-#include <string>
-#include "AUploadModule.h"
-#include "RequestHandler.h"
+# include <map>
+# include <fstream>
+# include <string>
+# include "AUploadModule.h"
+# include "RequestHandler.h"
+# include "defines.h"
+# include "utils.tpp"
 
 class UploadUrlencoded: public AUploadModule
 {
 private:
 	// input
 	std::ifstream 						input;
-
-	// output
-	std::map<std::string, std::string>	database;
 	
 	// vars
 	int									body_bytes_consumed;
+	std::map<std::string, std::string>	database;
 
 	// temp vars
 	std::string 						temp_value;
@@ -28,6 +29,8 @@ private:
 
 	// helper methods
 	void								storeInDatabase();
+	void								storeInJSON();
+	std::string							convertToJSON();
 	void								decode(std::string&);
 	void								parseBody(char);
 
@@ -46,13 +49,10 @@ private:
 public:
 	// constructors and desctructors
 	explicit UploadUrlencoded(RequestHandler&);
-	~UploadUrlencoded();
-
-	// getters
-	std::map<std::string, std::string>	getDatabase() const;
+	~UploadUrlencoded();	
 
 	// main method
-	void	uploadData();
+	void								uploadData();
 
 };
 

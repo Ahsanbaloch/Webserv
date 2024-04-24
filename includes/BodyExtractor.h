@@ -4,6 +4,7 @@
 # include <fstream>
 # include "defines.h"
 # include "CustomException.h"
+# include "utils.tpp"
 
 class RequestHandler;
 
@@ -27,11 +28,11 @@ public:
 	~BodyExtractor();
 
 	// getters
-	std::string	getTempBodyFilepath() const;
-	bool		getExtractionStatus() const;
+	std::string		getTempBodyFilepath() const;
+	bool			getExtractionStatus() const;
 
 	// methods
-	void	extractBody();
+	void			extractBody();
 };
 
 

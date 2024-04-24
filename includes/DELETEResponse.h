@@ -1,11 +1,11 @@
 #ifndef DELETERESPONSE_H
 # define DELETERESPONSE_H
 
-#include <iostream>
-#include <sstream>
-#include <cstdio>
-#include "AResponse.h"
-#include "RequestHandler.h"
+# include <iostream>
+# include <sstream>
+# include <cstdio>
+# include "AResponse.h"
+# include "RequestHandler.h"
 
 class DELETEResponse: public AResponse
 {
@@ -13,7 +13,6 @@ private:
 	// helper methods
 	void		deleteFile();
 	void		deleteDir();
-	// std::string	createStatusLine();
 
 	// constructors
 	DELETEResponse();

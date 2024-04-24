@@ -8,9 +8,12 @@
 class ConnectionHandler
 {
 private:
+	//vars
 	RequestHandler* 				handler;
 	std::vector<t_server_config>	server_config;
 	int								connection_fd;
+
+	//flags
 	bool							response_ready;
 	
 	// constructors
@@ -24,15 +27,15 @@ public:
 	~ConnectionHandler();
 
 	// getters
-	RequestHandler*	getRequestHandler();
-	int				getResponseStatus();
+	RequestHandler*					getRequestHandler();
+	int								getResponseStatus();
 
 	// setters
-	void			initRequestHandler();
-	void			setResponseStatus(bool);
+	void							initRequestHandler();
+	void							setResponseStatus(bool);
 
 	// methods
-	void			removeRequestHandler();
+	void							removeRequestHandler();
 
 };
 

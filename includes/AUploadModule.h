@@ -1,10 +1,10 @@
 #ifndef AUPLOADMODULE_H
 # define AUPLOADMODULE_H
 
-#include <string>
-#include <map>
-#include <fstream>
-#include "defines.h"
+# include <string>
+# include <map>
+# include <fstream>
+# include "defines.h"
 
 class RequestHandler;
 
@@ -14,7 +14,7 @@ protected:
 	RequestHandler&	handler;
 
 	// vars
-	std::string			filename; // move to children? (if not needed in all sub-classes)
+	std::string			filepath_outfile;
 
 	// flags
 	bool				body_read;
@@ -32,6 +32,7 @@ public:
 
 	// getters
 	bool			getUploadStatus() const;
+	std::string		getRelativeFilePath();
 
 	// methods
 	virtual void	uploadData() = 0;
