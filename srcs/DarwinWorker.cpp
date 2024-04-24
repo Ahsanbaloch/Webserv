@@ -131,7 +131,7 @@ void	DarwinWorker::runEventLoop()
 				else if (connected_clients[event_lst[i].ident]->getRequestHandler() != NULL && connected_clients[event_lst[i].ident]->getResponseStatus() && event_lst[i].filter == EVFILT_WRITE)
 				{
 					connected_clients[event_lst[i].ident]->getRequestHandler()->sendResponse();
-					if (connected_clients[event_lst[i].ident]->getRequestHandler()->getNumResponseChunks() == 0 || connected_clients[event_lst[i].ident]->getRequestHandler()->getResponseCompleteStatus() == 1)
+					if (connected_clients[event_lst[i].ident]->getRequestHandler()->getNumResponseChunks() == 0 || connected_clients[event_lst[i].ident]->getRequestHandler()->getChunksSentCompleteStatus() == 1)
 					{
 						if (connected_clients[event_lst[i].ident]->getRequestHandler()->getHeaderInfo().getHeaderFields()["connection"] == "close"
 						|| connected_clients[event_lst[i].ident]->getRequestHandler()->getStatus() >= 400)

@@ -57,7 +57,7 @@ private:
 	bool							response_ready;
 	bool							internal_redirect;
 	bool							cgi_post_int_redirect;
-	bool							response_complete;
+	bool							all_chunks_sent;
 	
 	// states
 	enum {
@@ -90,7 +90,6 @@ public:
 	std::vector<t_server_config>	getServerConfig() const;
 	s_location_config				getLocationConfig() const;
 	AUploadModule*					getUploader() const;
-	AResponse*						getResponseObj() const;
 	int								getSelectedLocation() const; // only for testing purposes
 	t_server_config					getSelectedServer() const; /// should probably return t_server_config
 	int								getStatus() const;
@@ -107,7 +106,7 @@ public:
 	std::string						getNewFilePath() const;
 	int								getNumResponseChunks() const;
 
-	bool								getResponseCompleteStatus() const;
+	bool							getChunksSentCompleteStatus() const;
 
 	// setters
 	void							setStatus(int);
@@ -138,8 +137,6 @@ public:
 		urlencoded
 	} content_type;
 
-	// int							total_bytes_sent;
-	int								bytes_to_send;
 };
 
 #endif

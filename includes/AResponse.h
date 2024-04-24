@@ -22,7 +22,6 @@ protected:
 	std::string		header_fields;
 
 	// flags
-	// bool			response_complete;
 	bool			chunked_body;
 
 	// methods
@@ -43,7 +42,6 @@ public:
 	std::string		getResponseStatusLine() const;
 	std::string		getRespondsHeaderFields() const;
 	std::string		getFullFilePath() const; // needed?
-	bool			getResponseCompleteStatus() const;
 	bool			getChunkedBodyStatus() const;
 
 	// methods

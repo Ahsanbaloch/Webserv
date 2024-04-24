@@ -23,7 +23,7 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	cgi_post_int_redirect = 0;
 	internal_redirect = 0;
 	num_response_chunks_sent = 0;
-	response_complete = 0;
+	all_chunks_sent = 0;
 	// total_bytes_sent = 0;
 
 	buf_pos = -1;
@@ -158,19 +158,14 @@ AUploadModule*	RequestHandler::getUploader() const
 	return (uploader);
 }
 
-AResponse*	RequestHandler::getResponseObj() const
-{
-	return (response);
-}
-
 int	RequestHandler::getNumResponseChunks() const
 {
 	return (num_response_chunks_sent);
 }
 
-bool	RequestHandler::getResponseCompleteStatus() const
+bool	RequestHandler::getChunksSentCompleteStatus() const
 {
-	return (response_complete);
+	return (all_chunks_sent);
 }
 
 ///////// SETTERS ///////////
@@ -187,7 +182,7 @@ void	RequestHandler::sendResponse()
 {
 	std::string resp;
 
-	if (request_header.getMethod() == "GET" && response->getChunkedBodyStatus() && status < 400)
+	if (response->getChunkedBodyStatus() && status < 400)
 	{
 		if (num_response_chunks_sent > 0)
 		{
@@ -209,9 +204,7 @@ void	RequestHandler::sendResponse()
 	else
 		resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
 	
-	
-	// std::cout << "num response chunks: " << num_response_chunks_sent << std::endl;
-	// std::cout << "message:" << resp << std::endl;
+
 	int bytes_sent = send(connection_fd, resp.c_str(), resp.length(), 0);
 	if (bytes_sent == -1)
 	{
@@ -230,9 +223,8 @@ void	RequestHandler::sendResponse()
 				get->incrementFilePosition(bytes_sent);
 			if (get->getFilePosition() == get->getFileSize())
 			{
-				response_complete = 1;
+				all_chunks_sent = 1;
 				get->getInputFile().close();
-				// input_file.close();
 			}
 		}
 		else
@@ -241,47 +233,6 @@ void	RequestHandler::sendResponse()
 			std::cout << "error resetting file position" << std::endl;
 		}
 	}
-
-
-	// if (response->getChunkedBodyStatus() && (bytes_sent != bytes_to_send))
-	// {
-	// 	GETResponse* get = dynamic_cast<GETResponse*>(response);
-	// 	if (get)
-	// 		get->decrementFilePosition(bytes_to_send - bytes_sent);
-	// 	else
-	// 	{
-	// 		// need to send a error response in this case
-	// 		std::cout << "error resetting file position" << std::endl;
-	// 	}
-	// }
-
-	// size_t total_bytes_sent = 0;
-	// int bytes_sent = 0;
-	// while (total_bytes_sent < resp.length())
-	// {
-	// 	bytes_sent = send(connection_fd, resp.c_str(), resp.length() - total_bytes_sent, 0);
-	// 	if (bytes_sent == -1)
-	// 	{
-	// 		// handle properly (also check for bytes_sent == 0)
-	// 		std::cout << "error when sending data" << std::endl;
-	// 		// break;
-	// 	}
-	// 	total_bytes_sent += bytes_sent;
-	// }
-	
-	// total_bytes_sent += bytes_sent;
-	// std::cout << "chunk sent: " << bytes_sent << std::endl;
-	// std::cout << "total bytes sent: " << total_bytes_sent << std::endl;
-	// if (bytes_sent == -1)
-	// {
-	// 	// handle properly (also check for bytes_sent == 0)
-	// 	std::cout << "error when sending data" << std::endl;
-	// }
-	// if (bytes_sent == 0)
-	// {
-	// 	// handle properly
-	// 	std::cout << "no bytes sent" << std::endl;
-	// }
 }
 
 void	RequestHandler::processRequest()

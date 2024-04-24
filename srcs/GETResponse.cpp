@@ -34,12 +34,6 @@ GETResponse& GETResponse::operator=(const GETResponse& src)
 	return (*this);
 }
 
-
-// void	GETResponse::decrementFilePosition(std::streampos bytes_not_read)
-// {
-// 	file_position -= bytes_not_read;
-// }
-
 void	GETResponse::incrementFilePosition(std::streampos position_increment)
 {
 	file_position += position_increment;
@@ -67,8 +61,7 @@ std::streampos	GETResponse::getFileSize() const
 
 std::string	GETResponse::getBodyFromFile()
 {
-	// std::string			chunk_termination;
-	char 				buffer[BUFFER_SIZE];
+	char	buffer[BUFFER_SIZE];
 	
 	input_file.seekg(file_position);
 	input_file.read(buffer, BUFFER_SIZE);
@@ -84,19 +77,6 @@ std::string	GETResponse::getBodyFromFile()
 	std::streampos bytes_read = input_file.gcount();
 	std::string chunk_content(buffer, bytes_read);
 
-	// file_position += bytes_read;
-	// if (file_position == file_size)
-	// {
-	// 	response_complete = 1;
-	// 	// chunk_termination = "\r\n0\r\n\r\n";
-	// 	input_file.close();
-	// }
-	// else
-	// 	chunk_termination = "\r\n";
-	
-	// std::string chunk_length = toHex(bytes_read) + "\r\n";
-	// return (chunk_length + chunk_content + chunk_termination);
-	handler.bytes_to_send = bytes_read;
 	return (chunk_content);
 }
 
@@ -158,20 +138,13 @@ std::string	GETResponse::createHeaderFields(std::string body) // probably don't 
 
 
 	header.append("Content-Type: " + mime_type + "\r\n");
-	// header.append("Content-Length: "); // alternatively TE: chunked?
-	// header.append(toString(body.size()) + "\r\n");
-	// what other headers to include?
-	// send Repsonses in Chunks
 	if (auto_index)
 	{
 		header.append("Content-Length: "); // alternatively TE: chunked?
 		header.append(toString(body.size()) + "\r\n");
 	}
 	else
-	{
-		// header.append("Transfer-Encoding: chunked\r\n");
 		header.append("Content-Length: " + std::to_string(file_size) + "\r\n");
-	}
 	// header.append("Cache-Control: no-cache");
 	// header.append("Set-Cookie: preference=darkmode; Domain=example.com");
 	// header.append("Server: nginx/1.21.0");
@@ -256,6 +229,8 @@ std::string	GETResponse::identifyMIME()
 		return ("audio/wav");
 	else if (file_type == ".xhtml")
 		return ("application/xhtml+xml");
+	else if (file_type == ".tif")
+		return (" image/tiff");
 	else
 	{
 		handler.setStatus(415);
@@ -277,5 +252,4 @@ void	GETResponse::createResponse()
 		body = createBody();
 	
 	header_fields = createHeaderFields(body);
-	handler.bytes_to_send = status_line.size() + body.size() + header_fields.size();
 }

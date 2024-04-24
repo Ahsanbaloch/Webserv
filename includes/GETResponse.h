@@ -46,7 +46,6 @@ public:
 	// main method
 	void			createResponse();
 	std::string		getBodyFromFile();
-	// void			decrementFilePosition(std::streampos);
 	void			incrementFilePosition(std::streampos);
 	
 };
