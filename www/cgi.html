@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Webserv CGI</title>
+</head>
+<body>
+    <header>
+        <h1>Welcome</h1>
+    </header>
+    <form action="cgi-bin/add.py" method="POST" enctype='multipart/form-data'>
+        <fieldset>
+            <legend>Enter two numbers to add</legend>
+            <label>First Number: <input type="number" name="num1"></label><br/>
+            <label>Second Number: <input type="number" name="num2"></label><br/>
+            <button>Add</button>
+        </fieldset>
+    </form>
+</body>
+</html>

@@ -11,6 +11,7 @@
 #include "CustomException.h"
 #include "KQueue.h"
 #include "RequestHandler.h"
+#include "ConnectionHandler.h" // test
 #include "ListeningSocketsBlock.h"
 #include "config/config_pars.hpp"
 
@@ -20,23 +21,30 @@
 class DarwinWorker
 {
 private:
-	/* data */
-public:
-	KQueue							Q;
-	std::map<int, ListeningSocket>	listening_sockets;
-	std::map<int, RequestHandler*>	ConnectedClients;
-	std::vector<int>				pending_fds;
-	struct sockaddr					client_addr;
-	socklen_t						addr_size;
-	struct kevent					event_lst[MAX_EVENTS];
-
-	explicit	DarwinWorker(const KQueue&, ListeningSocketsBlock&);
+	// vars
+	KQueue								Q;
+	struct kevent						event_lst[MAX_EVENTS];
+	std::map<int, ListeningSocket>		listening_sockets;
+	std::map<int, ConnectionHandler*>	connected_clients;
+	std::vector<int>					pending_fds;
+	struct sockaddr						client_addr;
+	socklen_t							addr_size;
+	
+	// helper methods
+	void	addToConnectedClients(ListeningSocket&);
+	void	closeConnection(int);
+	
+	// constructors
 	DarwinWorker();
+	DarwinWorker(const DarwinWorker&);
+	DarwinWorker& operator=(const DarwinWorker&);
+public:
+	// constructors & destructors
+	DarwinWorker(const KQueue&, ListeningSocketsBlock&);
 	~DarwinWorker();
 
+	// main method
 	void	runEventLoop();
-	void	addToConnectedClients(ListeningSocket&);
 };
-
 
 #endif

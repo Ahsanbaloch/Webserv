@@ -75,6 +75,7 @@ void	LinuxWorker::runEventLoop()
 			// event came from connection, so that we want to handle the request
 			else
 				ConnectedClients[event_lst[i].ident]->handleRequest(event_lst[i].ident); // rm ident in handleRequest and use fd stored in object
+			// need to add code similar to DarwinWorker
 		}
 	}
 }

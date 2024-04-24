@@ -3,16 +3,17 @@
 /*                                                        :::      ::::::::   */
 /*   config_pars.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
+/*   By: mamesser <mamesser@student.42wolfsburg.    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/03/19 19:37:28 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/04/23 12:11:24 by mamesser         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "config/config_pars.hpp"
 
-config_pars::config_pars(int argc, char **argv)
+config_pars::config_pars(int argc, char **argv) 
+: _server_root(""), _server_index(""), _error_string(""), _upload(""), _GET(true), _POST(false), _DELETE(false)
 {
 	std::string fileContent;
 	std::string argument_value;
@@ -107,16 +108,52 @@ void	config_pars::parse_server_block(t_server_config &server_config, const std::
 	std::size_t locPos = server_block.find("location");
 	std::string globalPart = server_block.substr(0, locPos);
 	std::string locationPart = locPos != std::string::npos ? server_block.substr(locPos) : "";
-	server_config.server_index = extractServerVariable("index", globalPart);
-	server_config.server_root = extractServerVariable("root", globalPart);
+	_server_root = extractServerVariable("root", globalPart);
+	//std::cout << _server_root << std::endl;
+	_server_index = extractServerVariable("index", globalPart);
 	extractIpPort(globalPart, server_config.Ip, server_config.port);
 	server_config.serverName = extractServerVariable("Server_name", globalPart);
 	server_config.bodySize = extractBodySize(globalPart);
-	server_config.errorPage = extractServerVariable("error_page", globalPart);
+	_error_string = extractServerVariable("error_page", globalPart);
+	_upload	= extractServerVariable("uploadDir", globalPart);
+	allowMethods(_GET, _POST, _DELETE,  globalPart);
 	if (!locationPart.empty())
-    	Location_block(server_config, locationPart, server_config.server_root, server_config.server_index);
+    	Location_block(server_config, locationPart);
 	else
 		throw InvalidLocationException();
+}
+
+void config_pars::extractErrorPage(int &status, std::string &page, std::string split_string, std::string merge_str)
+{
+	if (!split_string.empty())
+	{
+		if (split_string.find(" ") != std::string::npos)
+		{
+			std::istringstream iss(split_string);
+			if (!(iss >> status))
+				throw MissingValueException("Error Page Status...");
+			if (!(iss >> page))
+				throw MissingValueException("Error Page value...");
+			else
+			{
+ 				page = merge_str + page;
+				page = removeMultipleSlashes(page);
+				removLSlashes(page);
+			}
+			if (access(page.c_str() , F_OK) != 0)
+    		{
+				status = -1;
+				page = "";
+			}
+		}
+		else
+			throw MissingValueException("InValid Error Page data");
+	}
+	else
+	{
+		status = -1;
+		page = "";
+	}
 }
 
 std::string config_pars::extractServerVariable(const std::string variable, const std::string &server_block)
@@ -186,7 +223,7 @@ int	config_pars::extractBodySize(const std::string &server_block)
 }
 
 
-void	config_pars::Location_block(t_server_config &server_config, const std::string &config_block, std::string server_root, std::string server_index)
+void	config_pars::Location_block(t_server_config &server_config, const std::string &config_block)
 {
 	std::vector<std::string> location_blocks;
 	splitLocationBlocks(location_blocks, config_block);
@@ -195,7 +232,7 @@ void	config_pars::Location_block(t_server_config &server_config, const std::stri
 		throw InvalidLocationException();
 	for (size_t i = 0; i < location_blocks.size(); i++)
 	{
-		parseLocationBlock(location_config, location_blocks[i], server_root, server_index);
+		parseLocationBlock(location_config, location_blocks[i]);
 		server_config.locations.push_back(location_config);
 	}
 }
@@ -217,55 +254,120 @@ void	config_pars::checkDuplicatePath(std::map<std::string, std::vector<t_server_
 	}
 }
 
-void	config_pars::parseLocationBlock(t_location_config &location_config, const std::string &location_block, std::string server_root, std::string server_index)
+std::string config_pars::parseRootPath(t_location_config & location_config, const std::string & location_block)
 {
-	location_config.path = extractPath(location_block);
-	if (location_config.path == "/redir") //should use this condition to check if the path is redir or not?
-		location_config.redirect = extractVariables("redirect_url",location_block);
-	if (location_config.path == "/cgi-bin" )
-	{
-		location_config.cgi_ex = extractVariables("cgi-ext",location_block);
-		if (location_config.cgi_ex.empty())
-			throw MissingValueException("cgi-ext");
-	}
-	location_config.root = extractVariables("root", location_block);
-	if (location_config.root.empty() && server_root.empty())
-		throw MissingValueException("root");
-	if (location_config.root.empty())
-		location_config.root = server_root;
-	location_config.index = extractVariables("index", location_block);
-	if (server_index.empty() && location_config.index.empty())
-		throw MissingValueException("index");
-	if (location_config.index.empty())
-		location_config.index = server_index;
-	allowMethods(location_config.GET, location_config.POST, location_config.DELETE, location_block);
-	location_config.autoIndex = extractAutoIndex(location_block);
+	std::string rootValue = extractVariables("root", location_block);
+	rootValue = rootValueCheck(location_config, rootValue, _server_root);
+	std::string path = extractPath(location_block);
+	path = "/" + path;
+	path = removeMultipleSlashes(path);
+	location_config.path = path; //used this path
+	rootValue = rootValue + "/" + path + "/";
+	return (rootValue);
 }
 
-void	config_pars::allowMethods(bool &GET, bool &POST, bool &DELETE, const std::string location_block)
+void config_pars::parseMethod(t_location_config &location_config, const std::string &location_block)
 {
-	GET = true;
-	POST = false;
-	DELETE = false;
+	if (allowMethods(location_config.GET, location_config.POST, location_config.DELETE, location_block))
+	{
+		location_config.GET = _GET;
+		location_config.POST = _POST;
+		location_config.DELETE = _DELETE;
+	}
+}
+
+void config_pars::cgiOp(t_location_config &location_config, const std::string &location_block)
+{
+
+	std::string cgi_path = removeMultipleSlashes(location_config.root + "/" + "cgi-bin");
+	if (location_config.path == cgi_path)
+	{
+		std::string cgi_ext = extractVariables("cgi-ext",location_block);
+		if (cgi_ext.empty())
+			throw MissingValueException("cgi-ext");
+		extractMultipleCgi(location_config.cgi_ext, cgi_ext);
+	}
+	else
+		location_config.cgi_ext.clear();
+}
+
+void config_pars::uploadProcess(t_location_config &location_config, const std::string &location_block, std::string merge_string)
+{
+	std::string upload = extractVariables("uploadDir", location_block);
+	if (upload.empty() && _upload.empty())
+		location_config.uploadDir = "";
+	else if (!upload.empty())
+	{
+		SlashConvert(upload, merge_string, location_config.uploadDir);
+		if (access(location_config.uploadDir.c_str(), F_OK) != 0)
+			location_config.uploadDir = ""; // how to create the directory or it should return empty?
+	}
+	else
+	{
+		SlashConvert(_upload, merge_string, location_config.uploadDir);
+		if (access(location_config.uploadDir.c_str(), F_OK) != 0)
+			location_config.uploadDir = ""; // how to create the directory or it should return empty?
+	}
+}
+
+void	config_pars::parseLocationBlock(t_location_config &location_config, const std::string &location_block)
+{
+	std::string merge_string = parseRootPath(location_config, location_block);
+	location_config.redirect = extractVariables("redirect_url",location_block);
+	if (!location_config.redirect.empty() 
+			&& location_config.redirect.substr(0,7) != "http://" 
+			&& location_config.redirect.substr(0,8) != "https://")
+		location_config.redirect = "http://" + location_config.redirect;
+	parseMethod(location_config, location_block);
+	location_config.autoIndex = extractAutoIndex(location_block);
+	cgiOp(location_config, location_block);
+	std::string index = merge_string + extractVariables("index", location_block);
+	location_config.index = removeMultipleSlashes(index);
+	if (_server_index.empty() && location_config.index.empty())
+		location_config.index = merge_string + "index.html";
+	else if (location_config.index.empty())
+		SlashConvert(index, merge_string, location_config.index);
+	uploadProcess(location_config, location_block, merge_string);
+	std::string error_page_string = extractVariables("error_page", location_block); //TODO: make another function for readability Error page
+	if (!error_page_string.empty())
+		extractErrorPage(location_config.errorPage.error_page_status, location_config.errorPage.html_page, error_page_string, merge_string);
+	else if (error_page_string.empty() && _error_string.empty())
+		extractErrorPage(location_config.errorPage.error_page_status, location_config.errorPage.html_page, "", merge_string);
+	else
+		extractErrorPage(location_config.errorPage.error_page_status, location_config.errorPage.html_page, _error_string, merge_string);
+}
+
+int config_pars::allowMethods(bool &GET, bool &POST, bool &DELETE, const std::string location_block)
+{
+
 	size_t start = 0;
 	size_t end = 0;
-	std::string methods;
+	std::string a_methods;
 	if ((start = location_block.find("allow_methods", start)) != std::string::npos)
 	{
 		start = skipWhitespace(location_block, start + 13);
 		end = location_block.find(";", start);
 		if (location_block.find('\n', start) < location_block.find(';', start))
 			throw MissingSemicolonException();
-		methods = location_block.substr(start, end - start);
-		if (methods.empty())
-			return ;
-		if (methods.find("GET") != std::string::npos)
+		a_methods = location_block.substr(start, end - start);
+		if (a_methods.empty())
+			return (1);
+		if (a_methods.find("GET") != std::string::npos)
 			GET = true;
-		if (methods.find("POST") != std::string::npos)
+		else
+			GET = false;
+		if (a_methods.find("POST") != std::string::npos)
 			POST = true;
-		if (methods.find("DELETE") != std::string::npos)
+		else
+			POST = false;
+		if (a_methods.find("DELETE") != std::string::npos)
 			DELETE = true;
+		else
+			DELETE = false;
 	}
+	else
+		return (1);
+	return (0);
 }
 
 bool	config_pars::extractAutoIndex(const std::string &location_block)
@@ -316,6 +418,9 @@ std::string	config_pars::extractPath(const std::string &location_block)
 	removeLeadingWhitespaces(value);
 	if (value.empty())
 		throw InvalidPathException();
+	value = removeMultipleSlashes(value);
+	if (value.length() > 1)
+		removLSlashes(value);
 	return (value);
 }
 

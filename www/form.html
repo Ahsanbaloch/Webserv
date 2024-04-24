@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signup Form</title>
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <style>
+    
+  body{
+    color: #54B4D3;
+    background-color: #DBF9FC;
+  }
+
+  .col-md-6.signup-form {
+  padding: 20px;
+	opacity: 0.9;
+	margin-top: 150px;
+    padding: 20px;
+	background: #000000;
+	border-radius: 5%;
+}
+ 	img {
+	width: 100%;
+	height: 100%;
+	border-radius: 5%;
+	}
+  </style>
+</head>
+<body>
+  
+  <div class="container">
+    <div class="row justify-content-center data-row">
+	<div class="col-md-6 signup-form">
+		<img src="3.jpeg" class="img-fluid" alt="Responsive image">
+		<div class="offset-md-2 col-md-8  center">
+			<h2 class="text-center">Gaming Form</h2>
+			<form id="signupForm">
+			  <div class="form-group">
+				<label for="name">Name</label>
+				<input type="text" class="form-control" id="name" name="name" required>
+			  </div>
+			  <div class="form-group">
+				<label for="name">Game</label>
+				<input type="text" class="form-control" id="email" name="email" required>
+			  </div>
+			  <div class="form-group">
+				<label for="name">Player Name</label>
+				<input type="text" class="form-control" id="password" name="password" required>
+			  </div>
+			  <button type="submit" class="btn btn-info btn-block">Submit</button>
+			  <br>
+			</form>
+	</div>
+    </div>
+  </div>
+
+  <div class="container mt-5" id="output">
+    <!-- Form data will be displayed here -->
+  </div>
+
+  <!-- Bootstrap JS and jQuery -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+  <script>
+    // JavaScript code to handle form submission and display data
+    document.getElementById("signupForm").addEventListener("submit", function(event) {
+      event.preventDefault(); // Prevent the form from submitting
+
+      // Get form values
+      var name = document.getElementById("name").value;
+      var email = document.getElementById("email").value;
+      var password = document.getElementById("password").value;
+
+      // Display form data
+      var outputDiv = document.getElementById("output");
+      outputDiv.innerHTML = `
+        <div class="alert alert-success">
+          <h4 class="alert-heading">Form Submitted!</h4>
+          <p>Name: ${name}</p>
+          <p>Email: ${email}</p>
+          <p>Password: ${password}</p>
+        </div>
+      `;
+
+  // Create a new URL with query parameters
+  var newUrl = new URL(window.location.href);
+  newUrl.searchParams.append('name', name);
+  newUrl.searchParams.append('email', email);
+  newUrl.searchParams.append('password', password);
+
+  // Redirect to the new URL
+  window.location.href = newUrl.href;
+    });
+  </script>
+</body>
+</html>

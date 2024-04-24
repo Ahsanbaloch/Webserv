@@ -8,7 +8,12 @@
 #endif
 #include "ListeningSocketsBlock.h"
 #include "config/config_pars.hpp"
+#include "defines.h"
 
+int g_num_temp_files = 0;
+int g_num_temp_unchunked_files = 0;
+int g_num_temp_raw_body = 0;
+int g_num_form = 0;
 
 
 // next:
@@ -27,28 +32,33 @@ int	main(int argc, char **argv)
 		config_pars config(argc, argv);
 		std::map<std::string, std::vector<t_server_config> > serverConfigsMap = config.getServerConfigsMap();
 
+		
 		// for testing
-		for (std::map<std::string, std::vector<t_server_config> >::iterator it = serverConfigsMap.begin(); it != serverConfigsMap.end(); it++)
-		{
-			for (std::vector<t_server_config>::iterator it2 = it->second.begin(); it2 != it->second.end(); it2++)
-			{
-				//std::cout << "IP: " << " " << it2->Ip << " port: " << it2->port << " server name: " << it2->serverName  << "\n";
-				std::cout << "------------------" << std::endl;
-				std::cout << "SERVER_ROOT: " << it2->server_root << std::endl;
-				std::cout << "SERVER_NDEX: " << it2->server_index << std::endl;
-				std::cout << "------------------" << std::endl;
-				for (std::vector<t_location_config>::iterator it3 = it2->locations.begin(); it3 != it2->locations.end(); it3++)
-				{
-					std::cout << "location_root: " << it3->root << std::endl;
-					std::cout << "location_index: " << it3->index << std::endl;
-					/* std::cout << "PATH: " << it3->path << std::endl;
-					std::cout << "GET: " << it3->GET << std::endl;
-					std::cout << "POST: " << it3->POST << std::endl;
-					std::cout << "DELETE: " << it3->DELETE << std::endl; */
-					//std::cout << "--------------------" << std::endl;
-				}
-			}
-		}
+		// for (std::map<std::string, std::vector<t_server_config> >::iterator it = serverConfigsMap.begin(); it != serverConfigsMap.end(); it++)
+		// {
+		// 	for (std::vector<t_server_config>::iterator it2 = it->second.begin(); it2 != it->second.end(); it2++)
+		// 	{
+		// 		std::cout << "port and server name: " << it2->port << " " << it2->serverName << std::endl;
+		// 		for (std::vector<t_location_config>::iterator it3 = it2->locations.begin(); it3 != it2->locations.end(); it3++)
+		// 		{
+		// 			std::cout << "error page : "  << it3->errorPage.html_page << std::endl;
+		// 			std::cout << "error status : "  << it3->errorPage.error_page_status << std::endl;
+		// 			std::cout << "upload: " << it3->uploadDir << std::endl;
+		//  			std::cout << "root : " << it3->root << std::endl;
+		// 			std::cout << "url : " << it3->redirect << std::endl;
+		// 			std::cout << "Path : " << it3->path << std::endl;
+		// 			std::cout << "Index : " << it3->index << std::endl;
+		// // 			//std::cout << "cgi_ext size: " << it3->cgi_ext.size() << std::endl;
+		// // 			//std::cout << "upload: " << it3->uploadDir << std::endl;
+		// // 			std::cout << "GET : " << it3->GET << " POST : " << it3->POST << std::endl;
+		// // 			// for (std::vector<std::string>::iterator it4 = it3->cgi_ext.begin(); it4 != it3->cgi_ext.end(); ++it4)
+		// // 			// {
+		// // 			// 	std::cout << "cgi-ext : " << *it4 << std::endl;
+
+		// // 			// }
+		// 		}
+		// 	}
+		// }
 
 		// Create Server object (create listening sockets, bind, set non-blocking, listen)
 		ListeningSocketsBlock SocketsBlock(serverConfigsMap); // here goes the config vector; objects will be added to correct listeningSocket (alt: create and return map<socket_fd, ConfigData obj>)

@@ -1,201 +1,552 @@
 
 #include "RequestHandler.h"
 
-// next:
-// - create Request class (abstract)
-// - create dedicated classes starting with GET
-// - what does the response flow look like? --> where do I need to transfer what?
-// --> create E2E-Flow for GET request without body (afterwards do same for POST but with body)
+///////// CONSTRUCTORS & DESTRUCTORS ///////////
 
+RequestHandler::RequestHandler()
+	: request_header(*this)
+{
+}
 
 RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_config)
+	: request_header(*this)
 {
+	std::cout << "request handler constructed" << std::endl;
 	this->server_config = server_config;
 	connection_fd = fd;
 	status = 200;
-	buf_pos = -1;
-	body_parsing_done = 0;
-	chunk_length = 0;
+	selected_location = 0;
+	selected_server = 0;
+	bytes_read = 0;
 	response_ready = 0;
-	body_expected = 0;
-	body_read = 0;
-	request = NULL;
-	response = NULL;
-	raw_buf.setf(std::ios::app | std::ios::binary);
-	memset(&buf, 0, sizeof(buf));
-}
+	request_length = 0;
+	cgi_post_int_redirect = 0;
+	internal_redirect = 0;
+	num_response_chunks_sent = 0;
 
-RequestHandler::RequestHandler(/* args */)
-{
+	buf_pos = -1;
+
+	 // also add in copy constructor etc.
+	chunk_length = 0;
+	total_chunk_size = 0;
+	trailer_exists = 0;
+	body_unchunked = 0;
+	te_state = body_start;
+	
+	response = NULL;
+	uploader = NULL;
+	body_extractor = NULL;
+	memset(&buf, 0, sizeof(buf));
 }
 
 RequestHandler::~RequestHandler()
 {
+	std::cout << "request handler destroyed" << std::endl;
+	delete response;
+	delete uploader;
+	if (body_extractor != NULL) // needed?
+		delete body_extractor;
 }
 
+RequestHandler::RequestHandler(const RequestHandler& src)
+	: request_header(src.request_header)
+{
+	// tbd
+}
+
+RequestHandler& RequestHandler::operator=(const RequestHandler& src)
+{
+	if (this != &src)
+	{
+		request_header = src.request_header;
+		server_config = src.server_config;
+		status = src.status;
+		selected_location = src.selected_location;
+		selected_server = src.selected_server;
+		connection_fd = src.connection_fd;
+		bytes_read = src.bytes_read;
+		response_ready = src.response_ready;
+		request_length = src.request_length;
+		internal_redirect = src.internal_redirect;
+		num_response_chunks_sent = src.num_response_chunks_sent;
+		cgi_post_int_redirect = src.cgi_post_int_redirect;
+		buf_pos = src.buf_pos;
+		response = src.response;
+		uploader = src.uploader;
+		body_extractor = src.body_extractor;
+	}
+	return (*this);
+}
+
+
+///////// GETTERS ///////////
+
+std::vector<t_server_config>	RequestHandler::getServerConfig() const
+{
+	return (server_config);
+}
+
+int	RequestHandler::getStatus() const
+{
+	return (status);
+}
+
+s_location_config	RequestHandler::getLocationConfig() const
+{
+	return (server_config[selected_server].locations[selected_location]);
+}
+
+int	RequestHandler::getSelectedLocation() const
+{
+	return (selected_location);
+}
+
+t_server_config	RequestHandler::getSelectedServer() const
+{
+	return (server_config[selected_server]);
+}
+
+bool	RequestHandler::getResponseStatus() const
+{
+	return (response_ready);
+}
+
+int		RequestHandler::getBytesRead() const
+{
+	return (bytes_read);
+}
+
+int		RequestHandler::getRequestLength() const
+{
+	return (request_length);
+}
+
+const RequestHeader&	RequestHandler::getHeaderInfo()
+{
+	return (request_header);
+}
+
+bool	RequestHandler::getUnchunkingStatus() const
+{
+	return (body_unchunked);
+}
+
+std::string	RequestHandler::getTempBodyFilepath() const
+{
+	return (body_extractor->getTempBodyFilepath());
+}
+
+bool	RequestHandler::getIntRedirStatus() const
+{
+	return (internal_redirect);
+}
+
+std::string	RequestHandler::getIntRedirRefPath() const
+{
+	return (int_redir_referer_path);
+}
+
+std::string	RequestHandler::getNewFilePath() const
+{
+	return (new_file_path);
+}
+
+AUploadModule*	RequestHandler::getUploader() const
+{
+	return (uploader);
+}
+
+AResponse*	RequestHandler::getResponseObj() const
+{
+	return (response);
+}
+
+int	RequestHandler::getNumResponseChunks() const
+{
+	return (num_response_chunks_sent);
+}
+
+///////// SETTERS ///////////
+
+void	RequestHandler::setStatus(int status)
+{
+	this->status = status;
+}
+
+
+///////// METHODS ///////////
 
 void	RequestHandler::sendResponse()
 {
-	std::string resp = response->status_line + response->header_fields + response->body;	
-	send(connection_fd, resp.c_str(), resp.length(), 0); 
-	// check for errors when calling send
+	std::string resp;
+
+	if (request_header.getMethod() == "GET" && getLocationConfig().redirect.empty() && status < 400) // other conditions?
+	{
+		if (num_response_chunks_sent > 0)
+		{
+			std::string body_chunk;
+			GETResponse* get = dynamic_cast<GETResponse*>(response);
+			if (get)
+				body_chunk = get->getBodyFromFile(); // need to catch errors thrown in here also somewhere and provide error response
+			else
+			{
+				// need to send a error response in this case
+				throw CustomException("failed when reading from file");
+			}
+			resp = body_chunk;
+		}
+		else
+			resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
+		num_response_chunks_sent++;
+	}
+	else
+		resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
+	
+	
+	std::cout << "num response chunks: " << num_response_chunks_sent << std::endl;
+	std::cout << "message:" << resp << std::endl;
+
+	int bytes_sent = send(connection_fd, resp.c_str(), resp.length(), 0);
+	if (bytes_sent == -1)
+	{
+		// handle properly (also check for bytes_sent == 0)
+		std::cout << "error when sending data" << std::endl;
+	}
 }
 
-// read request handler
 void	RequestHandler::processRequest()
 {
-	for (std::vector<t_server_config>::iterator it = server_config.begin(); it != server_config.end(); it++)
-	{
-		std::cout << "port and server name: " << it->port << " " << it->serverName << std::endl;
-		for (std::vector<t_location_config>::iterator it2 = it->locations.begin(); it2 != it->locations.end(); it2++)
-		{
-			std::cout << "location: " << it2->path << std::endl;
-		}
-	}
-
-	//how to handle cases in which the header is not recv in one go? (do those cases exist?)
-	bytes_read = recv(connection_fd, buf, sizeof(buf), 0);
+	buf_pos = -1;
+	bytes_read = recv(connection_fd, buf, BUFFER_SIZE, 0);
 	if (bytes_read == -1)
 		throw CustomException("Failed when processing read request\n");
 	if (bytes_read == 0)
 		return ; // also throw exception. Need to check the exception exactly // also close connection?
+	// close fd in case bytes_read == 0 ???
 	
-	buf[bytes_read] = '\0'; // correct? BUFFER_SIZE + 1?
+	buf[bytes_read] = '\0';
 	request_length += bytes_read;
 
-	// check if headers have already been parsed
-	if (!header.header_complete)
+	printf("read %i bytes\n", bytes_read);
+	printf("buffer content: \n%s\n", buf);
+
+	try
 	{
-		try
+		// check if headers have already been read
+		if (!request_header.getHeaderStatus())
 		{
-			// what about folding lines?
-			header.parseRequestLine(*this);
-			header.parseHeaderFields(*this); // check if it still works if no header is sent
-			
-			// check which conifg struct is the relevant one based on server name (or later in ARequest::newRequest?)
-				// --> see DigitalOcean for approach
-			// check if requested resource exists???
-			// decode URL/Query if necessary
-			// construct full URI?
-			// check somewhere if TE contains something else than "chunked" --> in this case respond with 501
-		}
-		catch(const std::exception& e)
-		{
-			// terminate connection and remove file descriptor from the event queue
-			std::cerr << e.what() << '\n';
-		}
-	}
-	// if immediate response is expected to receive body
-		// make reponse
-	// if body is expected
-	if (body_expected)
-	{
-		//here we need to account for max-body_size specified in config file
-		// if chunked
-			//store body chunks in file (already store in the appropriate object)
-		// if not chunked
-			// store body in stringstream or vector (already store in the appropriate object)
-		// if end of body has not been reached
-			// return to continue receiving
-	}
-	// if no body is expected OR end of body has been reached
-	if (!body_expected || body_read)
-	{
-		// create Request object? --> What is the object actually going to do?
-		request = ARequest::newRequest(*this);
-		// process request (based on the object type that has been created --> through base pointer?)
-			// create Response object inside the function and return it here --> should then be stored in RequestHandler so that sendResponse can send it  --> What is teh purpose of this object?
-		
-		for (std::vector<t_server_config>::iterator it = server_config.begin(); it != server_config.end(); it++)
-		{
-			std::cout << "port and server name after check: " << it->port << " " << it->serverName << std::endl;
-			for (std::vector<t_location_config>::iterator it2 = it->locations.begin(); it2 != it->locations.end(); it2++)
+			if (!request_header.getRequestLineStatus())
+				request_header.parseRequestLine();
+			if (request_header.getRequestLineStatus())
 			{
-				std::cout << "location: " << it2->path << std::endl;
+				request_header.identifyFileName();
+				determineLocationBlock();
+				checkAllowedMethods(); // check if method is allowed in selected location
+				if (request_header.getMethod() == "GET")
+					checkInternalRedirect();
+				request_header.parseHeaderFields();
 			}
 		}
-		
-		response = request->createResponse(*this);
-		// set Response to be ready
+
+		if (request_header.getHeaderStatus())
+		{
+			request_header.checkHeader();
+
+			//for testing: print received headers
+			printf("\nheaders\n");
+			std::map<std::string, std::string> headers = request_header.getHeaderFields();
+			for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
+			{
+				std::cout << "key: " << it->first << " ";
+				std::cout << "value: " << it->second << std::endl;
+			}
+
+			if (request_header.getHeaderExpectedStatus()) // this is relevant for POST only, should this be done in another place? (e.g. POST request class)
+			{
+				// check value of expect field?
+				// check content-length field before accepting?
+				// create response signalling the client that the body can be send
+				// make reponse
+				// in this case we don't want to destroy the requesthandler object
+			}
+			// if body is expected, read the body (unless the selected location demands a redirect or it is not a POST request) 
+			if (request_header.getBodyStatus() && request_header.getMethod() == "POST" && getLocationConfig().redirect.empty())
+			{
+				// unchunk body if needed
+				if (getHeaderInfo().getTEStatus() && !body_unchunked)
+					unchunkBody();
+				if (!getHeaderInfo().getTEStatus() || body_unchunked)
+				{
+					if (request_header.getFileExtension() == ".py") // what if other cgi extension?
+					{
+						if (body_extractor == NULL)
+							body_extractor = new BodyExtractor(*this);
+						body_extractor->extractBody();
+						std::cout << body_extractor->getTempBodyFilepath() << std::endl;
+					}
+					else
+					{
+						if (uploader == NULL)
+							uploader = checkContentType(); // needs to be deleted/freed somewhere
+						uploader->uploadData();
+					}
+				}
+			}
+			// if no body is expected OR end of body has been reached
+			// check how getBodyStatus() gets set (does it already check for request method?)
+			if (!request_header.getBodyStatus() || (uploader != NULL && uploader->getUploadStatus())
+				|| !getLocationConfig().redirect.empty() || (body_extractor != NULL && body_extractor->getExtractionStatus()))
+			{
+				// std::cout << "body content: " << request_body.body << std::endl;
+				response = prepareResponse(); // how to handle errors in here?
+				response->createResponse(); // how to handle errors in here?
+				response_ready = 1;
+			}
+		}
 	}
-	
-
-
-	// The presence of a message body in a request is signaled by a Content-Length or Transfer-Encoding header field. Request message framing is independent of method semantics.
-
-	// interpret parsed input to decide what to do next
-		// construct targetURI? --> info from config file?
-		// --> split in GET / POST / DELETE ??
-		// GET requests can have a body but that has no semantic meaning --> so no need to check --> still need to recv the whole body before responding?
-		// --> also check if there is an expected immediate response, e.g. 100-continue
-		// if there are any encoded chars, decode them here? --> relevant for url/query
-		// construct the full URI here?
-	
-		// check if header includes Expect: 100-continue
-		// determine position where the header ends
-	
-	
-	// if we expect a body (only if POST?) // parse the body based on whether the request is a GET, POST or DELETE request? --> create specific objects for those requests?
-		// does the transmission format play a role here?
-		// if we read max number of bytes we continue receiving bytes and always append the incoming data to a stringfile
-		// for that we need to know an offset (where the header ends)
-		// receive chunks?
-		// for each iteration: each call of this event, you will add an oneshot event for the TIMEOUT event (EVFILT_TIMER), --> see slack bookmark
-
-
-	// notes
-		// video: 2h mark --> set stringstream flags
-		// use uint8_t or unsigned char for storing the incoming data
-		// if there are any endoded characters in the header, they need to be decoded
-			// Some characters are utilized by URLs for special use in defining their syntax. When these characters are not used in their special role inside a URL, they must be encoded.
-			// characters such as {} are getting encoded by the client(?) and being transmitted e.g. with %7B%7D
-
-	
-	printf("\nheaders\n");
-	for (std::map<std::string, std::string>::iterator it = header.header_fields.begin(); it != header.header_fields.end(); it++)
+	catch(const std::exception& e)
 	{
-		std::cout << "key: " << it->first << " ";
-		std::cout << "value: " << it->second << std::endl;
+		// delete response before reassigning if response != NULL ?
+		response = new ERRORResponse(*this); // need to free this somewhere
+		response->createResponse();
+		response_ready = 1;
+		std::cerr << e.what() << '\n';
+	}
+}
+
+void		RequestHandler::checkAllowedMethods()
+{
+	if (request_header.getMethod() == "GET" && !getLocationConfig().GET)
+	{
+		setStatus(405);
+		throw CustomException("Method Not Allowed");
+	}
+	else if (request_header.getMethod() == "POST" && !getLocationConfig().POST)
+	{
+		setStatus(405);
+		throw CustomException("Method Not Allowed");
+	}
+	else if (request_header.getMethod() == "DELETE" && !getLocationConfig().DELETE)
+	{
+		setStatus(405);
+		throw CustomException("Method Not Allowed");
+	}
+}
+
+void RequestHandler::checkInternalRedirect()
+{
+	if (request_header.getFileExtension().empty())
+	{
+		new_file_path = getLocationConfig().index;
+		if (access(new_file_path.c_str(), F_OK) == 0)
+		{
+			internal_redirect = 1;
+			int_redir_referer_path = "http://localhost:" + toString(getSelectedServer().port) + getLocationConfig().path;
+			std::string	orig_root = getLocationConfig().root;
+			findLocationBlock();
+			checkAllowedMethods();
+			if (!getLocationConfig().redirect.empty())
+				return ;
+			new_file_path = getLocationConfig().root + new_file_path.substr(orig_root.length());
+			if (getLocationConfig().path == "/cgi-bin" && new_file_path.substr(new_file_path.find_last_of('.')) == ".py")
+				cgi_post_int_redirect = 1;
+		}
+		else
+			new_file_path.erase();
+	}
+}
+
+void RequestHandler::determineLocationBlock()
+{
+	// find server block if there are multiple that match (this applies to all request types)
+	if (server_config.size() > 1)
+		findServerBlock();
+	
+	// find location block within server block if multiple exist (this applies to all request types; for GET requests there might be an internal redirect happening later on)
+	if (server_config[selected_server].locations.size() > 1)
+		findLocationBlock();
+}
+
+AResponse* RequestHandler::prepareResponse()
+{
+	// when checking for cgi, also check "cgi_post_int_redirect" status
+	// inside cgi should check internal redirect status. If true, then different path has to be selected
+	if (cgi_post_int_redirect)
+	{
+		setStatus(501);
+		throw CustomException("Not implemented");
 	}
 
-	
-	// if (transfer_encoding_exists && !content_length_exists) // creates issue with postman
-	// 	parseEncodedBody();
-	// if (transfer_encoding_exists)
-	// 	parseEncodedBody();
-	// else if (content_length_exists && !transfer_encoding_exists)
-	// 	parseContentBody();
-	// else
-	// {
-	// 	error = 400;
-	// 	throw CustomException("Bad request");
-	// 	// A server MAY reject a request that contains a message body but not a Content-Length by responding with 411 (Length Required).
-	// }
-	
-	std::cout << "identified method: " << header.method << '\n';
-	std::cout << "identified path: " << header.path << '\n';
-	std::cout << "identified query: " << header.query << '\n';
-	std::cout << "identified version: " << header.version << '\n';
-
-
-
-	printf("read %i bytes\n", bytes_read);
-	response_ready = 1;
-	// close fd in case bytes_read == 0 ???
+	if (!getLocationConfig().redirect.empty())
+		return (new REDIRECTResponse(*this));
+	if (request_header.getFileExtension() == "py")
+	{
+		
+		return (new CgiResponse(*this)); // need to free this somewhere
+	}
+	//CGi Extension Check to be done here
+	else if (request_header.getMethod() == "GET")
+		return (new GETResponse(*this)); // need to free this somewhere
+	else if (request_header.getMethod() == "DELETE")
+		return (new DELETEResponse(*this)); // need to free this somewhere
+	else if (request_header.getMethod() == "POST")
+		return (new POSTResponse(*this));
+	else
+	{
+		setStatus(501);
+		throw CustomException("Not implemented");
+	}
+		
 }
 
 
-void	RequestHandler::parseEncodedBody()
+AUploadModule*	RequestHandler::checkContentType()
 {
-	// check somewhere that when the transfer encoding contains something different than "chunked" to return an error
-
-	te_state = body_start;
-
-	while (!body_parsing_done && buf_pos++ < bytes_read)
+	std::string value = getHeaderInfo().getHeaderFields()["content-type"];
+	std::string type;
+	
+	// identify content type
+	std::size_t delim_pos = value.find(';');
+	if (delim_pos != std::string::npos)
+		type = value.substr(0, delim_pos);
+	else
+		type = value;
+	
+	if (type == "multipart/form-data")
 	{
-		u_char ch = buf[buf_pos];
+		content_type = multipart_form;
+		return (new UploadMultipart(*this));
+	}
+	else if (type == "application/x-www-form-urlencoded")
+	{
+		content_type = urlencoded;
+		return (new UploadUrlencoded(*this));
+	}
+	else
+	{
+		// or throwException if type is not supported?
+		content_type = text_plain;
+		return (new UploadPlain(*this));
+	}
+}
 
-		switch (te_state) 
+
+void	RequestHandler::findLocationBlock()
+{
+	std::vector<std::string> uri_path_items;
+	if (response == NULL && !internal_redirect)
+		uri_path_items = splitPath(request_header.getPath(), '/');
+	else
+	{
+		std::string temp = new_file_path.substr(getLocationConfig().root.length()); // replace after config parser update
+		// std::string temp = response->getFullFilePath().substr(getLocationConfig().root.length());
+		uri_path_items = splitPath(temp, '/');
+	}
+	int	size = server_config[selected_server].locations.size();
+	int	max = 0;
+	for (int i = 0; i < size; i++)
+	{
+		std::vector<std::string> location_path_items = splitPath(server_config[selected_server].locations[i].path, '/');
+		int matches = calcMatches(uri_path_items, location_path_items);
+		if (matches > max)
+		{
+			selected_location = i;
+			max = matches;
+		}
+	}
+	std::cout << "Thats the location block: " << getLocationConfig().path << std::endl;
+}
+
+std::vector<std::string>	RequestHandler::splitPath(std::string input, char delim)
+{
+	std::istringstream			iss(input);
+	std::string					item;
+	std::vector<std::string>	result;
+	
+	while (std::getline(iss, item, delim))
+		result.push_back("/" + item); // does adding "/" work in all cases?
+
+	return (result);
+}
+
+int	RequestHandler::calcMatches(std::vector<std::string>& uri_path_items, std::vector<std::string>& location_path_items)
+{
+	int	matches = 0;
+	int num_path_items = uri_path_items.size();
+	for (std::vector<std::string>::iterator it = location_path_items.begin(); it != location_path_items.end(); it++)
+	{
+		if (matches >= num_path_items)
+			break;
+		if (*it != uri_path_items[matches])
+			break;
+		matches++;
+	}
+	return (matches);
+}
+
+
+
+void	RequestHandler::findServerBlock()
+{
+	int size = server_config.size();
+
+	for (int i = 0; i < size; i++)
+	{
+		if (server_config[i].serverName == request_header.getHeaderFields()["host"])
+		{
+			selected_server = i;
+			break;
+		}
+	}
+}
+
+
+
+std::string	RequestHandler::getUnchunkedDataFile() const
+{
+	return (temp_filename_unchunked);
+}
+
+int			RequestHandler::getTotalChunkSize() const
+{
+	return (total_chunk_size);
+}
+
+void	RequestHandler::storeChunkedData()
+{
+	if (temp_filename_unchunked.empty())
+	{
+		g_num_temp_unchunked_files++;
+		temp_filename_unchunked = "www/temp/" + toString(g_num_temp_unchunked_files) + ".bin";
+	}
+
+	temp_unchunked.open(temp_filename_unchunked, std::ios::app | std::ios::binary);
+	int to_write = std::min(getBytesRead() - buf_pos, chunk_length);
+	temp_unchunked.write(reinterpret_cast<const char*>(&buf[buf_pos]), to_write);
+	buf_pos += to_write;
+	chunk_length -= to_write;
+	temp_unchunked.close();
+
+}
+
+void	RequestHandler::checkMaxBodySize()
+{
+	if (total_chunk_size > getServerConfig()[selected_server].bodySize)
+	{
+		setStatus(413);
+		if (!temp_filename_unchunked.empty())
+			remove(temp_filename_unchunked.c_str());
+		throw CustomException("Content Too Large");
+	}
+}
+
+void	RequestHandler::unchunkBody()
+{
+	while (!body_unchunked && buf_pos++ < getBytesRead())
+	{
+		unsigned char ch = buf[buf_pos];
+
+		switch (te_state)
 		{
 			case body_start:
 				if ((ch >= '0' && ch <= '9'))
@@ -218,12 +569,11 @@ void	RequestHandler::parseEncodedBody()
 				}
 				else
 				{
-					status = 400; // what is the correct error code?
+					setStatus(400); // what is the correct error code?
 					throw CustomException("Bad request 1"); // other exception?
 				}
 
 			case chunk_size:
-				std::cout << "len: " << chunk_length << std::endl;
 				if (ch >= '0' && ch <= '9')
 				{
 					chunk_length = chunk_length * 16 + (ch - '0');
@@ -239,7 +589,7 @@ void	RequestHandler::parseEncodedBody()
 					chunk_length = chunk_length * 16 + (ch - 'A' + 10);
 					break;
 				}
-				else if (chunk_length == 0)
+				else if (chunk_length == 0) // how to end if body is distributed over multiple requests?
 				{
 					if (ch == CR)
 					{
@@ -251,35 +601,41 @@ void	RequestHandler::parseEncodedBody()
 						te_state = chunk_trailer;
 						break;
 					}
-					else if (ch == SP)
+					else if (ch == ';')
 					{
 						te_state = chunk_extension; // are there more seperators? // seperate state for last extension?
 						break;
 					}
 					else
 					{
-						status = 400; // what is the correct error code?
+						setStatus(400); // what is the correct error code?
 						throw CustomException("Bad request 2"); // other exception?
 					}
 				}
 				else if (ch == CR)
 				{
+					total_chunk_size += chunk_length;
+					checkMaxBodySize();
 					te_state = chunk_size_cr;
 					break;
 				}
 				else if (ch == LF)
 				{
+					total_chunk_size += chunk_length;
+					checkMaxBodySize();
 					te_state = chunk_data;
 					break;
 				}
-				else if (ch == SP) // are there more seperators?
+				else if (ch == ';')
 				{
+					total_chunk_size += chunk_length;
+					checkMaxBodySize();
 					te_state = chunk_extension;
 					break;
 				}
 				else
 				{
-					status = 400; // what is the correct error code?
+					setStatus(400); // what is the correct error code?
 					throw CustomException("Bad request 3"); // other exception?
 				}
 			
@@ -296,37 +652,33 @@ void	RequestHandler::parseEncodedBody()
 				}
 				else
 				{
-					status = 400; // what is the correct error code?
+					setStatus(400); // what is the correct error code?
 					throw CustomException("Bad request 4"); // other exception?
 				}
 
-			case chunk_extension:
-				// read extension
-				// go to chunk data reading or chung_size_cr
-				break;
-
-			case chunk_data:
-				for (int i = 0; i < chunk_length; i++)
+			case chunk_extension: // skip over chunk_extension // could also be done in a for loop // limit max size of chunk extension -- vulnerabilities
+			// A server ought to limit the total length of chunk extensions received in a request to an amount reasonable for the services provided, in the same way that it applies length limitations and timeouts for other parts of a message, and generate an appropriate 4xx (Client Error) response if that amount is exceeded
+				if (ch == CR)
 				{
-					ch = buf[buf_pos];
-					if (ch == CR)
-					{
-						te_state = chunk_data_cr;
-						break;
-					}
-					// else if (ch == LF) // remove here?
-					// {
-					// 	te_state = body_start;
-					// 	break;
-					// }
-					else
-					{
-						body << ch;
-						buf_pos++;
-					}
+					te_state = chunk_size_cr;
+					break;
 				}
+				else if (ch == LF && chunk_length > 0)
+				{
+					te_state = chunk_data;
+					break;
+				}
+				else if (ch == LF && chunk_length == 0)
+				{
+					te_state = chunk_trailer;
+					break;
+				}
+				else
+					break;
+
+			case chunk_data: // Limit for chunk length?
+				storeChunkedData();
 				ch = buf[buf_pos];
-				// calc content-length
 				if (ch == CR)
 				{
 					te_state = chunk_data_cr;
@@ -337,13 +689,13 @@ void	RequestHandler::parseEncodedBody()
 					te_state = body_start;
 					break;
 				}
-				else
-				{
-					status = 400; // what is the correct error code?
-					throw CustomException("Bad request 5"); // other exception?
-				}
+				break;
+				// else
+				// {
+				// 	handler.setStatus(400); // what is the correct error code?
+				// 	throw CustomException("Bad request 5"); // other exception?
+				// }
 
-			
 			case chunk_data_cr:
 				if (ch == LF)
 				{
@@ -352,51 +704,77 @@ void	RequestHandler::parseEncodedBody()
 				}
 				else
 				{
-					status = 400; // what is the correct error code?
+					setStatus(400); // what is the correct error code?
 					throw CustomException("Bad request 6"); // other exception?
 				}
 			
 			// is the existence of trailers indicated in the headers
 			case chunk_trailer:
-				body_parsing_done = 1;
-				te_state = body_end;
-				break;
-				// check if trailer is existing
-				// read trailer
+				if (ch == CR)
+				{
+					te_state = chunk_trailer_cr;
+					break;
+				}
+				else if (ch == LF)
+				{
+					te_state = body_end;
+					break;
+				}
+				else // maybe skip trailer in a for loop? // limit size of trailer?
+				{
+					trailer_exists = 1; // create loop so that this is not set every time
+					break;
+				}
+				// trailer fields can be useful for supplying message integrity checks, digital signatures, delivery metrics, or post-processing status information
+				// probably can just discard this section --> how to identify end?
+
+			case chunk_trailer_cr:
+				if (ch == LF)
+				{
+					te_state = body_end;
+					break;
+				}
+				else
+				{
+					setStatus(400); // what is the correct error code?
+					throw CustomException("Bad request 7"); // other exception?
+				}
+
+			case body_end_cr:
+				if (ch == LF)
+				{
+					// body_parsing_done = 1;
+					// body_read = 1;
+					body_unchunked = 1;
+					break;
+				}
+				else
+				{
+					setStatus(400); // what is the correct error code?
+					throw CustomException("Bad request 8"); // other exception?
+				}
 
 			case body_end:
-				break;
-				// termination
-
-		}		
-
+				if (ch == CR)
+				{
+					te_state = body_end_cr;
+					break;
+				}
+				else if (ch == LF || !trailer_exists)
+				{
+					// body_parsing_done = 1;
+					// body_read = 1;
+					body_unchunked = 1;
+					break;
+				}
+				else
+				{
+					setStatus(400); // what is the correct error code?
+					throw CustomException("Bad request 9"); // other exception?
+				}
+		}
 	}
-
-	buf_pos++;
-
-		// check chunk-size (first part of body) and translate from hex to integer; followed by CRLF if chunk extension is not provided
-			// if chunk-size is 0 and followd by CRLF, the end of the transmission has been reached
-
-		// check for chunk extension, this is followed by CRLF
-			// A recipient MUST ignore unrecognized chunk extensions // how to recognize an invalid one?
-			// Where to store that extension?
-
-		// run through the chunk data using chunk-size as a delimiter
-			// add content to stream until CRLF is reached
-			// count data length
-			// check again for chunk size and chunk extension
-
-		// if end of data transimission (chunk size 0), check for trailer (finally terminated by empty line --> CRLFCRLF??)
-			// store somewhere
-			// what info does trailer entail?
-
-	// empty line termination --> always? or only when chunk size == 0?
-	
-	// set content-length in headers to counted data length --> for what purpose?
-	
-	
-
-
+}
 	// The chunked coding does not define any parameters. Their presence SHOULD be treated as an error. --> what is meant by that?
 
 
@@ -413,11 +791,20 @@ void	RequestHandler::parseEncodedBody()
 	// to an amount reasonable for the services provided, in the same way that it applies length limitations and timeouts for other parts of a 
 	// message, and generate an appropriate 4xx (Client Error) response if that amount is exceeded
 
-	// use ostringstream to store body?
+
+	// The presence of a message body in a request is signaled by a Content-Length or Transfer-Encoding header field. Request message framing is independent of method semantics.
+	// GET requests can have a body but that has no semantic meaning --> so no need to check --> still need to recv the whole body before responding?
 	
-	// chunked-body   = *chunk
-                   //last-chunk
-                   //trailer-section
-                   //CRLF
-}
+	// if we expect a body (only if POST?) // parse the body based on whether the request is a GET, POST or DELETE request? --> create specific objects for those requests?
+		// does the transmission format play a role here?
+		// if we read max number of bytes we continue receiving bytes and always append the incoming data to a stringfile
+		// for that we need to know an offset (where the header ends)
+		// receive chunks?
+		// for each iteration: each call of this event, you will add an oneshot event for the TIMEOUT event (EVFILT_TIMER), --> see slack bookmark
+
+	// notes
+		// video: 2h mark --> set stringstream flags
+		// use uint8_t or unsigned char for storing the incoming data
+
+
 

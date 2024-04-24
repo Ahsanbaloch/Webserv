@@ -1,7 +1,9 @@
 
 #include "KQueue.h"
 
-KQueue::KQueue(/* args */)
+///////// CONSTRUCTORS & DESTRUCTORS ///////////
+
+KQueue::KQueue()
 {
 	kqueue_fd = kqueue();
 	if (kqueue_fd == -1)
@@ -14,15 +16,60 @@ KQueue::~KQueue()
 {
 }
 
+KQueue::KQueue(const KQueue& src)
+{
+	kqueue_fd = src.kqueue_fd;
+	if (kqueue_fd == -1)
+		throw std::exception();
+	listening_sock_ident = src.listening_sock_ident;
+	connection_sock_ident = src.connection_sock_ident;
+}
+
+KQueue& KQueue::operator=(const KQueue& src)
+{
+	if (this != &src)
+	{
+		kqueue_fd = src.kqueue_fd;
+		if (kqueue_fd == -1)
+			throw std::exception();
+		listening_sock_ident = src.listening_sock_ident;
+		connection_sock_ident = src.connection_sock_ident;
+	}
+	return (*this);
+}
+
+
+///////// GETTERS ///////////
+
+int	KQueue::getKQueueFD() const
+{
+	return (kqueue_fd);
+}
+
+int	KQueue::getListeningSocketIdent() const
+{
+	return (listening_sock_ident);
+}
+
+int	KQueue::getConnectionSocketIdent() const
+{
+	return (connection_sock_ident);
+}
+
+
+///////// METHODS ///////////
+
 void	KQueue::attachListeningSockets(ListeningSocketsBlock& SocketsBlock)
 {
 	// define what events we are interested in (in case of the listening socket we are only interested in the EVFILT_READ
 	// since it is only used for accepting incoming connections)
-	struct kevent* listening_event = new struct kevent[SocketsBlock.num_listening_sockets];
+	struct kevent* listening_event = new struct kevent[SocketsBlock.getNumListeningSockets()];
 	int i = 0;
-	for (std::map<int, ListeningSocket>::iterator it = SocketsBlock.listening_sockets.begin(); it != SocketsBlock.listening_sockets.end(); it++)
+
+	std::map<int, ListeningSocket> listening_sockets = SocketsBlock.getListeningSockets();
+	for (std::map<int, ListeningSocket>::iterator it = listening_sockets.begin(); it != listening_sockets.end(); it++)
 		EV_SET(&listening_event[i++], it->first, EVFILT_READ, EV_ADD, 0, 0, &listening_sock_ident);
-	if (kevent(kqueue_fd, listening_event, SocketsBlock.num_listening_sockets, NULL, 0, NULL) == -1)
+	if (kevent(kqueue_fd, listening_event, SocketsBlock.getNumListeningSockets(), NULL, 0, NULL) == -1)
 	{
 		perror("Failure: ");
 		delete[] listening_event;
