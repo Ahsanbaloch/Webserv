@@ -78,10 +78,9 @@ void CgiResponse::_getPathInfo() {
 }
 
 void CgiResponse::_setEnv() {
-	printf("CONTENT_TYPE= %s\n", handler.getHeaderInfo().getHeaderFields()["Content-Type"].c_str());
 	_env.push_back("AUTH_TYPE=" + handler.getHeaderInfo().getHeaderFields()["Authorization"]);
 	_env.push_back("CONTENT_LENGTH=" + std::to_string(handler.request_header.getBodyLength()));
-	_env.push_back("CONTENT_TYPE=" + handler.getHeaderInfo().getHeaderFields()["Content-Type"]);
+	_env.push_back("CONTENT_TYPE=" + handler.getHeaderInfo().getHeaderFields()["content-type"]);
 	_env.push_back("GATEWAY_INTERFACE=CGI/1.1");
 	_env.push_back("PATH_INFO=" + _pathInfo);
 	_env.push_back("PATH_TRANSLATED=");
@@ -99,12 +98,10 @@ void CgiResponse::_setEnv() {
 }
 
 void CgiResponse::_exportEnv() {
-	//printf("exporting env\n");
 	_envp = new char*[_env.size() + 1];
 	for (size_t i = 0; i < _env.size(); i++) {
 		_envp[i] = new char[_env[i].size() + 1];
 		std::strcpy(_envp[i], _env[i].c_str());
-		printf("env: %s\n", _envp[i]);
 	}
 	_envp[_env.size()] = NULL;
 }

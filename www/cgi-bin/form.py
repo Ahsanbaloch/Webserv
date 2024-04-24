@@ -1,12 +1,12 @@
 #!/usr/bin/python3
 
-import sys
+# import sys
 
-# Read everything from standard input
-data = sys.stdin.read()
+# # Read everything from standard input
+# data = sys.stdin.read()
 
-# Print a line of hashtags, the data, and another line of hashtags to the standard error output
-sys.stderr.write("##########\n" + data + "\n##########\n")
+# # Print a line of hashtags, the data, and another line of hashtags to the standard error output
+# sys.stderr.write("##########\n" + data + "\n##########\n")
 
 
 
@@ -67,17 +67,17 @@ form = cgi.FieldStorage()
 print("<p>CGI got data</p>")
 
 # Check if the "name" field is present in the form data
-if form.getvalue("name"):
+#if form.getvalue("name"):
 # #if "name" in form:
 #     # If present, retrieve the value and display a personalized greeting
 # #name = form['name'].value
-#     name = form.getvalue("name")
+name = form.getvalue("name")
 # if form.getvalue("class"):
-#     class_name = form.getvalue("class")
-# print("<p>CGI got name</p>")
-# print("<h2>Hello, " + name + "!</h2>")
-# print("<h2>Class: " + class_name + "</h2>")
-    print("<p>Thank you for using our script.</p>")
+class_name = form.getvalue("class")
+print("<p>CGI got name</p>")
+print("<h2>Hello, " + name + "!</h2>")
+print(class_name)
+print("<p>Thank you for using our script.</p>")
 #else:
 print("<p>No name provided in the form data.</p>")
 

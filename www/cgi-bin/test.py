@@ -5,7 +5,7 @@ print("""
     <!-- Green heading with text "GeeksforGeeks" -->
     <h1>GeeksforGeeks</h1>
     <!-- Form with method 'post' and action 'form.py' -->
-    <form method='post' action='form.py' enctype='multipart/form-data'>
+    <form method='post' action='form.py' enctype='application/x-www-form-urlencoded'>
         <!-- Name input field -->
         <p><label>Name:</label> <input type="text" name="name" /></p>
         <!-- Class input field -->
