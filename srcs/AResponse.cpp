@@ -4,12 +4,12 @@
 ///////// CONSTRUCTORS & DESTRUCTORS ///////////
 
 AResponse::AResponse()
-	: handler(*new RequestHandler()), response_complete(0)
+	: handler(*new RequestHandler())
 {
 }
 
 AResponse::AResponse(RequestHandler& request_handler) 
-	: handler(request_handler), response_complete(0)
+	: handler(request_handler)
 {
 }
 
@@ -25,7 +25,6 @@ AResponse::AResponse(const AResponse& src)
 	body = src.body;
 	status_line = src.status_line;
 	header_fields = src.header_fields;
-	response_complete = src.response_complete;
 }
 
 AResponse& AResponse::operator=(const AResponse& src)
@@ -38,7 +37,6 @@ AResponse& AResponse::operator=(const AResponse& src)
 		body = src.body;
 		status_line = src.status_line;
 		header_fields = src.header_fields;
-		response_complete = src.response_complete;
 	}
 	return (*this);
 }
@@ -65,10 +63,10 @@ std::string AResponse::getFullFilePath() const
 	return (full_file_path);
 }
 
-bool	AResponse::getResponseCompleteStatus() const
-{
-	return (response_complete);
-}
+// bool	AResponse::getResponseCompleteStatus() const
+// {
+// 	return (response_complete);
+// }
 
 bool	AResponse::getChunkedBodyStatus() const
 {

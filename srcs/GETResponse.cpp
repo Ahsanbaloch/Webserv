@@ -35,10 +35,33 @@ GETResponse& GETResponse::operator=(const GETResponse& src)
 }
 
 
-void	GETResponse::decrementFilePosition(std::streampos bytes_not_read)
+// void	GETResponse::decrementFilePosition(std::streampos bytes_not_read)
+// {
+// 	file_position -= bytes_not_read;
+// }
+
+void	GETResponse::incrementFilePosition(std::streampos position_increment)
 {
-	file_position -= bytes_not_read;
+	file_position += position_increment;
 }
+
+//////////// GETTTER ///////////
+
+std::streampos	GETResponse::getFilePosition() const
+{
+	return (file_position);
+}
+
+std::ifstream&	GETResponse::getInputFile()
+{
+	return (input_file);
+}
+
+std::streampos	GETResponse::getFileSize() const
+{
+	return (file_size);
+}
+
 
 /////////// HELPER METHODS ///////////
 
@@ -59,15 +82,15 @@ std::string	GETResponse::getBodyFromFile()
 		}
 	}
 	std::streampos bytes_read = input_file.gcount();
-	file_position += bytes_read;
 	std::string chunk_content(buffer, bytes_read);
 
-	if (file_position == file_size)
-	{
-		response_complete = 1;
-		// chunk_termination = "\r\n0\r\n\r\n";
-		input_file.close();
-	}
+	// file_position += bytes_read;
+	// if (file_position == file_size)
+	// {
+	// 	response_complete = 1;
+	// 	// chunk_termination = "\r\n0\r\n\r\n";
+	// 	input_file.close();
+	// }
 	// else
 	// 	chunk_termination = "\r\n";
 	

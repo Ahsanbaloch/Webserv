@@ -38,10 +38,16 @@ public:
 	explicit GETResponse(RequestHandler&);
 	~GETResponse();
 
+	// getter
+	std::streampos	getFilePosition() const;
+	std::ifstream&	getInputFile();
+	std::streampos	getFileSize() const;
+
 	// main method
 	void			createResponse();
 	std::string		getBodyFromFile();
-	void			decrementFilePosition(std::streampos);
+	// void			decrementFilePosition(std::streampos);
+	void			incrementFilePosition(std::streampos);
 	
 };
 

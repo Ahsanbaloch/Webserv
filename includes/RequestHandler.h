@@ -57,6 +57,7 @@ private:
 	bool							response_ready;
 	bool							internal_redirect;
 	bool							cgi_post_int_redirect;
+	bool							response_complete;
 	
 	// states
 	enum {
@@ -105,6 +106,8 @@ public:
 	bool							getIntRedirStatus() const;
 	std::string						getNewFilePath() const;
 	int								getNumResponseChunks() const;
+
+	bool								getResponseCompleteStatus() const;
 
 	// setters
 	void							setStatus(int);

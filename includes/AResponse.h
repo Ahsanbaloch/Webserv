@@ -22,7 +22,7 @@ protected:
 	std::string		header_fields;
 
 	// flags
-	bool			response_complete;
+	// bool			response_complete;
 	bool			chunked_body;
 
 	// methods
