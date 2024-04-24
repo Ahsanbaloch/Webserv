@@ -400,10 +400,10 @@ AResponse* RequestHandler::prepareResponse()
 
 	if (!getLocationConfig().redirect.empty())
 		return (new REDIRECTResponse(*this));
-	if (request_header.getFileExtension() == "py")
+	if (request_header.getFileExtension() == ".py")
 	{
 		
-		return (new CgiResponse(*this)); // need to free this somewhere
+		return (new CGIResponse2(*this)); // need to free this somewhere
 	}
 	//CGi Extension Check to be done here
 	else if (request_header.getMethod() == "GET")

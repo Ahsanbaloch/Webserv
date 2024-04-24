@@ -18,6 +18,7 @@
 # include "DELETEResponse.h"
 # include "ERRORResponse.h"
 # include "CgiResponse.hpp"
+# include "CGIResponse2.h"
 # include "POSTResponse.h"
 # include "REDIRECTResponse.h"
 # include "BodyExtractor.h"
