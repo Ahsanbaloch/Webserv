@@ -28,7 +28,6 @@
 class RequestHandler
 {
 private:
-	RequestHeader					request_header;
 	AUploadModule*					uploader;
 	AResponse*						response;
 	BodyExtractor*					body_extractor;

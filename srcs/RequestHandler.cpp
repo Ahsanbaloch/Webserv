@@ -113,6 +113,11 @@ const RequestHeader&	RequestHandler::getHeaderInfo()
 	return (request_header);
 }
 
+t_server_config	RequestHandler::getSelectedServer() const
+{
+	return (server_config[selected_server]);
+}
+
 bool	RequestHandler::getUnchunkingStatus() const
 {
 	return (body_unchunked);

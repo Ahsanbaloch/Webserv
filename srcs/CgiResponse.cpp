@@ -1,11 +1,20 @@
 #include "CgiResponse.hpp"
+#include <fstream>
+#include <sys/fcntl.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <string>
+
+bool is_fd_open(int fd) {
+    return fcntl(fd, F_GETFD) != -1 || errno != EBADF;
+}
 
 CgiResponse::CgiResponse(){}
 
-CgiResponse::CgiResponse(RequestHandler& request_handler) : AResponse(request_handler), _envp(), _env(), _scriptPath(), _queryString(), _pathInfo(), _cgiOutputFd(), _cgiInputFd() {
+CgiResponse::CgiResponse(RequestHandler& request_handler) : AResponse(request_handler), _envp(), _env(), _scriptPath(), _queryString(), _pathInfo(), _cgiOutputFd(), _cgiInputFd(){
 }
 
-CgiResponse::CgiResponse(const CgiResponse &other) : AResponse(other), _envp(other._envp), _env(other._env), _scriptPath(other._scriptPath), _queryString(other._queryString), _pathInfo(other._pathInfo) {
+CgiResponse::CgiResponse(const CgiResponse &other) : AResponse(other), _envp(other._envp), _env(other._env), _scriptPath(other._scriptPath), _queryString(other._queryString), _pathInfo(other._pathInfo), _cgiOutputStr(other._cgiOutputStr){
 	*this = other;
 }
 
@@ -17,7 +26,6 @@ CgiResponse &CgiResponse::operator=(const CgiResponse &other) {
 		_env = other._env;
 		handler = other.handler;
 		header_fields = other.header_fields;
-		redirected_path = other.redirected_path;
 	}
 	return *this;
 }
@@ -36,13 +44,13 @@ void CgiResponse::_getScriptPath() {
 	size_t pos = path.find('.');
 	size_t pathInfo = path.find('/', pos);
 	size_t queryString = path.find('?', pos);
-	std::cout << "path: " << path << std::endl;
+	//std::cout << "path: " << path << std::endl;
 	if (queryString < pathInfo)
 		_scriptPath = path.substr(0, queryString);
 	else 
 		_scriptPath = path.substr(0, pathInfo);
 	_scriptPath = handler.getLocationConfig().root + _scriptPath;
-	std::cout << "script path: " << _scriptPath << std::endl;
+	//std::cout << "script path: " << _scriptPath << std::endl;
 	if (access(_scriptPath.c_str(), F_OK) == -1)
 		throw CustomException("CgiResponse: script path does not exist");
 	if (access(_scriptPath.c_str(), X_OK) == -1)
@@ -70,6 +78,7 @@ void CgiResponse::_getPathInfo() {
 }
 
 void CgiResponse::_setEnv() {
+	printf("CONTENT_TYPE= %s\n", handler.getHeaderInfo().getHeaderFields()["Content-Type"].c_str());
 	_env.push_back("AUTH_TYPE=" + handler.getHeaderInfo().getHeaderFields()["Authorization"]);
 	_env.push_back("CONTENT_LENGTH=" + std::to_string(handler.request_header.getBodyLength()));
 	_env.push_back("CONTENT_TYPE=" + handler.getHeaderInfo().getHeaderFields()["Content-Type"]);
@@ -90,22 +99,38 @@ void CgiResponse::_setEnv() {
 }
 
 void CgiResponse::_exportEnv() {
+	//printf("exporting env\n");
 	_envp = new char*[_env.size() + 1];
 	for (size_t i = 0; i < _env.size(); i++) {
 		_envp[i] = new char[_env[i].size() + 1];
 		std::strcpy(_envp[i], _env[i].c_str());
+		printf("env: %s\n", _envp[i]);
 	}
 	_envp[_env.size()] = NULL;
 }
 
 void CgiResponse::_writeCgiInput() {
-	write(_cgiInputFd[1], getResponseBody().c_str(), getResponseBody().size());
+	std::cout << "Started writing cgi input" << std::endl << std::endl;
+	std::string temp_file_path = handler.getTempBodyFilepath();
+	printf("temp_file_path: %s\n", temp_file_path.c_str());
+	int temp_fd = open(temp_file_path.c_str(), O_RDONLY);
+	if (temp_fd == -1)
+		throw CustomException("CgiResponse: open() failed");
+	printf("temp_fd: %d\n", temp_fd);
+	char buf[500];
+	int bytes_read = 0;
+	bytes_read = read(temp_fd, buf, 499); {
+
+		buf[bytes_read] = '\0';
+		write(_cgiInputFd[1], buf, bytes_read);
+		//write(_cgiInputFd[1], "\n\nTesting\n\n", 11);
+		write(1, buf, bytes_read);
+	}
 }
 
 void CgiResponse::_readCgiOutput() {
 	char buf[10];
 	int bytes_read;
-	std::cout << "reading cgi output" << std::endl;
 	while ((bytes_read = read(_cgiOutputFd[0], buf, 9)) > 0) {
 		buf[bytes_read] = '\0';		
 		_cgiOutputStr += buf;
@@ -115,78 +140,86 @@ void CgiResponse::_readCgiOutput() {
 }
 
 void CgiResponse::_execCgi() {
-	pid_t pid;
-	int status;
+    // Create pipes for input and output
+    if (pipe(_cgiInputFd) < 0 || pipe(_cgiOutputFd) < 0) {
+        throw CustomException("CgiResponse: Failed to create pipes");
+    }
+	printf("pipe done\n");
+    // Fork a new process
+    pid_t pid = fork();
+	printf("fork done\n");
+    if (pid < 0) {
+        throw CustomException("CgiResponse: Failed to fork process");
+    }
 
-	if (pipe(_cgiInputFd) == -1 || pipe(_cgiOutputFd) == -1)
-		throw CustomException("CgiResponse: pipe() failed");
-	if ((pid = fork()) == -1)
-		throw CustomException("CgiResponse: fork() failed");
-	if (pid == 0)
-	{
+    if (pid == 0) { // Child process
+        // Redirect standard input and output to the pipes
+		printf("in child\n");
 		dup2(_cgiInputFd[0], 0);
 		dup2(_cgiOutputFd[1], 1);
-		close(_cgiInputFd[1]);
-		close(_cgiOutputFd[0]);
+
+        // Close the other ends of the pipes
+        close(_cgiInputFd[1]);
+        close(_cgiOutputFd[0]);
 		close(_cgiInputFd[0]);
 		close(_cgiOutputFd[1]);
-		_exportEnv();
+
+        // Set up the environment for the CGI script
+        _exportEnv();
+		//printf("export done\n");
+		// Change to the script directory
 		std::string scriptPath = _scriptPath;
 		std::string scriptName = scriptPath.substr(scriptPath.find_last_of('/') + 1);
 		while (scriptPath.back() != '/')
 			scriptPath.pop_back();
 		scriptPath = "./" + scriptPath;
-		if (chdir(scriptPath.c_str()) == 1)
+		
+		//printf("scriptPath: %s\n", scriptPath.c_str());
+        // Change to the script directory
+        if (chdir(scriptPath.c_str()) < 0) {
+            exit(1);
+        }
+		if (execve(scriptName.c_str(), NULL, _envp) < 0) {
+			printf("execve failed\n");
 			exit(1);
-		if (execve(scriptName.c_str(), NULL, _envp) == -1)
-			exit(1);
-	}
-	else
-	{
-	// 	if (handler.request_header.getMethod() == "POST")
-	// 	{
-	// 		if (handler.getHeaderInfo().getHeaderFields()["content-type"]== "application/x-www-form-urlencoded")
-	// {
-	// 	std::cout << "urlencoded" << std::endl;
-	// 	write(_cgiInputFd[1], body.c_str(), body.size());
-	// 	// content_type = urlencoded;
-	// 	// return (new URLENCODEDBody(*this));
-	// }
-	// 	}
+		}
+    } else { // Parent process
+        // Write the HTTP request body to the CGI script, if necessary
+        printf("in parent\n");
+		if (handler.request_header.getMethod() == "POST") {
+            _writeCgiInput();
+        }
+        // Close the other ends of the pipes
+        close(_cgiInputFd[0]);
+        close(_cgiOutputFd[1]);
 		close(_cgiInputFd[1]);
-		close(_cgiInputFd[0]);
-		close(_cgiOutputFd[1]);
-		time_t start;
-		std::time(&start);
-		while(std::difftime(std::time(0), start) < 20)
-		{
-			waitpid(pid, &status, WNOHANG);
-			if (WIFEXITED(status))
-				break;
-		}
-		if (!WIFEXITED(status))
-		{
-			kill(pid, SIGKILL);
-			close(_cgiOutputFd[0]);
-			throw CustomException("CgiResponse: CGI script timed out");
-		}
-		if (WEXITSTATUS(status) != 0)
-		{
-			close(_cgiOutputFd[0]);
-			handler.setStatus(404);
-			throw CustomException("CgiResponse: CGI script failed");
-		}
+
+		std::cout << "Waiting for CGI script to finish execution" << std::endl;
+        // Wait for the CGI script to finish execution
+        int status;
+        if (waitpid(pid, &status, 0) < 0) {
+            throw CustomException("CgiResponse: Failed to wait for CGI script");
+        }
+
+		std::cout << "WEXITSTATUS: " << WEXITSTATUS(status) << std::endl;
+		std::cout << "WIFEXITED: " << WIFEXITED(status) << std::endl;
+        // Check the exit status of the CGI script
+        // if (WIFEXITED(status) && WEXITSTATUS(status) != 0){
+		// 	close(_cgiOutputFd[0]);
+        //     handler.setStatus(404);
+        //     throw CustomException("CgiResponse: CGI script failed");
+        // }
+
+        // Read the output of the CGI script
 		_readCgiOutput();
 		close(_cgiOutputFd[0]);
-		std::cout << "cgi output: " << _cgiOutputStr << std::endl;
-	
+        // Construct the HTTP response
 			body = "\n\t\t<!DOCTYPE html>\n\t\t<html lang=\"en\">\n\t\t<head>\n\t\t\t<meta charset=\"UTF-8\">\n\t\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n\t\t\t<title>CGI Page</title>\n\t\t</head>\n\t";
 			body.append(_cgiOutputStr);
-		std::cout << "body: " << body << std::endl;
 			handler.setStatus(200);
 			status_line = createStatusLine();
 			header_fields = createHeaderFields(body);
-	}
+    }
 }
 
 std::string	CgiResponse::identifyMIME()

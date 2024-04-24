@@ -37,10 +37,12 @@ private:
     std::string _pathInfo;
     std::string _boundary;
 
-    std::string _cgiOutputStr;
 
     int _cgiOutputFd[2];
     int _cgiInputFd[2];
+    std::string _cgiOutputStr;
+    // std::string runner;
+    // char ** argv;
 };
 
 #endif
