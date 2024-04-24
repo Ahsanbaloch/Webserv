@@ -36,38 +36,41 @@ std::string	CGIResponse2::identifyPathInfo()
 // what if internal redirect --> then path needs to be identified differently
 void	CGIResponse2::setEnv()
 {
-	std::map<std::string, std::string> temp;
+	std::vector<std::string> temp;
 	std::string path_info = identifyPathInfo();
 	std::string doc_root = handler.getLocationConfig().root;
 	std::string	cgi_location = "/cgi-bin/";
 
-	temp.insert(std::pair<std::string, std::string>("AUTH_TYPE=","Basic"));
+	temp.push_back("AUTH_TYPE=Basic");
 	if (handler.getHeaderInfo().getBodyLength() == 0)
-		temp.insert(std::pair<std::string, std::string>("CONTENT_LENGTH=",""));
+		temp.push_back("CONTENT_LENGTH=");
 	else
-		temp.insert(std::pair<std::string, std::string>("CONTENT_LENGTH=", toString(handler.getHeaderInfo().getBodyLength())));
-	temp.insert(std::pair<std::string, std::string>("CONTENT_TYPE=", handler.getHeaderInfo().getHeaderFields()["content-type"]));
-	temp.insert(std::pair<std::string, std::string>("DOCUMENT_ROOT=", doc_root));
-	temp.insert(std::pair<std::string, std::string>("GATEWAY_INTERFACE=","CGI/1.1"));
-	temp.insert(std::pair<std::string, std::string>("PATH_INFO=", path_info));
-	temp.insert(std::pair<std::string, std::string>("PATH_TRANSLATED=", doc_root + path_info));
-	temp.insert(std::pair<std::string, std::string>("QUERY_STRING=", handler.getHeaderInfo().getQuery()));
-	// temp.insert(std::pair<std::string, std::string>("REMOTE_ADDR=",""));
-	// temp.insert(std::pair<std::string, std::string>("REMOTE_HOST=",""));
-	// temp.insert(std::pair<std::string, std::string>("REMOTE_IDENT=",""));
-	// temp.insert(std::pair<std::string, std::string>("REMOTE_USER=",""));
-	temp.insert(std::pair<std::string, std::string>("REQUEST_METHOD=", handler.getHeaderInfo().getMethod()));
-	temp.insert(std::pair<std::string, std::string>("REQUEST_URI=", handler.getHeaderInfo().getPath()));
-	temp.insert(std::pair<std::string, std::string>("SCRIPT_NAME=", cgi_location + handler.getHeaderInfo().getFilename()));
-	temp.insert(std::pair<std::string, std::string>("SERVER_NAME=", handler.getSelectedServer().Ip));
-	temp.insert(std::pair<std::string, std::string>("SERVER_PORT=", toString(handler.getSelectedServer().port)));
-	temp.insert(std::pair<std::string, std::string>("SERVER_PROTOCOL=", "HTTP/1.1"));
-	temp.insert(std::pair<std::string, std::string>("SERVER_SOFTWARE=", "webserv"));
+		temp.push_back("CONTENT_LENGTH=" + toString(handler.getHeaderInfo().getBodyLength()));
+	temp.push_back("CONTENT_TYPE=" + handler.getHeaderInfo().getHeaderFields()["content-type"]);
+	temp.push_back("DOCUMENT_ROOT=" + doc_root);
+	temp.push_back("GATEWAY_INTERFACE=CGI/1.1");
+	temp.push_back("PATH_INFO=" + path_info);
+	temp.push_back("PATH_TRANSLATED=" + doc_root + path_info);
+	temp.push_back("QUERY_STRING=" + handler.getHeaderInfo().getQuery());
+	// temp.push_back("REMOTE_ADDR=");
+	// temp.push_back("REMOTE_HOST=");
+	// temp.push_back("REMOTE_IDENT=");
+	// temp.push_back("REMOTE_USER=");
+	temp.push_back("REQUEST_METHOD=" + handler.getHeaderInfo().getMethod());
+	// temp.push_back("REQUEST_URI=");
+	temp.push_back("SCRIPT_NAME=" + cgi_location + handler.getHeaderInfo().getFilename());
+	temp.push_back("SERVER_NAME=" + handler.getSelectedServer().Ip);
+	temp.push_back("SERVER_PORT=" + toString(handler.getSelectedServer().port));
+	temp.push_back("SERVER_PROTOCOL=HTTP/1.1");
+	temp.push_back("SERVER_SOFTWARE=webserv");
 
-	for (std::map<std::string, std::string>::iterator it = temp.begin(); it != temp.end(); it++)
+	env = new char*[temp.size() + 1];
+	for (size_t i = 0; i < temp.size(); i++)
 	{
-		std::cout << "key: " << it->first << " value: " << it->second << std::endl;
+		env[i] = new char[temp[i].size() + 1];
+		std::strcpy(env[i], temp[i].c_str());
 	}
+	env[temp.size()] = NULL;
 
 	throw CustomException("CGI stop");
 

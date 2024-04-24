@@ -1,7 +1,7 @@
 #ifndef CGIRESPONSE2_H
 # define CGIRESPONSE2_H
 
-# include <map>
+# include <vector>
 # include <string>
 # include "RequestHandler.h"
 # include "AResponse.h"
