@@ -30,6 +30,7 @@ class RequestHandler
 {
 private:
 	RequestHeader					request_header;
+	CgiResponse*					cgi_handler;
 	AUploadModule*					uploader;
 	AResponse*						response;
 	BodyExtractor*					body_extractor;
@@ -97,6 +98,7 @@ public:
 	int								getBytesRead() const;
 	int								getRequestLength() const;
 	const RequestHeader&			getHeaderInfo();
+	CgiResponse*					getCGI();
 	std::string						getUnchunkedDataFile() const;
 	int								getTotalChunkSize() const;
 	bool							getUnchunkingStatus() const;

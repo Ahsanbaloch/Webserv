@@ -38,6 +38,7 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	response = NULL;
 	uploader = NULL;
 	body_extractor = NULL;
+	cgi_handler = NULL;
 	memset(&buf, 0, sizeof(buf));
 }
 
@@ -48,6 +49,8 @@ RequestHandler::~RequestHandler()
 	delete uploader;
 	if (body_extractor != NULL) // needed?
 		delete body_extractor;
+	if (cgi_handler != NULL)
+		delete cgi_handler;
 }
 
 RequestHandler::RequestHandler(const RequestHandler& src)
@@ -123,6 +126,11 @@ const RequestHeader&	RequestHandler::getHeaderInfo()
 	return (request_header);
 }
 
+CgiResponse*	RequestHandler::getCGI()
+{
+	return (cgi_handler);
+}
+
 t_server_config	RequestHandler::getSelectedServer() const
 {
 	return (server_config[selected_server]);
@@ -167,6 +175,8 @@ bool	RequestHandler::getChunksSentCompleteStatus() const
 {
 	return (all_chunks_sent);
 }
+
+
 
 ///////// SETTERS ///////////
 
@@ -318,6 +328,13 @@ void	RequestHandler::processRequest()
 			if (!request_header.getBodyStatus() || (uploader != NULL && uploader->getUploadStatus())
 				|| !getLocationConfig().redirect.empty() || (body_extractor != NULL && body_extractor->getExtractionStatus()))
 			{
+				if (request_header.getFileExtension() == ".py")
+				{
+					std::cout << "CGI response" << std::endl;
+					cgi_handler = new CgiResponse(*this);
+					cgi_handler->createResponse();
+				}
+
 				// std::cout << "body content: " << request_body.body << std::endl;
 				response = prepareResponse(); // how to handle errors in here?
 				response->createResponse(); // how to handle errors in here?
@@ -400,11 +417,6 @@ AResponse* RequestHandler::prepareResponse()
 
 	if (!getLocationConfig().redirect.empty())
 		return (new REDIRECTResponse(*this));
-	if (request_header.getFileExtension() == ".py")
-	{
-		std::cout << "CGI response" << std::endl;
-		return (new CgiResponse(*this)); // need to free this somewhere
-	}
 	//CGi Extension Check to be done here
 	else if (request_header.getMethod() == "GET")
 		return (new GETResponse(*this)); // need to free this somewhere

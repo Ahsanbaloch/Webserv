@@ -1,30 +1,35 @@
 #include "CgiResponse.hpp"
-#include <fstream>
-#include <sys/fcntl.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <string>
+#include "RequestHandler.h"
 
 bool is_fd_open(int fd) {
     return fcntl(fd, F_GETFD) != -1 || errno != EBADF;
 }
 
-CgiResponse::CgiResponse() : AResponse() {}
+CgiResponse::CgiResponse()
+	: handler(*new RequestHandler())
+{}
 
-CgiResponse::CgiResponse(RequestHandler& request_handler) : AResponse(request_handler), _envp(), _cgiOutputFd(), _cgiInputFd(){
+CgiResponse::CgiResponse(RequestHandler& src)
+	: handler(src), _envp(), _cgiOutputFd(), _cgiInputFd()
+{
 }
 
-CgiResponse::CgiResponse(const CgiResponse &other) : AResponse(other), _envp(other._envp), _cgiOutputStr(other._cgiOutputStr){
-	*this = other;
+CgiResponse::CgiResponse(const CgiResponse &other)
+	: handler(other.handler)
+{
+	 *this = other;
 }
 
 CgiResponse::~CgiResponse() {
 }
 
-CgiResponse &CgiResponse::operator=(const CgiResponse &other) {
+CgiResponse &CgiResponse::operator=(const CgiResponse &other) 
+{
 	if (this != &other) {
-		AResponse::operator=(other);
+		_envp = other._envp;
+		argv = other.argv;
 		handler = other.handler;
+		_cgiOutputStr = other._cgiOutputStr;
 	}
 	return *this;
 }
@@ -116,8 +121,19 @@ void CgiResponse::_readCgiOutput() {
 		perror("read");
 }
 
+void	CgiResponse::createArgument()
+{
+	std::string file_path =  "./www/cgi-bin/" + handler.getHeaderInfo().getFilename();
+	argv = new char*[3];
+	argv[0] = strdup(file_path.c_str());
+	argv[1] = strdup(handler.getTempBodyFilepath().c_str());
+	argv[2] = NULL;
+}
+
 void CgiResponse::_execCgi() {
     // Create pipes for input and output
+
+	createArgument();
     if (pipe(_cgiInputFd) < 0 || pipe(_cgiOutputFd) < 0) {
         throw CustomException("CgiResponse: Failed to create pipes");
     }
@@ -128,6 +144,7 @@ void CgiResponse::_execCgi() {
     if (pid < 0) {
         throw CustomException("CgiResponse: Failed to fork process");
     }
+
 
     if (pid == 0) { // Child process
         // Redirect standard input and output to the pipes
@@ -160,16 +177,16 @@ void CgiResponse::_execCgi() {
 
 		std::cout << "scriptPath: " << scriptPath << std::endl;
 		std::cout << "scriptName: " << scriptName << std::endl;
-		if (execve(scriptPath.c_str(), NULL, _envp) < 0) {
+		if (execve(scriptPath.c_str(), argv, _envp) < 0) {
 			printf("execve failed\n");
 			exit(1);
 		}
     } else { // Parent process
         // Write the HTTP request body to the CGI script, if necessary
         printf("in parent\n");
-		if (handler.getHeaderInfo().getMethod() == "POST") {
-            _writeCgiInput();
-        }
+		// if (handler.getHeaderInfo().getMethod() == "POST") {
+        //     _writeCgiInput();
+        // }
         // Close the other ends of the pipes
         close(_cgiInputFd[0]);
         close(_cgiOutputFd[1]);
@@ -181,7 +198,7 @@ void CgiResponse::_execCgi() {
         if (waitpid(pid, &status, 0) < 0) {
             throw CustomException("CgiResponse: Failed to wait for CGI script");
         }
-
+		remove(handler.getTempBodyFilepath().c_str());
 		std::cout << "WEXITSTATUS: " << WEXITSTATUS(status) << std::endl;
 		std::cout << "WIFEXITED: " << WIFEXITED(status) << std::endl;
         // Check the exit status of the CGI script
@@ -195,64 +212,7 @@ void CgiResponse::_execCgi() {
 		_readCgiOutput();
 		close(_cgiOutputFd[0]);
         // Construct the HTTP response
-			body = "\n\t\t<!DOCTYPE html>\n\t\t<html lang=\"en\">\n\t\t<head>\n\t\t\t<meta charset=\"UTF-8\">\n\t\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n\t\t\t<title>CGI Page</title>\n\t\t</head>\n\t";
-			body.append(_cgiOutputStr);
-			handler.setStatus(200);
-			status_line = createStatusLine();
-			header_fields = createHeaderFields(body);
+		
     }
 }
 
-std::string	CgiResponse::identifyMIME()
-{
-	// also check against accept header? --> return 406 if the requirement cannot be satisfied
-	// how to best identifyMIME?
-	if (file_type == "html")
-		return ("text/html");
-	else if (file_type == "jpeg")
-		return ("image/jpeg");
-	else if (file_type == "png" || file_type == "ico")
-		return ("image/png");
-	else
-		return ("text/html"); // what should be the default return?
-}
-
-
-std::string	CgiResponse::createHeaderFields(std::string body) // probably don't need parameter anymore
-{
-	std::string	header;
-
-	if (!handler.getLocationConfig().redirect.empty())
-		header.append("Location: " + handler.getLocationConfig().redirect + "\r\n");
-	else
-	{
-		std::string mime_type = identifyMIME(); // should not be called if we have a url redirection
-		if (mime_type.empty()) // only check when body should be sent?
-		{
-			handler.setStatus(415);
-			throw CustomException("Unsupported Media Type");
-		}
-		else
-		{
-			std::ostringstream length_conversion;
-			length_conversion << body.size();
-			header.append("Content-Type: " + mime_type + "\r\n");
-			header.append("Content-Length: "); // alternatively TE: chunked?
-			header.append(length_conversion.str() + "\r\n");
-			// header.append("Location: url"); // redirect client to a different url or new path 
-			// what other headers to include?
-			// send Repsonses in Chunks?
-			// header.append("Transfer-Encoding: chunked");
-			// header.append("Cache-Control: no-cache");
-			// header.append("Set-Cookie: preference=darkmode; Domain=example.com");
-			// header.append("Server: nginx/1.21.0");
-			// header.append("Expires: Sat, 08 May 2023 12:00:00 GMT"); // If a client requests the same resource before the expiration date has passed, the server can return a cached copy of the resource.
-			// header.append("Last-Modified: Tue, 04 May 2023 16:00:00 GMT"); // This header specifies the date and time when the content being sent in the response was last modified. This can be used by clients to determine if the resource has changed since it was last requested.
-			// header.append("ETag: "abc123""); //This header provides a unique identifier for the content being sent in the response. This can be used by clients to determine if the resource has changed since it was last requested, without having to download the entire resource again.
-			// header.append("Keep-Alive: timeout=5, max=100"); // used to enable persistent connections between the client and the server, allowing multiple requests and responses to be sent over a single TCP connection
-			// Access-Control-Allow-Origin; X-Frame-Options; X-XSS-Protection; Referrer-Policy; X-Forwarded-For; X-Powered-By; 
-			header.append("\r\n");
-		}
-	}
-	return (header);
-}
