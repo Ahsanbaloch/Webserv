@@ -1,5 +1,5 @@
-#ifndef CGI_RESPONSE_HPP
-# define CGI_RESPONSE_HPP
+#ifndef CGIHANDLER_H
+# define CGIHANDLER_H
 
 # include <signal.h>
 # include <string>
@@ -12,23 +12,23 @@
 
 class RequestHandler;
 
-class CgiResponse
+class CGIHandler
 {
 public:
     
-    ~CgiResponse();
-    CgiResponse(const CgiResponse &other);
-	explicit CgiResponse(RequestHandler&);
-    CgiResponse &operator=(const CgiResponse &other);
+    ~CGIHandler();
+    CGIHandler(const CGIHandler &other);
+	explicit CGIHandler(RequestHandler&);
+    CGIHandler &operator=(const CGIHandler &other);
 
-	void createResponse();
+	void execute();
 
 	std::string _cgiOutputStr;
 
 
 private:
 	RequestHandler&	handler;
-    CgiResponse();
+    CGIHandler();
 
     std::string createHeaderFields(std::string);
     std::string identifyMIME();

@@ -18,7 +18,8 @@
 # include "GETResponse.h"
 # include "DELETEResponse.h"
 # include "ERRORResponse.h"
-# include "CgiResponse.hpp"
+# include "CGIHandler.h"
+# include "CGIResponse.h"
 # include "POSTResponse.h"
 # include "REDIRECTResponse.h"
 # include "BodyExtractor.h"
@@ -31,14 +32,13 @@ class RequestHandler
 {
 private:
 	RequestHeader					request_header;
-	CgiResponse*					cgi_handler;
+	CGIHandler*						cgi_handler;
 	AUploadModule*					uploader;
 	AResponse*						response;
 	BodyExtractor*					body_extractor;
 
 	// vars
 	std::vector<t_server_config>	server_config;
-	std::string						new_file_path; // add to header?
 	std::string						int_redir_referer_path;
 	int								status;
 	int								selected_location;
@@ -57,8 +57,7 @@ private:
 
 	// flags
 	bool							response_ready;
-	bool							internal_redirect;
-	bool							cgi_post_int_redirect;
+	bool							internal_redirect; // needed?
 	bool							all_chunks_sent;
 	bool							cgi_detected;
 	
@@ -100,14 +99,12 @@ public:
 	int								getBytesRead() const;
 	int								getRequestLength() const;
 	const RequestHeader&			getHeaderInfo();
-	CgiResponse*					getCGI();
+	CGIHandler*						getCGI();
 	std::string						getUnchunkedDataFile() const;
 	int								getTotalChunkSize() const;
 	bool							getUnchunkingStatus() const;
 	std::string						getTempBodyFilepath() const;
 	std::string						getIntRedirRefPath() const;
-	bool							getIntRedirStatus() const;
-	std::string						getNewFilePath() const;
 	int								getNumResponseChunks() const;
 
 	bool							getChunksSentCompleteStatus() const;

@@ -179,16 +179,10 @@ int		RequestHeader::getBodyLength() const
 
 /////////////// SETTERS //////////////////
 
-void	RequestHeader::changeFilename(std::string new_file_path)
+void	RequestHeader::makeInternalRedirect(std::string new_path)
 {
-	if (handler.getIntRedirStatus())
-		filename = new_file_path.substr(0, new_file_path.find_last_of('.'));
-}
-
-void	RequestHeader::changeFileExtension(std::string new_file_path)
-{
-	if (handler.getIntRedirStatus())
-		file_ext = new_file_path.substr(new_file_path.find_last_of('.'));
+	path = new_path;
+	identifyFileName();
 }
 
 

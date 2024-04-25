@@ -114,32 +114,23 @@ void	GETResponse::determineOutput()
 	// if the request is not for a file (otherwise the location has already been found)
 	if (handler.getHeaderInfo().getFileExtension().empty())
 	{
-		if (handler.getIntRedirStatus())
+		if (handler.getLocationConfig().autoIndex)
 		{
-			full_file_path = handler.getNewFilePath(); // may adjust after config integration
-			file_type = full_file_path.substr(full_file_path.find_last_of('.')); 
+			printf("auto index found\n");
+			auto_index = 1;
 		}
 		else
 		{
-			if (handler.getLocationConfig().autoIndex)
-			{
-				printf("auto index found\n");
-				auto_index = 1;
-			}
-			else
-			{
-				handler.setStatus(404);
-				throw CustomException("Not Found");
-			}
+			handler.setStatus(404);
+			throw CustomException("Not Found");
 		}
 	}
 	else
 	{
-		if (handler.getHeaderInfo().getFileExtension() == ".py")
-			file_type = ".html";
-		else
-			file_type = handler.getHeaderInfo().getFileExtension();
-		full_file_path = handler.getLocationConfig().root + "/" + handler.getHeaderInfo().getPath();
+		file_type = handler.getHeaderInfo().getFileExtension();
+		std::cout << "file_type: " << file_type << std::endl;
+		full_file_path = handler.getLocationConfig().root + handler.getHeaderInfo().getPath();
+		std::cout << "full_file_path: " << full_file_path << std::endl;
 	}
 }
 

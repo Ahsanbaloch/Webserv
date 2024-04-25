@@ -20,7 +20,6 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	bytes_read = 0;
 	response_ready = 0;
 	request_length = 0;
-	cgi_post_int_redirect = 0;
 	internal_redirect = 0;
 	num_response_chunks_sent = 0;
 	all_chunks_sent = 0;
@@ -47,8 +46,9 @@ RequestHandler::~RequestHandler()
 {
 	std::cout << "request handler destroyed" << std::endl;
 	delete response;
-	delete uploader;
-	if (body_extractor != NULL) // needed?
+	if (uploader != NULL) // needed?
+		delete uploader;
+	if (body_extractor != NULL)
 		delete body_extractor;
 	if (cgi_handler != NULL)
 		delete cgi_handler;
@@ -75,7 +75,6 @@ RequestHandler& RequestHandler::operator=(const RequestHandler& src)
 		request_length = src.request_length;
 		internal_redirect = src.internal_redirect;
 		num_response_chunks_sent = src.num_response_chunks_sent;
-		cgi_post_int_redirect = src.cgi_post_int_redirect;
 		buf_pos = src.buf_pos;
 		response = src.response;
 		uploader = src.uploader;
@@ -127,7 +126,7 @@ const RequestHeader&	RequestHandler::getHeaderInfo()
 	return (request_header);
 }
 
-CgiResponse*	RequestHandler::getCGI()
+CGIHandler*	RequestHandler::getCGI()
 {
 	return (cgi_handler);
 }
@@ -147,19 +146,9 @@ std::string	RequestHandler::getTempBodyFilepath() const
 	return (body_extractor->getTempBodyFilepath());
 }
 
-bool	RequestHandler::getIntRedirStatus() const
-{
-	return (internal_redirect);
-}
-
 std::string	RequestHandler::getIntRedirRefPath() const
 {
 	return (int_redir_referer_path);
-}
-
-std::string	RequestHandler::getNewFilePath() const
-{
-	return (new_file_path);
 }
 
 AUploadModule*	RequestHandler::getUploader() const
@@ -317,8 +306,9 @@ void	RequestHandler::processRequest()
 				if (cgi_detected) // also check for content type
 				{
 					std::cout << "CGI response" << std::endl;
-					cgi_handler = new CgiResponse(*this);
-					cgi_handler->createResponse(); // rename function --> init CGI script
+					if (cgi_handler == NULL)
+						cgi_handler = new CGIHandler(*this);
+					cgi_handler->execute();
 				}
 
 				// std::cout << "body content: " << request_body.body << std::endl;
@@ -330,8 +320,9 @@ void	RequestHandler::processRequest()
 	}
 	catch(const std::exception& e)
 	{
-		// delete response before reassigning if response != NULL ?
-		response = new ERRORResponse(*this); // need to free this somewhere
+		if (response != NULL)
+			delete response;
+		response = new ERRORResponse(*this);
 		response->createResponse();
 		response_ready = 1;
 		std::cerr << e.what() << '\n';
@@ -341,21 +332,15 @@ void	RequestHandler::processRequest()
 
 void		RequestHandler::checkForCGI()
 {
-
-	if (find(getLocationConfig().cgi_ext.begin(), getLocationConfig().cgi_ext.end(), request_header.getFileExtension()) == getLocationConfig().cgi_ext.end())
+	if (getLocationConfig().path == "/cgi-bin")
 	{
-		status = 403; // which status should be set here? 
-		throw CustomException("Forbidden");
-	}
-	else
-	{
-		if (getLocationConfig().path == "/cgi-bin")
-			cgi_detected = 1;
-		else
+		if (find(getLocationConfig().cgi_ext.begin(), getLocationConfig().cgi_ext.end(), request_header.getFileExtension()) == getLocationConfig().cgi_ext.end())
 		{
 			status = 403; // which status should be set here? 
 			throw CustomException("Forbidden");
 		}
+		else
+			cgi_detected = 1;
 	}
 
 	// also check execution rights here?
@@ -384,7 +369,8 @@ void RequestHandler::checkInternalRedirect()
 {
 	if (request_header.getFileExtension().empty())
 	{
-		new_file_path = getLocationConfig().index;
+		std::cout << "initial path: " << request_header.getPath() << std::endl;
+		std::string new_file_path = getLocationConfig().index;
 		if (access(new_file_path.c_str(), F_OK) == 0)
 		{
 			internal_redirect = 1;
@@ -394,14 +380,10 @@ void RequestHandler::checkInternalRedirect()
 			checkAllowedMethods();
 			if (!getLocationConfig().redirect.empty())
 				return ;
-			new_file_path = getLocationConfig().root + new_file_path.substr(orig_root.length());
-			request_header.changeFilename(new_file_path);
-			request_header.changeFileExtension(new_file_path);
-			if (getLocationConfig().path == "/cgi-bin")
-				cgi_post_int_redirect = 1;
+			new_file_path = new_file_path.substr(orig_root.length());
+			request_header.makeInternalRedirect(new_file_path);
+			std::cout << "new path: " << request_header.getPath() << std::endl;
 		}
-		else
-			new_file_path.erase();
 	}
 }
 
@@ -418,21 +400,14 @@ void RequestHandler::determineLocationBlock()
 
 AResponse* RequestHandler::prepareResponse()
 {
-	// when checking for cgi, also check "cgi_post_int_redirect" status
-	// inside cgi should check internal redirect status. If true, then different path has to be selected
-	if (cgi_post_int_redirect)
-	{
-		setStatus(501);
-		throw CustomException("Not implemented");
-	}
-
 	if (!getLocationConfig().redirect.empty())
 		return (new REDIRECTResponse(*this));
-	//CGi Extension Check to be done here
+	else if (cgi_detected)
+		return (new CGIResponse(*this));
 	else if (request_header.getMethod() == "GET")
-		return (new GETResponse(*this)); // need to free this somewhere
+		return (new GETResponse(*this));
 	else if (request_header.getMethod() == "DELETE")
-		return (new DELETEResponse(*this)); // need to free this somewhere
+		return (new DELETEResponse(*this));
 	else if (request_header.getMethod() == "POST")
 		return (new POSTResponse(*this));
 	else
@@ -440,7 +415,6 @@ AResponse* RequestHandler::prepareResponse()
 		setStatus(501);
 		throw CustomException("Not implemented");
 	}
-		
 }
 
 
@@ -477,15 +451,7 @@ AUploadModule*	RequestHandler::checkContentType()
 
 void	RequestHandler::findLocationBlock()
 {
-	std::vector<std::string> uri_path_items;
-	if (response == NULL && !internal_redirect)
-		uri_path_items = splitPath(request_header.getPath(), '/');
-	else
-	{
-		std::string temp = new_file_path.substr(getLocationConfig().root.length()); // replace after config parser update
-		// std::string temp = response->getFullFilePath().substr(getLocationConfig().root.length());
-		uri_path_items = splitPath(temp, '/');
-	}
+	std::vector<std::string> uri_path_items = splitPath(request_header.getPath(), '/');
 	int	size = server_config[selected_server].locations.size();
 	int	max = 0;
 	for (int i = 0; i < size; i++)
