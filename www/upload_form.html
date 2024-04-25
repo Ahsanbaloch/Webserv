@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Signup Form</title>
+  <title>Upload Form</title>
   <!-- Bootstrap CSS -->
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   <style>
@@ -11,7 +11,7 @@
 
 
   .col-md-6.signup-form {
-  border: 1px solid rgb(21, 79, 214);
+ /*  border: 1px solid rgb(21, 79, 214); */
   /* color : white; */
   padding: 20px;
 	opacity: 0.9;
@@ -36,7 +36,7 @@
             <a class="nav-link active" aria-current="page" href="Home.html">Home</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="#">Form</a>
+            <a class="nav-link" href="form.html">Form</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="upload_form.html">Upload File</a>
@@ -50,27 +50,20 @@
     <div class="row justify-content-center data-row">
       
 	<div class="col-md-6 signup-form ">
-    <h2 class="text-center">minion Form</h2>
-		<img src="./minion/Ahsan.jpeg" class="img-fluid" alt="Responsive image">
+		
 		<div class="offset-md-2 col-md-8  center">
 			
-			<form method="post" id="signupForm">
-			  <div class="form-group">
-				<label for="name">Your Name</label>  
-				<input type="text" class="form-control" id="name" name="name" required>
-			  </div>
-			  <div class="form-group">
-				<label for="name">Favourite Minion Name</label>
-				<input type="text" class="form-control" id="email" name="email" required>
-			  </div>
-			  <div class="form-group">
-				<label for="name">Favourite Minion movie</label>
-				<input type="text" class="form-control" id="password" name="password" required>
-			  </div>
-			  <button type="submit" class="btn btn-primary btn-block">Submit</button>
-			  <br>
-			</form>
+            <form method="post" id="signupForm">
+                <div class="form-group">
+                  <label for="customFile">please upload Banana</label>
+                  <div class="custom-file">
+                    <input type="file" class="custom-file-input" id="customFile" name="file" required>
+                    <label class="custom-file-label" for="customFile">Choose file</label>
+                  </div>
+                </div>
+              </form>
 	</div>
+    <img src="./minion/add_file.jpg" class="img-fluid" alt="Responsive image">
     </div>
   </div>
 
