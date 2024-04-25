@@ -123,11 +123,20 @@ void CgiResponse::_readCgiOutput() {
 
 void	CgiResponse::createArgument()
 {
-	std::string file_path =  "./www/cgi-bin/" + handler.getHeaderInfo().getFilename();
-	argv = new char*[3];
-	argv[0] = strdup(file_path.c_str());
-	argv[1] = strdup(handler.getTempBodyFilepath().c_str());
-	argv[2] = NULL;
+	std::string file_path = "./www/cgi-bin/" + handler.getHeaderInfo().getFilename();
+	if (handler.getHeaderInfo().getMethod() == "POST")
+	{
+		argv = new char*[3];
+		argv[0] = strdup(file_path.c_str());
+		argv[1] = strdup(handler.getTempBodyFilepath().c_str());
+		argv[2] = NULL;
+	}
+	else
+	{
+		argv = new char*[2];
+		argv[0] = strdup(file_path.c_str());
+		argv[1] = NULL;
+	}
 }
 
 void CgiResponse::_execCgi() {
@@ -198,7 +207,8 @@ void CgiResponse::_execCgi() {
         if (waitpid(pid, &status, 0) < 0) {
             throw CustomException("CgiResponse: Failed to wait for CGI script");
         }
-		remove(handler.getTempBodyFilepath().c_str());
+		if (handler.getHeaderInfo().getMethod() == "POST")
+			remove(handler.getTempBodyFilepath().c_str());
 		std::cout << "WEXITSTATUS: " << WEXITSTATUS(status) << std::endl;
 		std::cout << "WIFEXITED: " << WIFEXITED(status) << std::endl;
         // Check the exit status of the CGI script

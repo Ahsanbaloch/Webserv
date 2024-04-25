@@ -217,7 +217,7 @@ void	UploadMultipart::checkFileExistence()
 	if (access(file_path.c_str(), F_OK) == -1)
 	{
 		handler.setStatus(403);
-		throw CustomException("Forbidden");
+		throw CustomException("Forbidden2");
 	}
 }
 
@@ -338,7 +338,7 @@ void	UploadMultipart::storeFileData()
 		if (access(filepath_outfile.c_str(), F_OK) == 0)
 		{
 			handler.setStatus(403);
-			throw CustomException("Forbidden");
+			throw CustomException("Forbidden3");
 		}
 	}
 
@@ -381,7 +381,7 @@ void	UploadMultipart::storeUnchunkedFileData()
 		if (access(filepath_outfile.c_str(), F_OK) == 0)
 		{
 			handler.setStatus(403);
-			throw CustomException("Forbidden");
+			throw CustomException("Forbidden4");
 		}
 	}
 	

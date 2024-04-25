@@ -41,8 +41,8 @@ void	POSTResponse::respondFileUpload()
 	}
 	else
 	{
-		body = "\n\t\t<!DOCTYPE html>\n\t\t<html lang=\"en\">\n\t\t<head>\n\t\t\t<meta charset=\"UTF-8\">\n\t\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n\t\t\t<title>Error</title>\n\t\t</head>\n\t";
-		body.append("<body><h1>Success</h1></body></html>");
+		openBodyFile("www/index.html"); // replace by success html page location / or cgi if handled in the same
+		body = createBodyChunk();
 		header_fields.append("Location: http://localhost:");
 		header_fields.append(toString(handler.getSelectedServer().port));
 		header_fields.append(handler.getUploader()->getRelativeFilePath());
@@ -50,7 +50,7 @@ void	POSTResponse::respondFileUpload()
 	}
 	header_fields.append("Content-Type: text/html\r\n");
 	header_fields.append("Content-Length: ");
-	header_fields.append(toString(body.size()) + "\r\n");
+	header_fields.append(toString(body_size) + "\r\n");
 	header_fields.append("\r\n");
 }
 

@@ -197,14 +197,7 @@ void	RequestHandler::sendResponse()
 		if (num_response_chunks_sent > 0)
 		{
 			std::string body_chunk;
-			GETResponse* get = dynamic_cast<GETResponse*>(response);
-			if (get)
-				body_chunk = get->getBodyFromFile(); // need to catch errors thrown in here also somewhere and provide error response
-			else
-			{
-				// need to send a error response in this case
-				throw CustomException("failed when reading from file");
-			}
+			body_chunk = response->createBodyChunk();
 			resp = body_chunk;
 		}
 		else
@@ -214,7 +207,6 @@ void	RequestHandler::sendResponse()
 	else
 		resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
 	
-
 	int bytes_sent = send(connection_fd, resp.c_str(), resp.length(), 0);
 	if (bytes_sent == -1)
 	{
@@ -224,23 +216,14 @@ void	RequestHandler::sendResponse()
 	}
 	if (response->getChunkedBodyStatus())
 	{
-		GETResponse* get = dynamic_cast<GETResponse*>(response);
-		if (get)
+		if (num_response_chunks_sent == 1)
+			bytes_sent -= response->getResponseStatusLine().length() + response->getRespondsHeaderFields().length();
+		if (bytes_sent > 0)
+			response->incrementFilePosition(bytes_sent);
+		if (response->getFilePosition() == response->getBodySize())
 		{
-			if (num_response_chunks_sent == 1)
-				bytes_sent -= response->getResponseStatusLine().length() + response->getRespondsHeaderFields().length();
-			if (bytes_sent > 0)
-				get->incrementFilePosition(bytes_sent);
-			if (get->getFilePosition() == get->getFileSize())
-			{
-				all_chunks_sent = 1;
-				get->getInputFile().close();
-			}
-		}
-		else
-		{
-			// need to send a error response in this case
-			std::cout << "error resetting file position" << std::endl;
+			all_chunks_sent = 1;
+			response->getBodyFile().close();
 		}
 	}
 }
