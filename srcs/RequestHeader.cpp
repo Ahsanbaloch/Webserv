@@ -180,7 +180,7 @@ int		RequestHeader::getBodyLength() const
 
 void	RequestHeader::identifyFileName()
 {
-	std::size_t found = path.find_last_of('.');
+	std::size_t found = path.find_first_of('.');
 	if (found == std::string::npos)
 	{
 		filename = "";
@@ -188,13 +188,23 @@ void	RequestHeader::identifyFileName()
 	}
 	else
 	{
-		file_ext = path.substr(found);
-		found = path.find_last_of('/');
-		filename = path.substr(found + 1);
+		std::size_t extra_path_found = path.substr(found).find_first_of('/');
+		if (extra_path_found == std::string::npos)
+		{
+			file_ext = path.substr(found);
+			found = path.find_last_of('/');
+			filename = path.substr(found + 1);
+		}
+		else
+		{
+			file_ext = path.substr(found, extra_path_found);
+			found = path.substr(0, found).find_last_of('/');
+			extra_path_found = path.substr(found + 1).find_last_of('/');
+			filename = path.substr(found + 1, extra_path_found);
+		}
 	}
 	std::cout << "name: " << filename << " ext: " << file_ext << std::endl;
 }
-
 
 void	RequestHeader::checkHeader()
 {

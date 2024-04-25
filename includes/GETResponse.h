@@ -15,6 +15,7 @@ private:
 	//vars
 	std::ifstream	input_file;
 	std::streampos	file_position;
+	std::streampos	file_size;
 
 	//flags
 	bool			auto_index;
@@ -37,9 +38,15 @@ public:
 	explicit GETResponse(RequestHandler&);
 	~GETResponse();
 
+	// getter
+	std::streampos	getFilePosition() const;
+	std::ifstream&	getInputFile();
+	std::streampos	getFileSize() const;
+
 	// main method
 	void			createResponse();
 	std::string		getBodyFromFile();
+	void			incrementFilePosition(std::streampos);
 	
 };
 

@@ -23,6 +23,8 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	cgi_post_int_redirect = 0;
 	internal_redirect = 0;
 	num_response_chunks_sent = 0;
+	all_chunks_sent = 0;
+	// total_bytes_sent = 0;
 
 	buf_pos = -1;
 
@@ -101,11 +103,6 @@ int	RequestHandler::getSelectedLocation() const
 	return (selected_location);
 }
 
-t_server_config	RequestHandler::getSelectedServer() const
-{
-	return (server_config[selected_server]);
-}
-
 bool	RequestHandler::getResponseStatus() const
 {
 	return (response_ready);
@@ -124,6 +121,11 @@ int		RequestHandler::getRequestLength() const
 const RequestHeader&	RequestHandler::getHeaderInfo()
 {
 	return (request_header);
+}
+
+t_server_config	RequestHandler::getSelectedServer() const
+{
+	return (server_config[selected_server]);
 }
 
 bool	RequestHandler::getUnchunkingStatus() const
@@ -156,14 +158,14 @@ AUploadModule*	RequestHandler::getUploader() const
 	return (uploader);
 }
 
-AResponse*	RequestHandler::getResponseObj() const
-{
-	return (response);
-}
-
 int	RequestHandler::getNumResponseChunks() const
 {
 	return (num_response_chunks_sent);
+}
+
+bool	RequestHandler::getChunksSentCompleteStatus() const
+{
+	return (all_chunks_sent);
 }
 
 ///////// SETTERS ///////////
@@ -180,7 +182,7 @@ void	RequestHandler::sendResponse()
 {
 	std::string resp;
 
-	if (request_header.getMethod() == "GET" && getLocationConfig().redirect.empty() && status < 400) // other conditions?
+	if (response->getChunkedBodyStatus() && status < 400)
 	{
 		if (num_response_chunks_sent > 0)
 		{
@@ -202,15 +204,34 @@ void	RequestHandler::sendResponse()
 	else
 		resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
 	
-	
-	std::cout << "num response chunks: " << num_response_chunks_sent << std::endl;
-	std::cout << "message:" << resp << std::endl;
 
 	int bytes_sent = send(connection_fd, resp.c_str(), resp.length(), 0);
 	if (bytes_sent == -1)
 	{
 		// handle properly (also check for bytes_sent == 0)
 		std::cout << "error when sending data" << std::endl;
+		// break;
+	}
+	if (response->getChunkedBodyStatus())
+	{
+		GETResponse* get = dynamic_cast<GETResponse*>(response);
+		if (get)
+		{
+			if (num_response_chunks_sent == 1)
+				bytes_sent -= response->getResponseStatusLine().length() + response->getRespondsHeaderFields().length();
+			if (bytes_sent > 0)
+				get->incrementFilePosition(bytes_sent);
+			if (get->getFilePosition() == get->getFileSize())
+			{
+				all_chunks_sent = 1;
+				get->getInputFile().close();
+			}
+		}
+		else
+		{
+			// need to send a error response in this case
+			std::cout << "error resetting file position" << std::endl;
+		}
 	}
 }
 
@@ -379,9 +400,9 @@ AResponse* RequestHandler::prepareResponse()
 
 	if (!getLocationConfig().redirect.empty())
 		return (new REDIRECTResponse(*this));
-	if (request_header.getFileExtension() == "py")
+	if (request_header.getFileExtension() == ".py")
 	{
-		
+		std::cout << "CGI response" << std::endl;
 		return (new CgiResponse(*this)); // need to free this somewhere
 	}
 	//CGi Extension Check to be done here
