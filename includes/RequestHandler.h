@@ -7,6 +7,7 @@
 # include <vector>
 # include <sstream>
 # include <cstdio>
+# include <algorithm>
 # include "CustomException.h"
 # include "RequestHeader.h"
 # include "AUploadModule.h"
@@ -59,6 +60,7 @@ private:
 	bool							internal_redirect;
 	bool							cgi_post_int_redirect;
 	bool							all_chunks_sent;
+	bool							cgi_detected;
 	
 	// states
 	enum {
@@ -130,6 +132,7 @@ public:
 	std::vector<std::string>		splitPath(std::string input, char delim);
 	AResponse*						prepareResponse();
 	AUploadModule*					checkContentType();
+	void							checkForCGI();
 
 	// make private?
 	enum {

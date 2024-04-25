@@ -100,6 +100,10 @@ public:
 	int									getBodyBeginning() const;
 	int									getBodyLength() const;
 
+	// setters
+	void								changeFilename(std::string);
+	void								changeFileExtension(std::string);
+
 	// methods
 	void								parseRequestLine();
 	void								parseHeaderFields();

@@ -24,6 +24,7 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	internal_redirect = 0;
 	num_response_chunks_sent = 0;
 	all_chunks_sent = 0;
+	cgi_detected = 0;
 	// total_bytes_sent = 0;
 
 	buf_pos = -1;
@@ -265,6 +266,7 @@ void	RequestHandler::processRequest()
 		if (request_header.getHeaderStatus())
 		{
 			request_header.checkHeader();
+			checkForCGI();
 
 			//for testing: print received headers
 			printf("\nheaders\n");
@@ -291,12 +293,13 @@ void	RequestHandler::processRequest()
 					unchunkBody();
 				if (!getHeaderInfo().getTEStatus() || body_unchunked)
 				{
-					if (request_header.getFileExtension() == ".py") // what if other cgi extension?
+					if (cgi_detected)
 					{
+						// change to write directly to file descriptor if content type is urlendcoded
+						// ckeck in extractBodyFunction --> rename class to CGIReceiver
 						if (body_extractor == NULL)
 							body_extractor = new BodyExtractor(*this);
 						body_extractor->extractBody();
-						std::cout << body_extractor->getTempBodyFilepath() << std::endl;
 					}
 					else
 					{
@@ -311,11 +314,11 @@ void	RequestHandler::processRequest()
 			if (!request_header.getBodyStatus() || (uploader != NULL && uploader->getUploadStatus())
 				|| !getLocationConfig().redirect.empty() || (body_extractor != NULL && body_extractor->getExtractionStatus()))
 			{
-				if (request_header.getFileExtension() == ".py")
+				if (cgi_detected) // also check for content type
 				{
 					std::cout << "CGI response" << std::endl;
 					cgi_handler = new CgiResponse(*this);
-					cgi_handler->createResponse();
+					cgi_handler->createResponse(); // rename function --> init CGI script
 				}
 
 				// std::cout << "body content: " << request_body.body << std::endl;
@@ -333,6 +336,29 @@ void	RequestHandler::processRequest()
 		response_ready = 1;
 		std::cerr << e.what() << '\n';
 	}
+}
+
+
+void		RequestHandler::checkForCGI()
+{
+
+	if (find(getLocationConfig().cgi_ext.begin(), getLocationConfig().cgi_ext.end(), request_header.getFileExtension()) == getLocationConfig().cgi_ext.end())
+	{
+		status = 403; // which status should be set here? 
+		throw CustomException("Forbidden");
+	}
+	else
+	{
+		if (getLocationConfig().path == "/cgi-bin")
+			cgi_detected = 1;
+		else
+		{
+			status = 403; // which status should be set here? 
+			throw CustomException("Forbidden");
+		}
+	}
+
+	// also check execution rights here?
 }
 
 void		RequestHandler::checkAllowedMethods()
@@ -369,7 +395,9 @@ void RequestHandler::checkInternalRedirect()
 			if (!getLocationConfig().redirect.empty())
 				return ;
 			new_file_path = getLocationConfig().root + new_file_path.substr(orig_root.length());
-			if (getLocationConfig().path == "/cgi-bin" && new_file_path.substr(new_file_path.find_last_of('.')) == ".py")
+			request_header.changeFilename(new_file_path);
+			request_header.changeFileExtension(new_file_path);
+			if (getLocationConfig().path == "/cgi-bin")
 				cgi_post_int_redirect = 1;
 		}
 		else
