@@ -166,6 +166,7 @@ void	DarwinWorker::runEventLoop()
 				}
 				std::cout << "content: " << buf << std::endl;
 				throw CustomException("cgi event?");
+				// success
 			}
 
 		}
