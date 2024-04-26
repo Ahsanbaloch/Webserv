@@ -2,6 +2,7 @@
 #include "ConnectionHandler.h"
 
 ConnectionHandler::ConnectionHandler()
+	: Q(*new KQueue())
 {
 	connection_fd = 0;
 	response_ready = 0;
@@ -9,6 +10,7 @@ ConnectionHandler::ConnectionHandler()
 }
 
 ConnectionHandler::ConnectionHandler(const ConnectionHandler& src)
+	: Q(src.Q)
 {
 	handler = src.handler;
 	server_config = src.server_config;
@@ -24,11 +26,13 @@ ConnectionHandler&	ConnectionHandler::operator=(const ConnectionHandler& src)
 		server_config = src.server_config;
 		connection_fd = src.connection_fd;
 		response_ready = src.response_ready;
+		// Q = src.Q;
 	}
 	return (*this);
 }
 
-ConnectionHandler::ConnectionHandler(int fd, std::vector<t_server_config> server_config)
+ConnectionHandler::ConnectionHandler(int fd, std::vector<t_server_config> server_config, const KQueue& q)
+	: Q(q)
 {
 	connection_fd = fd;
 	response_ready = 0;
@@ -47,7 +51,7 @@ RequestHandler*	ConnectionHandler::getRequestHandler()
 
 void	ConnectionHandler::initRequestHandler()
 {
-	handler = new RequestHandler(connection_fd, server_config);
+	handler = new RequestHandler(connection_fd, server_config, Q);
 }
 
 int	ConnectionHandler::getResponseStatus()

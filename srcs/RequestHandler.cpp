@@ -4,12 +4,12 @@
 ///////// CONSTRUCTORS & DESTRUCTORS ///////////
 
 RequestHandler::RequestHandler()
-	: request_header(*this)
+	: request_header(*this), Q(*new KQueue())
 {
 }
 
-RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_config)
-	: request_header(*this)
+RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_config,  const KQueue& q)
+	: request_header(*this), Q(q)
 {
 	std::cout << "request handler constructed" << std::endl;
 	this->server_config = server_config;
@@ -55,7 +55,7 @@ RequestHandler::~RequestHandler()
 }
 
 RequestHandler::RequestHandler(const RequestHandler& src)
-	: request_header(src.request_header)
+	: request_header(src.request_header), Q(src.Q)
 {
 	// tbd
 }
@@ -220,6 +220,7 @@ void	RequestHandler::sendResponse()
 
 void	RequestHandler::processRequest()
 {
+	// always memset(buffer, 0, sizeof(buffer)) after buffer has been handled?
 	buf_pos = -1;
 	bytes_read = recv(connection_fd, buf, BUFFER_SIZE, 0);
 	if (bytes_read == -1)
@@ -306,9 +307,8 @@ void	RequestHandler::processRequest()
 				if (cgi_detected) // also check for content type
 				{
 					std::cout << "CGI response" << std::endl;
-					if (cgi_handler == NULL)
-						cgi_handler = new CGIHandler(*this);
 					cgi_handler->execute();
+					return ;
 				}
 
 				// std::cout << "body content: " << request_body.body << std::endl;
@@ -332,25 +332,28 @@ void	RequestHandler::processRequest()
 
 void		RequestHandler::checkForCGI()
 {
-	std::cout << "location path: " << getLocationConfig().path << std::endl;
-	std::cout << "location path size: " << getLocationConfig().path.size() << std::endl;
 	if (getLocationConfig().path == "/cgi-bin")
 	{
-		int size = getLocationConfig().cgi_ext.size();
-		std::cout << "location cgi size: " << getLocationConfig().cgi_ext.size() << std::endl;
-		for (int i = 0; i < size; i++)
-		{
-			std::cout << "cgi ext: " << getLocationConfig().cgi_ext[i] << std::endl;
-		}
-	
-
 		if (find(getLocationConfig().cgi_ext.begin(), getLocationConfig().cgi_ext.end(), request_header.getFileExtension()) == getLocationConfig().cgi_ext.end())
 		{
 			status = 403; // which status should be set here? 
 			throw CustomException("Forbidden");
 		}
 		else
+		{
 			cgi_detected = 1;
+			cgi_handler = new CGIHandler(*this);
+			// add cgi_out to multiplexer
+			struct kevent cgi_event;
+			// may make kqeue ref not constant so that identifier can be set
+			std::cout << "origin connectionf fd: " << connection_fd << std::endl;
+			EV_SET(&cgi_event, cgi_handler->cgi_out[0], EVFILT_READ, EV_ADD, 0, 0, &connection_fd);
+			if (kevent(Q.getKQueueFD(), &cgi_event, 1, NULL, 0, NULL) == -1)
+			{
+				perror("Failure: ");
+				throw CustomException("Failed when registering events for CGI output\n");
+			}
+		}
 	}
 
 	// also check execution rights here?

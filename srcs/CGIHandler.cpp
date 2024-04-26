@@ -12,6 +12,8 @@ CGIHandler::CGIHandler()
 CGIHandler::CGIHandler(RequestHandler& src)
 	: handler(src), _envp(), _cgiOutputFd(), _cgiInputFd()
 {
+	if (pipe(cgi_out) < 0)
+		throw CustomException("CGIHandler: Failed to create pipes");
 }
 
 CGIHandler::CGIHandler(const CGIHandler &other)
@@ -139,10 +141,11 @@ void CGIHandler::_execCgi() {
     // Create pipes for input and output
 
 	createArgument();
-	createTempFile();
+	// createTempFile();
     // if (pipe(_cgiInputFd) < 0 || pipe(_cgiOutputFd) < 0) {
     //     throw CustomException("CGIHandler: Failed to create pipes");
     // }
+	
 	// printf("pipe done\n");
     // // Fork a new process
     pid_t pid = fork();
@@ -151,15 +154,17 @@ void CGIHandler::_execCgi() {
         throw CustomException("CGIHandler: Failed to fork process");
     }
 
-
     if (pid == 0) { // Child process
         // Redirect standard input and output to the pipes
 		printf("in child\n");
 		// dup2(_cgiInputFd[0], 0);
 		// dup2(_cgiOutputFd[1], 1);
-		dup2(fd_out, STDOUT_FILENO);
+		// dup2(fd_out, STDOUT_FILENO);
+		dup2(cgi_out[1], STDOUT_FILENO);
 		// check for error
 
+		close(cgi_out[0]);
+		close(cgi_out[1]);
 
         // Close the other ends of the pipes
         // close(_cgiInputFd[1]);
@@ -197,6 +202,7 @@ void CGIHandler::_execCgi() {
         //     _writeCgiInput();
         // }
         // Close the other ends of the pipes
+		close(cgi_out[1]);
         // close(_cgiInputFd[0]);
         // close(_cgiOutputFd[1]);
 		// close(_cgiInputFd[1]);
@@ -217,11 +223,11 @@ void CGIHandler::_execCgi() {
         //     handler.setStatus(404);
         //     throw CustomException("CGIHandler: CGI script failed");
         // }
-
+		// close(cgi_out[0]);
         // Read the output of the CGI script
 		// _readCgiOutput();
 		// close(_cgiOutputFd[0]);
-		close(fd_out);
+		// close(fd_out);
         // Construct the HTTP response
 		
     }

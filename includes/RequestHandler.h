@@ -23,6 +23,7 @@
 # include "POSTResponse.h"
 # include "REDIRECTResponse.h"
 # include "BodyExtractor.h"
+# include "KQueue.h"
 # include "config/config_pars.hpp"
 # include "defines.h"
 # include "utils.tpp"
@@ -36,6 +37,7 @@ private:
 	AUploadModule*					uploader;
 	AResponse*						response;
 	BodyExtractor*					body_extractor;
+	const KQueue&					Q;
 
 	// vars
 	std::vector<t_server_config>	server_config;
@@ -85,7 +87,7 @@ public:
 	// constructors & destructors
 	RequestHandler();
 	RequestHandler& operator=(const RequestHandler&);
-	RequestHandler(int, std::vector<t_server_config>); // get ServerConfig as a reference? // might be able to remove int connection_fd as this is now part of the connection handler
+	RequestHandler(int, std::vector<t_server_config>, const KQueue&); // get ServerConfig as a reference? // might be able to remove int connection_fd as this is now part of the connection handler
 	~RequestHandler();
 
 	// getters

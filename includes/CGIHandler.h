@@ -26,6 +26,7 @@ public:
 
 	std::string _cgiOutputStr;
 
+	int	cgi_out[2];
 
 private:
 	RequestHandler&	handler;
