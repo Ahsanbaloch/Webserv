@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   config_pars.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mamesser <mamesser@student.42wolfsburg.    +#+  +:+       +#+        */
+/*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/04/23 12:11:24 by mamesser         ###   ########.fr       */
+/*   Updated: 2024/04/26 21:18:06 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -109,7 +109,6 @@ void	config_pars::parse_server_block(t_server_config &server_config, const std::
 	std::string globalPart = server_block.substr(0, locPos);
 	std::string locationPart = locPos != std::string::npos ? server_block.substr(locPos) : "";
 	_server_root = extractServerVariable("root", globalPart);
-	//std::cout << _server_root << std::endl;
 	_server_index = extractServerVariable("index", globalPart);
 	extractIpPort(globalPart, server_config.Ip, server_config.port);
 	server_config.serverName = extractServerVariable("Server_name", globalPart);
@@ -278,17 +277,12 @@ void config_pars::parseMethod(t_location_config &location_config, const std::str
 
 void config_pars::cgiOp(t_location_config &location_config, const std::string &location_block)
 {
-
-	std::string cgi_path = removeMultipleSlashes(location_config.root + "/" + "cgi-bin");
-	if (location_config.path == cgi_path)
-	{
+		location_config.cgi_ext.clear();
 		std::string cgi_ext = extractVariables("cgi-ext",location_block);
-		if (cgi_ext.empty())
+
+		if (location_config.path == "/cgi-bin" && cgi_ext.empty())
 			throw MissingValueException("cgi-ext");
 		extractMultipleCgi(location_config.cgi_ext, cgi_ext);
-	}
-	else
-		location_config.cgi_ext.clear();
 }
 
 void config_pars::uploadProcess(t_location_config &location_config, const std::string &location_block, std::string merge_string)
@@ -404,6 +398,9 @@ std::string	config_pars::extractVariables(const std::string &variable, const std
 		removeLeadingWhitespaces(value);
     	if (variable == "redirect_url" && (value.empty() || location_block.empty()))
     	    throw MissingValueException(variable);
+		/* if (variable == "cgi-bin" && (value.empty() || location_block.empty()))
+    	    throw MissingValueException(variable); */
+		
 	}
 	return (value);
 }

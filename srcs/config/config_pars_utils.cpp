@@ -6,7 +6,7 @@
 /*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 16:53:25 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/04/21 19:50:24 by ahsalam          ###   ########.fr       */
+/*   Updated: 2024/04/26 21:18:54 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -193,6 +193,7 @@ std::string removeMultipleSlashes(const std::string& input)
 
 void extractMultipleCgi(std::vector<std::string> &cgi_ext, const std::string cgi_str)
 {
+	//std::vector<std::string> temp_cgi;
 	std::istringstream ss(cgi_str);
 	std::string token;
 	while (ss >> token)
@@ -203,13 +204,10 @@ void extractMultipleCgi(std::vector<std::string> &cgi_ext, const std::string cgi
 			for (std::string::iterator it = token.begin(); it != token.end(); ++it)
 			{
 				if (*it != ' ')
-					newToken += *it; 
+					newToken += *it;
 			}
+			//std::cout << "Token : " << newToken << std::endl;
 			cgi_ext.push_back(newToken);
 		}
 	}
-	for (std::vector<std::string>::iterator it = cgi_ext.begin(); it != cgi_ext.end(); ++it)
-    {
-        std::cout << *it << std::endl;
-    }
 }
