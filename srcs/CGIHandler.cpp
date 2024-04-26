@@ -34,6 +34,11 @@ CGIHandler &CGIHandler::operator=(const CGIHandler &other)
 	return *this;
 }
 
+std::string	CGIHandler::getCGIOutput()
+{
+	return (temp_file_path);
+}
+
 void CGIHandler::execute()
 {
 	setEnv();
@@ -93,23 +98,6 @@ void	CGIHandler::setEnv()
 		std::cout << "envp[" << i << "]: " << _envp[i] << std::endl;
 }
 
-void CGIHandler::_writeCgiInput() {
-	std::cout << "Started writing cgi input" << std::endl << std::endl;
-	std::string temp_file_path = handler.getTempBodyFilepath();
-	printf("temp_file_path: %s\n", temp_file_path.c_str());
-	int temp_fd = open(temp_file_path.c_str(), O_RDONLY);
-	if (temp_fd == -1)
-		throw CustomException("CGIHandler: open() failed");
-	printf("temp_fd: %d\n", temp_fd);
-	char buf[500];
-	int bytes_read = 0;
-	bytes_read = read(temp_fd, buf, 499); {
-
-		buf[bytes_read] = '\0';
-		write(_cgiInputFd[1], buf, bytes_read);
-	}
-}
-
 void CGIHandler::_readCgiOutput() {
 	char buf[10];
 	int bytes_read;
@@ -139,15 +127,23 @@ void	CGIHandler::createArgument()
 	}
 }
 
+void	CGIHandler::createTempFile()
+{
+	temp_file_path = "www/temp/cgi.bin";
+	fd_out = open(temp_file_path.c_str(), O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+	if (fd_out != -1)
+		throw CustomException("CGIHandler: Failed to create temp file");
+}
+
 void CGIHandler::_execCgi() {
     // Create pipes for input and output
 
 	createArgument();
-    if (pipe(_cgiInputFd) < 0 || pipe(_cgiOutputFd) < 0) {
-        throw CustomException("CGIHandler: Failed to create pipes");
-    }
-	printf("pipe done\n");
-    // Fork a new process
+    // if (pipe(_cgiInputFd) < 0 || pipe(_cgiOutputFd) < 0) {
+    //     throw CustomException("CGIHandler: Failed to create pipes");
+    // }
+	// printf("pipe done\n");
+    // // Fork a new process
     pid_t pid = fork();
 	printf("fork done\n");
     if (pid < 0) {
@@ -158,14 +154,17 @@ void CGIHandler::_execCgi() {
     if (pid == 0) { // Child process
         // Redirect standard input and output to the pipes
 		printf("in child\n");
-		dup2(_cgiInputFd[0], 0);
-		dup2(_cgiOutputFd[1], 1);
+		// dup2(_cgiInputFd[0], 0);
+		// dup2(_cgiOutputFd[1], 1);
+		dup2(fd_out, STDOUT_FILENO);
+		// check for error
+
 
         // Close the other ends of the pipes
-        close(_cgiInputFd[1]);
-        close(_cgiOutputFd[0]);
-		close(_cgiInputFd[0]);
-		close(_cgiOutputFd[1]);
+        // close(_cgiInputFd[1]);
+        // close(_cgiOutputFd[0]);
+		// close(_cgiInputFd[0]);
+		// close(_cgiOutputFd[1]);
 
         // Set up the environment for the CGI script
         //_exportEnv();
@@ -197,9 +196,9 @@ void CGIHandler::_execCgi() {
         //     _writeCgiInput();
         // }
         // Close the other ends of the pipes
-        close(_cgiInputFd[0]);
-        close(_cgiOutputFd[1]);
-		close(_cgiInputFd[1]);
+        // close(_cgiInputFd[0]);
+        // close(_cgiOutputFd[1]);
+		// close(_cgiInputFd[1]);
 
 		std::cout << "Waiting for CGI script to finish execution" << std::endl;
         // Wait for the CGI script to finish execution
@@ -219,8 +218,9 @@ void CGIHandler::_execCgi() {
         // }
 
         // Read the output of the CGI script
-		_readCgiOutput();
-		close(_cgiOutputFd[0]);
+		// _readCgiOutput();
+		// close(_cgiOutputFd[0]);
+		close(fd_out);
         // Construct the HTTP response
 		
     }

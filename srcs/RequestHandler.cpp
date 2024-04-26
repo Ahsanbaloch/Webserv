@@ -332,8 +332,18 @@ void	RequestHandler::processRequest()
 
 void		RequestHandler::checkForCGI()
 {
+	std::cout << "location path: " << getLocationConfig().path << std::endl;
+	std::cout << "location path size: " << getLocationConfig().path.size() << std::endl;
 	if (getLocationConfig().path == "/cgi-bin")
 	{
+		int size = getLocationConfig().cgi_ext.size();
+		std::cout << "location cgi size: " << getLocationConfig().cgi_ext.size() << std::endl;
+		for (int i = 0; i < size; i++)
+		{
+			std::cout << "cgi ext: " << getLocationConfig().cgi_ext[i] << std::endl;
+		}
+	
+
 		if (find(getLocationConfig().cgi_ext.begin(), getLocationConfig().cgi_ext.end(), request_header.getFileExtension()) == getLocationConfig().cgi_ext.end())
 		{
 			status = 403; // which status should be set here? 

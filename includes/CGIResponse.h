@@ -5,18 +5,21 @@
 # include <string>
 # include "RequestHandler.h"
 # include "AResponse.h"
+# include "CGIHandler.h"
 # include "utils.tpp"
 
 class CGIResponse: public AResponse
 {
 private:
-	/* data */
+	
 public:
 	CGIResponse(RequestHandler&);
 	CGIResponse(/* args */);
 	~CGIResponse();
 
 	void	createResponse();
+	void	readCGIHeader();
+	
 };
 
 #endif
