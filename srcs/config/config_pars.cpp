@@ -278,8 +278,7 @@ void config_pars::parseMethod(t_location_config &location_config, const std::str
 
 void config_pars::cgiOp(t_location_config &location_config, const std::string &location_block)
 {
-
-	std::string cgi_path = removeMultipleSlashes(location_config.root + "/" + "cgi-bin");
+	std::string cgi_path = "/cgi-bin";
 	if (location_config.path == cgi_path)
 	{
 		std::string cgi_ext = extractVariables("cgi-ext",location_block);

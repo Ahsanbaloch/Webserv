@@ -131,7 +131,7 @@ void	CGIHandler::createTempFile()
 {
 	temp_file_path = "www/temp/cgi.bin";
 	fd_out = open(temp_file_path.c_str(), O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
-	if (fd_out != -1)
+	if (fd_out == -1)
 		throw CustomException("CGIHandler: Failed to create temp file");
 }
 
@@ -139,6 +139,7 @@ void CGIHandler::_execCgi() {
     // Create pipes for input and output
 
 	createArgument();
+	createTempFile();
     // if (pipe(_cgiInputFd) < 0 || pipe(_cgiOutputFd) < 0) {
     //     throw CustomException("CGIHandler: Failed to create pipes");
     // }
@@ -183,8 +184,8 @@ void CGIHandler::_execCgi() {
         //     exit(1);
         // }
 
-		std::cout << "scriptPath: " << scriptPath << std::endl;
-		std::cout << "scriptName: " << scriptName << std::endl;
+		// std::cout << "scriptPath: " << scriptPath << std::endl;
+		// std::cout << "scriptName: " << scriptName << std::endl;
 		if (execve(scriptPath.c_str(), argv, _envp) < 0) {
 			printf("execve failed\n");
 			exit(1);

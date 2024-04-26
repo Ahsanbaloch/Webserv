@@ -1,0 +1,14 @@
+Content-Type: text/html
+
+
+<html><body style='text-align:center;'>
+<h1 style='color: green;'>GeeksforGeeks</h1>
+<p>CGI trying to get data</p>
+<p>CGI got data</p>
+<p>CGI got name</p>
+<h2>Hello, lol!</h2>
+None
+<p>Thank you for using our script.</p>
+<p>No name provided in the form data.</p>
+</body></html>
+

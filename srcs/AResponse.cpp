@@ -4,12 +4,12 @@
 ///////// CONSTRUCTORS & DESTRUCTORS ///////////
 
 AResponse::AResponse()
-	: handler(*new RequestHandler()), body_size(0), file_position(0)
+	: handler(*new RequestHandler()), body_size(0), file_position(0), file_pos_offset(0)
 {
 }
 
 AResponse::AResponse(RequestHandler& request_handler) 
-	: handler(request_handler), body_size(0), file_position(0)
+	: handler(request_handler), body_size(0), file_position(0), file_pos_offset(0)
 {
 }
 
@@ -38,6 +38,7 @@ AResponse& AResponse::operator=(const AResponse& src)
 		status_line = src.status_line;
 		header_fields = src.header_fields;
 		file_position = src.file_position;
+		file_pos_offset = src.file_pos_offset;
 		body_size = src.body_size;
 	}
 	return (*this);
@@ -85,6 +86,11 @@ std::streampos	AResponse::getFilePosition() const
 	return (file_position);
 }
 
+
+std::streampos	AResponse::getFilePosOffset() const
+{
+	return (file_pos_offset);
+}
 
 
 ///////// METHODS ///////////

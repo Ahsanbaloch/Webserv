@@ -9,15 +9,6 @@
 # sys.stderr.write("##########\n" + data + "\n##########\n")
 
 
-
-
-
-
-
-
-
-
-
 # import cgi
 
 # form = cgi.FieldStorage()
@@ -53,7 +44,7 @@ import sys, cgi, cgitb
 temp_file_path = sys.argv[1]
 
 # Send an HTTP header indicating the content type as HTML
-print("\n\nContent-type: text/html\n\n")
+print("Content-Type: text/html\n\n")
 
 # Start an HTML document with center-aligned content
 print("<html><body style='text-align:center;'>")

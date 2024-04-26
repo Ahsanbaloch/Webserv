@@ -210,7 +210,7 @@ void	RequestHandler::sendResponse()
 			bytes_sent -= response->getResponseStatusLine().length() + response->getRespondsHeaderFields().length();
 		if (bytes_sent > 0)
 			response->incrementFilePosition(bytes_sent);
-		if (response->getFilePosition() == response->getBodySize())
+		if (response->getFilePosition() - response->getFilePosOffset() == response->getBodySize())
 		{
 			all_chunks_sent = 1;
 			response->getBodyFile().close();

@@ -23,25 +23,26 @@ void	CGIResponse::readCGIHeader()
 	while(std::getline(body_file, line))
 	{
 		std::cout << "line: " << line << std::endl;
-		// if (line.find("Status") != std::string::npos)
-		// {
-		// 	std::string status;
-		// 	for (std::string::iterator it = line.begin(); it != line.end(); it++)
-		// 	{
-		// 		if (isdigit(*it))
-		// 			status += *it;
-		// 	}
-		// 	handler.setStatus(toInt(status));
-		// 	if (toInt(status) >= 400)
-		// 		throw CustomException("CGI Error");
-		// }
-		// else if (!line.empty())
-		// 	header_fields.append(line + "\r\n");
-		// else
-		// 	break;
+		if (line.find("Status") != std::string::npos)
+		{
+			std::string status;
+			for (std::string::iterator it = line.begin(); it != line.end(); it++)
+			{
+				if (isdigit(*it))
+					status += *it;
+			}
+			handler.setStatus(toInt(status));
+			if (toInt(status) >= 400)
+				throw CustomException("CGI Error");
+		}
+		else if (!line.empty())
+			header_fields.append(line + "\r\n");
+		else
+			break;
+		
 	}
-	throw CustomException("Stop testing");
 	file_position = body_file.tellg();
+	file_pos_offset = file_position;
 	body_size = body_size - file_position;
 }
 
@@ -65,7 +66,7 @@ void	CGIResponse::createResponse()
 		throw CustomException("CGI Error"); // should this be done?
 	}
 	header_fields.append("\r\n");
-	createStatusLine();
+	status_line = createStatusLine();
 
 	// need to read the header line of the CGI response
 	// needs to be at least one line seperated by newline

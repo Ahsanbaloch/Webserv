@@ -25,6 +25,7 @@ protected:
 	std::ifstream	body_file;
 	std::streampos	body_size;
 	std::streampos	file_position;
+	std::streampos	file_pos_offset;
 
 	// flags
 	bool			chunked_body;
@@ -54,6 +55,7 @@ public:
 	std::string		createBodyChunk();
 	std::streampos	getBodySize() const;
 	std::streampos	getFilePosition() const;
+	std::streampos	getFilePosOffset() const;
 
 
 	// methods
