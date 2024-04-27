@@ -3,6 +3,7 @@
 
 # include <vector>
 # include <string>
+# include <map>
 # include "RequestHandler.h"
 # include "AResponse.h"
 # include "CGIHandler.h"
@@ -11,6 +12,18 @@
 class CGIResponse: public AResponse
 {
 private:
+	bool								cgi_he_complete;
+	std::map<std::string, std::string>	cgi_header_fields;
+	std::ofstream	outfile;
+	std::string							temp_body_filepath;
+
+	enum {
+		he_start = 0,
+		he_name,
+		he_value,
+		he_done,
+		he_end
+	} cgi_resp_he_state;
 	
 public:
 	CGIResponse(RequestHandler&);
@@ -19,7 +32,13 @@ public:
 
 	void	createResponse();
 	void	readCGIHeader();
+	void	processBuffer();
+	void	readHeaderFields();
+	void	storeBody();
+	void	createHeaderFields();
 	
+
+
 };
 
 #endif

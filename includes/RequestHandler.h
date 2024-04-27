@@ -121,7 +121,8 @@ public:
 	
 	unsigned char					cgi_buf[BUFFER_SIZE + 1];
 	int								cgi_buf_pos;
-	std::string						test_cgi;
+	// std::string						test_cgi;
+	int								cgi_bytes_read;
 
 	// methods
 	void							determineLocationBlock();

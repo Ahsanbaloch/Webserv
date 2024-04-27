@@ -367,16 +367,15 @@ void	RequestHandler::checkForCGI()
 
 void	RequestHandler::readCGIResponse()
 {
-	char cgi_buf[BUFFER_SIZE];
 	cgi_buf_pos = -1;
 
-	int bytes_read = read(cgi_handler->cgi_out[0], cgi_buf, BUFFER_SIZE);
-	if (bytes_read == -1)
+	cgi_bytes_read = read(cgi_handler->cgi_out[0], cgi_buf, BUFFER_SIZE);
+	if (cgi_bytes_read == -1)
 		perror("recv");
-	else if (bytes_read == 0)
+	else if (cgi_bytes_read == 0)
 	{
 		close(cgi_handler->cgi_out[0]);
-		std::cout << "cgi content: " << test_cgi << std::endl;
+		// std::cout << "cgi content: " << test_cgi << std::endl;
 		response->createResponse();
 		response_ready = 1;
 		// throw CustomException("test end");
@@ -385,10 +384,15 @@ void	RequestHandler::readCGIResponse()
 	}
 	else
 	{
-		buf[bytes_read] = '\0';
+		cgi_buf[bytes_read] = '\0';
+		
+		CGIResponse* cgiResponse = dynamic_cast<CGIResponse*>(response);
+		if (cgiResponse != NULL)
+			cgiResponse->processBuffer();
+
 		// here I want to read the buffer and start constructing the header, until I find the body
 		// the body is then added to a file which can be send in chunks
-		test_cgi.append(cgi_buf, bytes_read);
+		// test_cgi.append(cgi_buf, bytes_read);
 		// std::cout << "received: " << cgi_buf << std::endl;
 	}
 
@@ -449,15 +453,14 @@ void RequestHandler::determineLocationBlock()
 
 void	RequestHandler::setCGIResponse()
 {
-	response = new CGIResponse(*this);
+	if (response == NULL)
+		response = new CGIResponse(*this);
 }
 
 AResponse* RequestHandler::prepareResponse()
 {
 	if (!getLocationConfig().redirect.empty())
 		return (new REDIRECTResponse(*this));
-	// else if (cgi_detected)
-	// 	return (new CGIResponse(*this));
 	else if (request_header.getMethod() == "GET")
 		return (new GETResponse(*this));
 	else if (request_header.getMethod() == "DELETE")

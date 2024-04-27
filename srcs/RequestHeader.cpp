@@ -365,6 +365,8 @@ void	RequestHeader::parseHeaderFields()
 				else if (ch == LF)
 				{
 					headers_parsing_done = 1;
+					body_beginning = handler.buf_pos; // needed?
+					header_complete = 1; // needed?
 					break;
 				}
 				else
@@ -453,7 +455,7 @@ void	RequestHeader::parseHeaderFields()
 
 			case he_cr:
 				if (ch == LF)
-					rl_state = rl_done;
+					headers_state = he_done;
 				else 
 				{
 					handler.setStatus(400);
