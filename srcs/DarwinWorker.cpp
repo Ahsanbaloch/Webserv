@@ -148,25 +148,13 @@ void	DarwinWorker::runEventLoop()
 					}
 				}
 			}
-			else
+			else if (*reinterpret_cast<int*>(event_lst[i].udata) != Q.getListeningSocketIdent()
+					&& *reinterpret_cast<int*>(event_lst[i].udata) != Q.getConnectionSocketIdent())
 			{
-		
-				std::cout << "cgi event?" << std::endl;
 				std::cout << "connection fd? " << *reinterpret_cast<int*>(event_lst[i].udata) << std::endl;
-				char buf[BUFFER_SIZE];
-				int bytes_read = read(event_lst[i].ident, buf, BUFFER_SIZE);
-				if (bytes_read == -1)
-					perror("recv");
-				else if (bytes_read == 0)
-					std::cout << "client disconnected\n";
-				else
-				{
-					buf[bytes_read] = '\0';
-					std::cout << "received: " << buf << std::endl;
-				}
-				std::cout << "content: " << buf << std::endl;
-				throw CustomException("cgi event?");
-				// success
+				connected_clients[*reinterpret_cast<int*>(event_lst[i].udata)]->getRequestHandler()->setCGIResponse();
+				connected_clients[*reinterpret_cast<int*>(event_lst[i].udata)]->getRequestHandler()->readCGIResponse();
+				
 			}
 
 		}

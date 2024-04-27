@@ -27,6 +27,7 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	// total_bytes_sent = 0;
 
 	buf_pos = -1;
+	cgi_buf_pos = -1;
 
 	 // also add in copy constructor etc.
 	chunk_length = 0;
@@ -155,6 +156,11 @@ AUploadModule*	RequestHandler::getUploader() const
 {
 	return (uploader);
 }
+
+// AResponse*	RequestHandler::getResponse() const
+// {
+// 	return (response);
+// }
 
 int	RequestHandler::getNumResponseChunks() const
 {
@@ -329,8 +335,7 @@ void	RequestHandler::processRequest()
 	}
 }
 
-
-void		RequestHandler::checkForCGI()
+void	RequestHandler::checkForCGI()
 {
 	if (getLocationConfig().path == "/cgi-bin")
 	{
@@ -359,7 +364,34 @@ void		RequestHandler::checkForCGI()
 	// also check execution rights here?
 }
 
-void		RequestHandler::checkAllowedMethods()
+
+void	RequestHandler::readCGIResponse()
+{
+	char cgi_buf[BUFFER_SIZE];
+	cgi_buf_pos = -1;
+
+	int bytes_read = read(cgi_handler->cgi_out[0], cgi_buf, BUFFER_SIZE);
+	if (bytes_read == -1)
+		perror("recv");
+	else if (bytes_read == 0)
+	{
+		close(cgi_handler->cgi_out[0]);
+		std::cout << "cgi content: " << test_cgi << std::endl;
+		throw CustomException("test end");
+		// call cgi_create response
+		// then set response status to finished
+	}
+	else
+	{
+		buf[bytes_read] = '\0';
+		test_cgi.append(cgi_buf, bytes_read);
+		// std::cout << "received: " << cgi_buf << std::endl;
+	}
+
+
+}
+
+void	RequestHandler::checkAllowedMethods()
 {
 	if (request_header.getMethod() == "GET" && !getLocationConfig().GET)
 	{
@@ -411,12 +443,17 @@ void RequestHandler::determineLocationBlock()
 		findLocationBlock();
 }
 
+void	RequestHandler::setCGIResponse()
+{
+	response = new CGIResponse(*this);
+}
+
 AResponse* RequestHandler::prepareResponse()
 {
 	if (!getLocationConfig().redirect.empty())
 		return (new REDIRECTResponse(*this));
-	else if (cgi_detected)
-		return (new CGIResponse(*this));
+	// else if (cgi_detected)
+	// 	return (new CGIResponse(*this));
 	else if (request_header.getMethod() == "GET")
 		return (new GETResponse(*this));
 	else if (request_header.getMethod() == "DELETE")

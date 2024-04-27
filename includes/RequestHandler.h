@@ -94,6 +94,7 @@ public:
 	std::vector<t_server_config>	getServerConfig() const;
 	s_location_config				getLocationConfig() const;
 	AUploadModule*					getUploader() const;
+	// AResponse*						getResponse() const;
 	int								getSelectedLocation() const; // only for testing purposes
 	t_server_config					getSelectedServer() const; /// should probably return t_server_config
 	int								getStatus() const;
@@ -118,6 +119,10 @@ public:
 	unsigned char					buf[BUFFER_SIZE + 1];
 	int								buf_pos;
 	
+	unsigned char					cgi_buf[BUFFER_SIZE + 1];
+	int								cgi_buf_pos;
+	std::string						test_cgi;
+
 	// methods
 	void							determineLocationBlock();
 	void							processRequest();
@@ -132,6 +137,8 @@ public:
 	AResponse*						prepareResponse();
 	AUploadModule*					checkContentType();
 	void							checkForCGI();
+	void							setCGIResponse();
+	void							readCGIResponse();
 
 	// make private?
 	enum {
