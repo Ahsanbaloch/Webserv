@@ -4,6 +4,11 @@ import cgi
 import os
 import sys
 
+print("Status: 303")
+print("Location: /index.html")
+print()
+
+
 def create_file_from_multipart(data_file):
   """
   Parses multipart form data from a temporary file and creates a file.
@@ -35,9 +40,6 @@ def create_file_from_multipart(data_file):
     with open(filepath, 'wb') as upload_file:
       upload_file.write(file_data.file.read())
     
-    print("File uploaded successfully!")
-  else:
-    print("No file uploaded.")
 
 # Get the temporary file path from the script argument
 data_file = sys.argv[1] # SCRIPT_FILENAME is a CGI environment variable

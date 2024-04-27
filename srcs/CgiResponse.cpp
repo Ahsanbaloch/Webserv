@@ -92,10 +92,7 @@ void	CGIResponse::readHeaderFields()
 				else if (ch == CR)
 					break;
 				if (ch == LF)
-				{
 					cgi_resp_he_state = he_done;
-					break;
-				}
 				else
 				{
 					header_value.append(1, ch);
@@ -116,11 +113,9 @@ void	CGIResponse::readHeaderFields()
 						throw CustomException("CGI Error");
 				}
 				else
-				{
 					cgi_header_fields.insert(std::pair<std::string, std::string>(header_name, header_value));
-					header_name.clear();
-					header_value.clear();
-				}
+				header_name.clear();
+				header_value.clear();
 				cgi_resp_he_state = he_start;
 				break;
 
@@ -155,14 +150,9 @@ bool	CGIResponse::processBuffer()
 		readHeaderFields();
 	if (cgi_he_complete)
 	{
-		for (std::map<std::string, std::string>::iterator it = cgi_header_fields.begin(); it != cgi_header_fields.end(); it++)
-		{
-			std::cout << "Key: " << it->first << ", Value: " << it->second << std::endl;
-		}
 
 		if (cgi_header_fields.find("Location") != cgi_header_fields.end()) 
 		{
-
 			return (1);
 			// check if the file specified by location is existing
 				// if not do something
