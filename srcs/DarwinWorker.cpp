@@ -122,6 +122,8 @@ void	DarwinWorker::runEventLoop()
 			// event came from connection, so that we want to handle the request (unless the connection has been closed)
 			else if (*reinterpret_cast<int*>(event_lst[i].udata) == Q.getConnectionSocketIdent() && connected_clients[event_lst[i].ident] != NULL)
 			{
+				// std::cout << "response Status: " << connected_clients[event_lst[i].ident]->getResponseStatus() << std::endl;
+				// std::cout << "connection fd: " << connected_clients[event_lst[i].ident] << std::endl;
 				if (event_lst[i].filter == EVFILT_READ)
 				{
 					if (connected_clients[event_lst[i].ident]->getRequestHandler() == NULL)
@@ -154,7 +156,7 @@ void	DarwinWorker::runEventLoop()
 				std::cout << "connection fd? " << *reinterpret_cast<int*>(event_lst[i].udata) << std::endl;
 				connected_clients[*reinterpret_cast<int*>(event_lst[i].udata)]->getRequestHandler()->setCGIResponse();
 				connected_clients[*reinterpret_cast<int*>(event_lst[i].udata)]->getRequestHandler()->readCGIResponse();
-				
+				connected_clients[*reinterpret_cast<int*>(event_lst[i].udata)]->setResponseStatus(connected_clients[*reinterpret_cast<int*>(event_lst[i].udata)]->getRequestHandler()->getResponseStatus());
 			}
 
 		}

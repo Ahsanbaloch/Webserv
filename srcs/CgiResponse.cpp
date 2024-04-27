@@ -49,24 +49,32 @@ void	CGIResponse::readCGIHeader()
 
 void	CGIResponse::createResponse()
 {
-	openBodyFile(handler.getCGI()->getCGIOutput());
-	readCGIHeader();
-	if (header_fields.find("Location") != std::string::npos)
-		body = "";
-	else if (header_fields.find("Content-Type") != std::string::npos)
-	{
-		if (header_fields.find("Content-Length") == std::string::npos)
-			header_fields.append("Content-Length: " + toString(body_size) + "\r\n");
-		body = createBodyChunk();
-		chunked_body = 1;
-	}
-	else
-	{
-		handler.setStatus(500);
-		throw CustomException("CGI Error"); // should this be done?
-	}
-	header_fields.append("\r\n");
+
 	status_line = createStatusLine();
+	body = handler.test_cgi;
+	header_fields.append("Content-Type: text/html\r\n");
+	header_fields.append("Content-Length: " + toString(body.size()) + "\r\n");
+	header_fields.append("\r\n");
+
+
+	// openBodyFile(handler.getCGI()->getCGIOutput());
+	// readCGIHeader();
+	// if (header_fields.find("Location") != std::string::npos)
+	// 	body = "";
+	// else if (header_fields.find("Content-Type") != std::string::npos)
+	// {
+	// 	if (header_fields.find("Content-Length") == std::string::npos)
+	// 		header_fields.append("Content-Length: " + toString(body_size) + "\r\n");
+	// 	body = createBodyChunk();
+	// 	chunked_body = 1;
+	// }
+	// else
+	// {
+	// 	handler.setStatus(500);
+	// 	throw CustomException("CGI Error"); // should this be done?
+	// }
+	// header_fields.append("\r\n");
+	// status_line = createStatusLine();
 
 	// need to read the header line of the CGI response
 	// needs to be at least one line seperated by newline

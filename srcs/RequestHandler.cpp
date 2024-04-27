@@ -377,13 +377,17 @@ void	RequestHandler::readCGIResponse()
 	{
 		close(cgi_handler->cgi_out[0]);
 		std::cout << "cgi content: " << test_cgi << std::endl;
-		throw CustomException("test end");
+		response->createResponse();
+		response_ready = 1;
+		// throw CustomException("test end");
 		// call cgi_create response
 		// then set response status to finished
 	}
 	else
 	{
 		buf[bytes_read] = '\0';
+		// here I want to read the buffer and start constructing the header, until I find the body
+		// the body is then added to a file which can be send in chunks
 		test_cgi.append(cgi_buf, bytes_read);
 		// std::cout << "received: " << cgi_buf << std::endl;
 	}
