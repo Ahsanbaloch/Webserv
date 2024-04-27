@@ -193,8 +193,6 @@ void	GETResponse::createResponse()
 	status_line = createStatusLine();
 	if ((handler.getStatus() >= 100 && handler.getStatus() <= 103) || handler.getStatus() == 204 || handler.getStatus() == 304)
 		body = ""; // or just initialize it like that // here no body should be created
-	else if	(handler.getHeaderInfo().getFileExtension() == ".py")
-		body = handler.getCGI()->_cgiOutputStr;
 	else
 		body = createBody();
 	

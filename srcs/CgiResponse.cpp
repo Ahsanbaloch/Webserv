@@ -149,7 +149,7 @@ void	CGIResponse::storeBody()
 }
 
 
-void	CGIResponse::processBuffer()
+bool	CGIResponse::processBuffer()
 {
 	if (!cgi_he_complete)
 		readHeaderFields();
@@ -162,7 +162,18 @@ void	CGIResponse::processBuffer()
 
 		if (cgi_header_fields.find("Location") != cgi_header_fields.end()) 
 		{
+
+			return (1);
+			// check if the file specified by location is existing
+				// if not do something
+				// else perform internal redirect (probably based on the file type)
+			
+
 			// perform internal redirect
+				// if internal redirect --> reset path, filename and file extension and research for location
+				// find new Location
+				// make getResponse
+				// status code 303 (See other); needs to be sent in this case
 			// close(cgi_handler->cgi_out[0]);
 			// response->createResponse();
 			// response_ready = 1;
@@ -179,7 +190,7 @@ void	CGIResponse::processBuffer()
 			throw CustomException("CGI Error"); // should this be done?
 		}
 	}
-
+	return (0);
 }
 
 void	CGIResponse::createHeaderFields()
@@ -233,12 +244,7 @@ void	CGIResponse::createResponse()
 	// may include status code
 		
 		// Content-Type --> if html has been created (e.g. form); status: 200
-		// Location --> local resource --> indicates to server to reprocess request with the new path
-			// if internal redircect --> reset path, filename and file extension and reseach for location
-			// find new Location
-			// make getResponse
-			// status code 303 (See other); needs to be sent in this case
-			// what if file does not exist?
+		
 
 	// if (handler.getHeaderInfo().getMethod() == "GET")
 	// {

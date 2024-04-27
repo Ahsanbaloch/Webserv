@@ -386,17 +386,23 @@ void	RequestHandler::readCGIResponse()
 	{
 		cgi_buf[bytes_read] = '\0';
 		
+		std::cout << "buffer: " << cgi_buf << std::endl;
+
 		CGIResponse* cgiResponse = dynamic_cast<CGIResponse*>(response);
 		if (cgiResponse != NULL)
-			cgiResponse->processBuffer();
-
-		// here I want to read the buffer and start constructing the header, until I find the body
-		// the body is then added to a file which can be send in chunks
-		// test_cgi.append(cgi_buf, bytes_read);
-		// std::cout << "received: " << cgi_buf << std::endl;
+		{
+			if (cgiResponse->processBuffer())
+			{
+				close(cgi_handler->cgi_out[0]);
+				request_header.makeInternalRedirect(cgiResponse->cgi_header_fields["Location"]);
+				findLocationBlock();
+				delete response;
+				response = new GETResponse(*this);
+				response->createResponse();
+				response_ready = 1;
+			}
+		}
 	}
-
-
 }
 
 void	RequestHandler::checkAllowedMethods()

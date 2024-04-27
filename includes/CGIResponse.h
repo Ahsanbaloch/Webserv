@@ -13,8 +13,8 @@ class CGIResponse: public AResponse
 {
 private:
 	bool								cgi_he_complete;
-	std::map<std::string, std::string>	cgi_header_fields;
-	std::ofstream	outfile;
+	
+	std::ofstream						outfile;
 	std::string							temp_body_filepath;
 
 	enum {
@@ -32,11 +32,12 @@ public:
 
 	void	createResponse();
 	void	readCGIHeader();
-	void	processBuffer();
+	bool	processBuffer();
 	void	readHeaderFields();
 	void	storeBody();
 	void	createHeaderFields();
 	
+	std::map<std::string, std::string>	cgi_header_fields;
 
 
 };

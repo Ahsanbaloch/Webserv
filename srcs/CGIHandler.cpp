@@ -118,6 +118,7 @@ void	CGIHandler::createArgument()
 	{
 		argv = new char*[3];
 		argv[0] = strdup(file_path.c_str());
+		std::cout << "temp body path" << handler.getTempBodyFilepath() << std::endl;
 		argv[1] = strdup(handler.getTempBodyFilepath().c_str());
 		argv[2] = NULL;
 	}
