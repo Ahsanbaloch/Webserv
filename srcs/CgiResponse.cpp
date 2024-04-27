@@ -153,20 +153,10 @@ bool	CGIResponse::processBuffer()
 
 		if (cgi_header_fields.find("Location") != cgi_header_fields.end()) 
 		{
-			return (1);
 			// check if the file specified by location is existing
 				// if not do something
 				// else perform internal redirect (probably based on the file type)
-			
-
-			// perform internal redirect
-				// if internal redirect --> reset path, filename and file extension and research for location
-				// find new Location
-				// make getResponse
-				// status code 303 (See other); needs to be sent in this case
-			// close(cgi_handler->cgi_out[0]);
-			// response->createResponse();
-			// response_ready = 1;
+			return (1);
 		}
 		else if (cgi_header_fields.find("Content-Type") != cgi_header_fields.end())
 		{
