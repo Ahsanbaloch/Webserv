@@ -193,6 +193,7 @@ void CGIHandler::_execCgi() {
 		// std::cout << "scriptPath: " << scriptPath << std::endl;
 		// std::cout << "scriptName: " << scriptName << std::endl;
 		if (execve(scriptPath.c_str(), argv, _envp) < 0) {
+			perror("execve failure");
 			printf("execve failed\n");
 			exit(1);
 		}
