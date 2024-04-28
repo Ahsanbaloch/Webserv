@@ -35,11 +35,12 @@ private:
    
     std::string identifyPathInfo();
     void setEnv();
-	void	createArgument();
+	void	createArguments();
 	void	createTempFile();
 
-    char **_envp;
-	char** argv;
+	pid_t	cgi_pid;
+    char**	env;
+	char**	argv;
   
 };
 

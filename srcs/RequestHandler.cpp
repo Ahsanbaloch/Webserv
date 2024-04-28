@@ -326,6 +326,7 @@ void	RequestHandler::processRequest()
 	}
 	catch(const std::exception& e)
 	{
+		removeTempFiles();
 		if (response != NULL)
 			delete response;
 		response = new ERRORResponse(*this);
@@ -401,6 +402,7 @@ void	RequestHandler::readCGIResponse()
 	}
 	catch(const std::exception& e)
 	{
+		removeTempFiles();
 		if (response != NULL)
 			delete response;
 		response = new ERRORResponse(*this);
@@ -600,6 +602,20 @@ void	RequestHandler::storeChunkedData()
 	chunk_length -= to_write;
 	temp_unchunked.close();
 
+}
+
+void	RequestHandler::removeTempFiles()
+{
+	if (!getTempBodyFilepath().empty())
+		remove(getTempBodyFilepath().c_str());
+	if (!temp_filename_unchunked.empty())
+		remove(temp_filename_unchunked.c_str());
+	CGIResponse* cgiResponse = dynamic_cast<CGIResponse*>(response);
+	if (cgiResponse != NULL)
+	{
+		if (!cgiResponse->getTempBodyFilePath().empty())
+			remove(cgiResponse->getTempBodyFilePath().c_str());
+	}
 }
 
 void	RequestHandler::checkMaxBodySize()

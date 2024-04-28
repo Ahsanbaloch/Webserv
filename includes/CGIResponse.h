@@ -38,6 +38,7 @@ public:
 	void	readHeaderFields();
 	void	storeBody();
 	void	createHeaderFields();
+	std::string	getTempBodyFilePath();
 	
 	std::map<std::string, std::string>	cgi_header_fields;
 

@@ -6,10 +6,13 @@ CGIHandler::CGIHandler()
 {}
 
 CGIHandler::CGIHandler(RequestHandler& src)
-	: handler(src), _envp()
+	: handler(src), env(NULL)
 {
 	if (pipe(cgi_out) < 0)
-		throw CustomException("CGIHandler: Failed to create pipes");
+	{
+		handler.setStatus(500);
+		throw CustomException("Internal Server Error: Failed to create pipe");
+	}
 }
 
 CGIHandler::CGIHandler(const CGIHandler &other)
@@ -18,16 +21,30 @@ CGIHandler::CGIHandler(const CGIHandler &other)
 	 *this = other;
 }
 
-CGIHandler::~CGIHandler() {
+CGIHandler::~CGIHandler()
+{
+	if (env != NULL)
+	{
+		for (size_t i = 0; env[i]; i++)
+			delete env[i];
+		delete env;
+	}
+	if (argv != NULL)
+	{
+		for (size_t i = 0; argv[i]; i++)
+			delete argv[i];
+		delete argv;
+	}
 }
 
 CGIHandler &CGIHandler::operator=(const CGIHandler &other) 
 {
-	if (this != &other) {
-		_envp = other._envp;
+	if (this != &other)
+	{
+		env = other.env;
 		argv = other.argv;
 		handler = other.handler;
-		}
+	}
 	return *this;
 }
 
@@ -50,53 +67,58 @@ std::string	CGIHandler::identifyPathInfo()
 
 void	CGIHandler::setEnv()
 {
-	std::vector<std::string> temp;
+	std::vector<std::string> temp_env;
 	std::string path_info = identifyPathInfo();
 	std::string doc_root = handler.getLocationConfig().root;
 	std::string	cgi_location = "/cgi-bin/";
 
-	temp.push_back("AUTH_TYPE=Basic");
+	temp_env.push_back("AUTH_TYPE=Basic");
 	if (handler.getHeaderInfo().getBodyLength() == 0)
-		temp.push_back("CONTENT_LENGTH=");
+		temp_env.push_back("CONTENT_LENGTH=");
 	else
-		temp.push_back("CONTENT_LENGTH=" + toString(handler.getHeaderInfo().getBodyLength()));
-	temp.push_back("CONTENT_TYPE=" + handler.getHeaderInfo().getHeaderFields()["content-type"]);
-	temp.push_back("DOCUMENT_ROOT=" + doc_root);
-	temp.push_back("GATEWAY_INTERFACE=CGI/1.1");
-	temp.push_back("PATH_INFO=" + path_info);
-	temp.push_back("PATH_TRANSLATED=" + doc_root + path_info);
-	temp.push_back("QUERY_STRING=" + handler.getHeaderInfo().getQuery());
-	// temp.push_back("REMOTE_ADDR=");
-	// temp.push_back("REMOTE_HOST=");
-	// temp.push_back("REMOTE_IDENT=");
-	// temp.push_back("REMOTE_USER=");
-	temp.push_back("REQUEST_METHOD=" + handler.getHeaderInfo().getMethod());
+		temp_env.push_back("CONTENT_LENGTH=" + toString(handler.getHeaderInfo().getBodyLength()));
+	temp_env.push_back("CONTENT_TYPE=" + handler.getHeaderInfo().getHeaderFields()["content-type"]);
+	temp_env.push_back("DOCUMENT_ROOT=" + doc_root);
+	temp_env.push_back("GATEWAY_INTERFACE=CGI/1.1");
+	temp_env.push_back("PATH_INFO=" + path_info);
+	temp_env.push_back("PATH_TRANSLATED=" + doc_root + path_info);
+	temp_env.push_back("QUERY_STRING=" + handler.getHeaderInfo().getQuery());
+	// temp_env.push_back("REMOTE_ADDR=");
+	// temp_env.push_back("REMOTE_HOST=");
+	// temp_env.push_back("REMOTE_IDENT=");
+	// temp_env.push_back("REMOTE_USER=");
+	temp_env.push_back("REQUEST_METHOD=" + handler.getHeaderInfo().getMethod());
 	// temp.push_back("REQUEST_URI=");
-	temp.push_back("SCRIPT_NAME=" + cgi_location + handler.getHeaderInfo().getFilename());
-	temp.push_back("SERVER_NAME=" + handler.getSelectedServer().Ip);
-	temp.push_back("SERVER_PORT=" + toString(handler.getSelectedServer().port));
-	temp.push_back("SERVER_PROTOCOL=HTTP/1.1");
-	temp.push_back("SERVER_SOFTWARE=webserv");
+	temp_env.push_back("SCRIPT_NAME=" + cgi_location + handler.getHeaderInfo().getFilename());
+	temp_env.push_back("SERVER_NAME=" + handler.getSelectedServer().Ip);
+	temp_env.push_back("SERVER_PORT=" + toString(handler.getSelectedServer().port));
+	temp_env.push_back("SERVER_PROTOCOL=HTTP/1.1");
+	temp_env.push_back("SERVER_SOFTWARE=webserv");
 
-	_envp = new char*[temp.size() + 1];
-	for (size_t i = 0; i < temp.size(); i++)
+	env = new char*[temp_env.size() + 1];
+	for (size_t i = 0; i < temp_env.size(); i++)
 	{
-		_envp[i] = new char[temp[i].size() + 1];
-		std::strcpy(_envp[i], temp[i].c_str());
+		env[i] = new char[temp_env[i].size() + 1];
+		std::strcpy(env[i], temp_env[i].c_str());
 	}
-	_envp[temp.size()] = NULL;
-	for (size_t i = 0; i < temp.size(); i++)
-		std::cout << "envp[" << i << "]: " << _envp[i] << std::endl;
+	env[temp_env.size()] = NULL;
+	for (size_t i = 0; i < temp_env.size(); i++)
+		std::cout << "env[" << i << "]: " << env[i] << std::endl;
 }
 
-void	CGIHandler::createArgument()
+// make program the first argument and path the second?
+void	CGIHandler::createArguments()
 {
 	std::string file_path = "./www/cgi-bin/" + handler.getHeaderInfo().getFilename();
 	if (handler.getHeaderInfo().getMethod() == "POST")
 	{
+		if (handler.getTempBodyFilepath().empty())
+		{
+			handler.setStatus(500);
+			throw CustomException("Internal Server Error");
+		}
 		argv = new char*[3];
 		argv[0] = strdup(file_path.c_str());
-		std::cout << "temp body path" << handler.getTempBodyFilepath() << std::endl;
 		argv[1] = strdup(handler.getTempBodyFilepath().c_str());
 		argv[2] = NULL;
 	}
@@ -110,58 +132,63 @@ void	CGIHandler::createArgument()
 
 void CGIHandler::_execCgi() 
 {
-	createArgument();
-
-	// // Fork a new process
-	pid_t pid = fork();
-	printf("fork done\n");
-	if (pid < 0)
+	createArguments();
+	cgi_pid = fork();
+	if (cgi_pid < 0)
 	{
-		throw CustomException("CGIHandler: Failed to fork process");
-    }
+		handler.setStatus(500);
+		throw CustomException("Internal Server Error: Failed to fork process");
+	}
+	if (cgi_pid == 0)
+	{
+		if (dup2(cgi_out[1], STDOUT_FILENO) < 0)
+		{
+			handler.setStatus(500);
+			throw CustomException("Internal Server Error: Failed to dup");
+		}
+		if (close(cgi_out[0]) < 0 || close(cgi_out[1] < 0))
+		{
+			handler.setStatus(500);
+			throw CustomException("Internal Server Error: Failed to close pipe ends");
+		}
 
-	if (pid == 0) { // Child process
-		// Redirect standard output to the pipe
-		dup2(cgi_out[1], STDOUT_FILENO);
-		// check for error
-
-		// close the end of the pipes
-		close(cgi_out[0]);
-		close(cgi_out[1]);
-
-		// Change to the script directory?
-		//printf("scriptPath: %s\n", scriptPath.c_str());
-		// Change to the script directory
+		// Change to the script directory ??
 		// if (chdir(scriptPath.c_str()) < 0) {
 		//     exit(1);
 		// }
 
-		if (execve(argv[0], argv, _envp) < 0)
+		if (execve(argv[0], argv, env) < 0)
 		{
-			perror("execve failure");
-			exit(1);
+			handler.setStatus(500);
+			throw CustomException("Internal Server Error: Execve failed");
 		}
 	}
-	else 
+	else
 	{
 		close(cgi_out[1]);
-
-		// put this somewhere else? // also introduce timer
-		std::cout << "Waiting for CGI script to finish execution" << std::endl;
-		int status;
-		if (waitpid(pid, &status, 0) < 0) {
-			throw CustomException("CGIHandler: Failed to wait for CGI script");
-		}
 		if (handler.getHeaderInfo().getMethod() == "POST")
 			remove(handler.getTempBodyFilepath().c_str());
-		std::cout << "WEXITSTATUS: " << WEXITSTATUS(status) << std::endl;
-		std::cout << "WIFEXITED: " << WIFEXITED(status) << std::endl;
-		// Check the exit status of the CGI script
-		// if (WIFEXITED(status) && WEXITSTATUS(status) != 0){
-		// 	close(_cgiOutputFd[0]);
-		//     handler.setStatus(404);
-		//     throw CustomException("CGIHandler: CGI script failed");
-		// }
+		int status;
+		time_t start;
+		std::time(&start);
+		while (std::difftime(std::time(NULL), start) < 10)
+		{
+			waitpid(cgi_pid, &status, WNOHANG);
+			if (WIFEXITED(status))
+				break;
+		}
+		if (!WIFEXITED(status))
+		{
+			kill(cgi_pid, SIGKILL);
+			close(cgi_out[0]);
+			handler.setStatus(504);
+			throw CustomException("Gateway Timeout");
+		}
+		if (WEXITSTATUS(status)) {
+			close(cgi_out[0]);
+			handler.setStatus(500);
+			throw CustomException("Internal Server Error");
+		}
 	}
 }
 

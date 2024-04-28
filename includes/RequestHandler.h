@@ -141,6 +141,7 @@ public:
 	void							checkForCGI();
 	void							setCGIResponse();
 	void							readCGIResponse();
+	void							removeTempFiles();
 
 	// make private?
 	enum {

@@ -17,6 +17,12 @@ CGIResponse::~CGIResponse()
 {
 }
 
+
+std::string	CGIResponse::getTempBodyFilePath()
+{
+	return (temp_body_filepath);
+}
+
 void	CGIResponse::readCGIHeader()
 {
 	std::string	line;
