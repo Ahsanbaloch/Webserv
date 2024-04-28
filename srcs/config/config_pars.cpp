@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   config_pars.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mamesser <mamesser@student.42wolfsburg.    +#+  +:+       +#+        */
+/*   By: ahsalam <ahsalam@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/04 15:08:27 by ahsalam           #+#    #+#             */
-/*   Updated: 2024/04/28 16:11:33 by mamesser         ###   ########.fr       */
+/*   Updated: 2024/04/28 17:46:15 by ahsalam          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -111,6 +111,7 @@ void	config_pars::parse_server_block(t_server_config &server_config, const std::
 	_server_root = extractServerVariable("root", globalPart);
 	_server_index = extractServerVariable("index", globalPart);
 	extractIpPort(globalPart, server_config.Ip, server_config.port);
+	extractTimeout(globalPart, server_config.timeout);
 	server_config.serverName = extractServerVariable("Server_name", globalPart);
 	server_config.bodySize = extractBodySize(globalPart);
 	_error_string = extractServerVariable("error_page", globalPart);
@@ -120,6 +121,30 @@ void	config_pars::parse_server_block(t_server_config &server_config, const std::
     	Location_block(server_config, locationPart);
 	else
 		throw InvalidLocationException();
+}
+
+void config_pars::extractTimeout(const std::string &server_block, int &timeout)
+{
+	size_t start = 0;
+	size_t end = 0;
+	timeout = 20;
+	if ((start = server_block.find("timeout", start)) != std::string::npos)
+	{
+		start = skipWhitespace(server_block, start + 7);
+		end = server_block.find(";", start);
+		if (server_block.find('\n', start) < server_block.find(';', start))
+			throw MissingSemicolonException();
+		const std::string timeout_str = server_block.substr(start, end - start);
+		std::istringstream iss(timeout_str);
+		if (!(iss >> timeout))
+			throw MissingValueException("timeout isn't int ");
+		else
+		{
+			if (timeout > 60 || timeout < 10)
+				timeout = 20;
+		}
+	}
+
 }
 
 void config_pars::extractErrorPage(int &status, std::string &page, std::string split_string, std::string merge_str)
