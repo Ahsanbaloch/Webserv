@@ -291,8 +291,6 @@ void	RequestHandler::processRequest()
 				{
 					if (cgi_detected)
 					{
-						// change to write directly to file descriptor if content type is urlendcoded
-						// ckeck in extractBodyFunction --> rename class to CGIReceiver
 						if (body_extractor == NULL)
 							body_extractor = new BodyExtractor(*this);
 						body_extractor->extractBody();

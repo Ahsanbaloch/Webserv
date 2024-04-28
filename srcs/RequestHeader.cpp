@@ -233,7 +233,7 @@ void	RequestHeader::checkFields()
 {
 	if (header_fields.find("content-length") != header_fields.end() && method == "POST")
 	{
-		if (body_length == 0)
+		if (body_length == 0 && header_fields.find("transfer-encoding") == header_fields.end())
 		{
 			handler.setStatus(400);
 			throw CustomException("Bad request: POST without body");
