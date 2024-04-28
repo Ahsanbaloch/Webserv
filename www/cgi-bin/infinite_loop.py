@@ -16,6 +16,8 @@ def create_file_from_multipart(data_file):
   Args:
       data_file: Path to the temporary file containing multipart data.
   """
+  while True:
+    print("This is an infinite loop")
   
   # Open the temporary file in binary mode
   with open(data_file, 'rb') as f:

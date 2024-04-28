@@ -10,21 +10,10 @@
 #include "config/config_pars.hpp"
 #include "defines.h"
 
-int g_num_temp_files = 0;
-int g_num_temp_unchunked_files = 0;
-int g_num_temp_raw_body = 0;
-int g_num_form = 0;
-
-
-// next:
-// 
 
 int	main(int argc, char **argv)
 {
-	// for testing multiple ports --> info incl. ip comes from config file
-	// std::vector<int> ports_test;
-	// ports_test.push_back(4141);
-	// ports_test.push_back(8181);
+	srand(time(0));
 
 	try
 	{

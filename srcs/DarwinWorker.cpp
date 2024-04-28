@@ -55,7 +55,7 @@ void	DarwinWorker::addToConnectedClients(ListeningSocket& socket)
 	int size = pending_fds.size();
 	for (int i = 0; i < size; i++)
 	{
-		ConnectionHandler* Handler = new ConnectionHandler(pending_fds[i], socket.getServerConfig());
+		ConnectionHandler* Handler = new ConnectionHandler(pending_fds[i], socket.getServerConfig(), Q);
 		connected_clients.insert(std::pair<int, ConnectionHandler*>(pending_fds[i], Handler));
 	}
 }
@@ -85,7 +85,8 @@ void	DarwinWorker::runEventLoop()
 		for (int i = 0; new_events > i; i++)
 		{
 			// when client disconnected an EOF is sent. Close fd to rm event from kqueue
-			if (event_lst[i].flags & EV_EOF)
+			if ((*reinterpret_cast<int*>(event_lst[i].udata) == Q.getListeningSocketIdent()
+				|| *reinterpret_cast<int*>(event_lst[i].udata) == Q.getConnectionSocketIdent()) && event_lst[i].flags & EV_EOF)
 			{
 				std::cout << "client disconnected\n";
 				if (connected_clients[event_lst[i].ident] != NULL)
@@ -147,6 +148,14 @@ void	DarwinWorker::runEventLoop()
 					}
 				}
 			}
+			else if (*reinterpret_cast<int*>(event_lst[i].udata) != Q.getListeningSocketIdent()
+					&& *reinterpret_cast<int*>(event_lst[i].udata) != Q.getConnectionSocketIdent())
+			{
+				connected_clients[*reinterpret_cast<int*>(event_lst[i].udata)]->getRequestHandler()->setCGIResponse();
+				connected_clients[*reinterpret_cast<int*>(event_lst[i].udata)]->getRequestHandler()->readCGIResponse();
+				connected_clients[*reinterpret_cast<int*>(event_lst[i].udata)]->setResponseStatus(connected_clients[*reinterpret_cast<int*>(event_lst[i].udata)]->getRequestHandler()->getResponseStatus());
+			}
+
 		}
 	}
 }

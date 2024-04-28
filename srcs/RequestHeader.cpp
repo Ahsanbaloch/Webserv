@@ -176,6 +176,16 @@ int		RequestHeader::getBodyLength() const
 	return (body_length);
 }
 
+
+/////////////// SETTERS //////////////////
+
+void	RequestHeader::makeInternalRedirect(std::string new_path)
+{
+	path = new_path;
+	identifyFileName();
+}
+
+
 /////////////// MAIN METHODS //////////////////
 
 void	RequestHeader::identifyFileName()
@@ -221,10 +231,17 @@ void	RequestHeader::checkHeader()
 
 void	RequestHeader::checkFields()
 {
-	// others check such as empty host field value, TE != chunked etc. is done in parsing
+	if (header_fields.find("content-length") != header_fields.end() && method == "POST")
+	{
+		if (body_length == 0 && header_fields.find("transfer-encoding") == header_fields.end())
+		{
+			handler.setStatus(400);
+			throw CustomException("Bad request: POST without body");
+		}
+	}
 	if (header_fields.find("host") == header_fields.end())
 	{
-		handler.setStatus(410);
+		handler.setStatus(400);
 		throw CustomException("Bad request 1");
 	}
 	if (!transfer_encoding_exists && !content_length_exists && method == "POST") // if both exist at the same time is check when parsing
@@ -355,6 +372,8 @@ void	RequestHeader::parseHeaderFields()
 				else if (ch == LF)
 				{
 					headers_parsing_done = 1;
+					body_beginning = handler.buf_pos; // needed?
+					header_complete = 1; // needed?
 					break;
 				}
 				else
@@ -443,7 +462,7 @@ void	RequestHeader::parseHeaderFields()
 
 			case he_cr:
 				if (ch == LF)
-					rl_state = rl_done;
+					headers_state = he_done;
 				else 
 				{
 					handler.setStatus(400);

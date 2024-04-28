@@ -4,6 +4,7 @@
 # include <string>
 # include <map>
 # include <vector>
+# include <fstream>
 # include "utils.tpp"
 
 class RequestHandler;
@@ -21,11 +22,18 @@ protected:
 	std::string		status_line;
 	std::string		header_fields;
 
+	std::ifstream	body_file;
+	std::streampos	body_size;
+	std::streampos	file_position;
+	std::streampos	file_pos_offset;
+
 	// flags
 	bool			chunked_body;
 
 	// methods
 	std::string		createStatusLine();
+	void			openBodyFile(std::string);
+	
 
 	// constructors
 	AResponse();
@@ -42,10 +50,17 @@ public:
 	std::string		getResponseStatusLine() const;
 	std::string		getRespondsHeaderFields() const;
 	std::string		getFullFilePath() const; // needed?
+	std::ifstream&	getBodyFile();
 	bool			getChunkedBodyStatus() const;
+	std::string		createBodyChunk();
+	std::streampos	getBodySize() const;
+	std::streampos	getFilePosition() const;
+	std::streampos	getFilePosOffset() const;
+
 
 	// methods
 	virtual void	createResponse() = 0;
+	void			incrementFilePosition(std::streampos);
 
 };
 

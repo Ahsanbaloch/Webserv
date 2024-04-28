@@ -105,6 +105,8 @@ public:
 	void								parseHeaderFields();
 	void								identifyFileName();
 	void								checkHeader();
+	void								makeInternalRedirect(std::string);
+
 
 };
 

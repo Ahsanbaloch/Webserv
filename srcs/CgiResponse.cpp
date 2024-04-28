@@ -1,258 +1,200 @@
-#include "CgiResponse.hpp"
-#include <fstream>
-#include <sys/fcntl.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <string>
 
-bool is_fd_open(int fd) {
-    return fcntl(fd, F_GETFD) != -1 || errno != EBADF;
-}
+#include "CGIResponse.h"
 
-CgiResponse::CgiResponse() : AResponse() {}
-
-CgiResponse::CgiResponse(RequestHandler& request_handler) : AResponse(request_handler), _envp(), _cgiOutputFd(), _cgiInputFd(){
-}
-
-CgiResponse::CgiResponse(const CgiResponse &other) : AResponse(other), _envp(other._envp), _cgiOutputStr(other._cgiOutputStr){
-	*this = other;
-}
-
-CgiResponse::~CgiResponse() {
-}
-
-CgiResponse &CgiResponse::operator=(const CgiResponse &other) {
-	if (this != &other) {
-		AResponse::operator=(other);
-		handler = other.handler;
-	}
-	return *this;
-}
-
-void CgiResponse::createResponse()
+CGIResponse::CGIResponse(RequestHandler& src)
+	: AResponse(src)
 {
-	setEnv();
-	_execCgi();
+	cgi_he_complete = 0;
+	cgi_resp_he_state = he_start;
 }
 
-std::string	CgiResponse::identifyPathInfo()
+CGIResponse::CGIResponse(/* args */)
+	: AResponse()
 {
-	std::size_t identify_path = handler.getHeaderInfo().getPath().find(handler.getHeaderInfo().getFilename());
+}
 
-	std::string path_info = handler.getHeaderInfo().getPath().substr(identify_path + handler.getHeaderInfo().getFilename().length());
-	if (path_info.empty())
-		path_info = "/";
-	return (path_info);
+CGIResponse::~CGIResponse()
+{
 }
 
 
-// what if internal redirect --> then path needs to be identified differently
-void	CgiResponse::setEnv()
+std::string	CGIResponse::getTempBodyFilePath()
 {
-	std::vector<std::string> temp;
-	std::string path_info = identifyPathInfo();
-	std::string doc_root = handler.getLocationConfig().root;
-	std::string	cgi_location = "/cgi-bin/";
+	return (temp_body_filepath);
+}
 
-	temp.push_back("AUTH_TYPE=Basic");
-	if (handler.getHeaderInfo().getBodyLength() == 0)
-		temp.push_back("CONTENT_LENGTH=");
-	else
-		temp.push_back("CONTENT_LENGTH=" + toString(handler.getHeaderInfo().getBodyLength()));
-	temp.push_back("CONTENT_TYPE=" + handler.getHeaderInfo().getHeaderFields()["content-type"]);
-	temp.push_back("DOCUMENT_ROOT=" + doc_root);
-	temp.push_back("GATEWAY_INTERFACE=CGI/1.1");
-	temp.push_back("PATH_INFO=" + path_info);
-	temp.push_back("PATH_TRANSLATED=" + doc_root + path_info);
-	temp.push_back("QUERY_STRING=" + handler.getHeaderInfo().getQuery());
-	// temp.push_back("REMOTE_ADDR=");
-	// temp.push_back("REMOTE_HOST=");
-	// temp.push_back("REMOTE_IDENT=");
-	// temp.push_back("REMOTE_USER=");
-	temp.push_back("REQUEST_METHOD=" + handler.getHeaderInfo().getMethod());
-	// temp.push_back("REQUEST_URI=");
-	temp.push_back("SCRIPT_NAME=" + cgi_location + handler.getHeaderInfo().getFilename());
-	temp.push_back("SERVER_NAME=" + handler.getSelectedServer().Ip);
-	temp.push_back("SERVER_PORT=" + toString(handler.getSelectedServer().port));
-	temp.push_back("SERVER_PROTOCOL=HTTP/1.1");
-	temp.push_back("SERVER_SOFTWARE=webserv");
+void	CGIResponse::readCGIHeader()
+{
+	std::string	line;
 
-	_envp = new char*[temp.size() + 1];
-	for (size_t i = 0; i < temp.size(); i++)
+	while(std::getline(body_file, line))
 	{
-		_envp[i] = new char[temp[i].size() + 1];
-		std::strcpy(_envp[i], temp[i].c_str());
-	}
-	_envp[temp.size()] = NULL;
-	for (size_t i = 0; i < temp.size(); i++)
-		std::cout << "envp[" << i << "]: " << _envp[i] << std::endl;
-}
-
-void CgiResponse::_writeCgiInput() {
-	std::cout << "Started writing cgi input" << std::endl << std::endl;
-	std::string temp_file_path = handler.getTempBodyFilepath();
-	printf("temp_file_path: %s\n", temp_file_path.c_str());
-	int temp_fd = open(temp_file_path.c_str(), O_RDONLY);
-	if (temp_fd == -1)
-		throw CustomException("CgiResponse: open() failed");
-	printf("temp_fd: %d\n", temp_fd);
-	char buf[500];
-	int bytes_read = 0;
-	bytes_read = read(temp_fd, buf, 499); {
-
-		buf[bytes_read] = '\0';
-		write(_cgiInputFd[1], buf, bytes_read);
-	}
-}
-
-void CgiResponse::_readCgiOutput() {
-	char buf[10];
-	int bytes_read;
-	while ((bytes_read = read(_cgiOutputFd[0], buf, 9)) > 0) {
-		buf[bytes_read] = '\0';		
-		_cgiOutputStr += buf;
-	}
-	if (bytes_read == -1)
-		perror("read");
-}
-
-void CgiResponse::_execCgi() {
-    // Create pipes for input and output
-    if (pipe(_cgiInputFd) < 0 || pipe(_cgiOutputFd) < 0) {
-        throw CustomException("CgiResponse: Failed to create pipes");
-    }
-	printf("pipe done\n");
-    // Fork a new process
-    pid_t pid = fork();
-	printf("fork done\n");
-    if (pid < 0) {
-        throw CustomException("CgiResponse: Failed to fork process");
-    }
-
-    if (pid == 0) { // Child process
-        // Redirect standard input and output to the pipes
-		printf("in child\n");
-		dup2(_cgiInputFd[0], 0);
-		dup2(_cgiOutputFd[1], 1);
-
-        // Close the other ends of the pipes
-        close(_cgiInputFd[1]);
-        close(_cgiOutputFd[0]);
-		close(_cgiInputFd[0]);
-		close(_cgiOutputFd[1]);
-
-        // Set up the environment for the CGI script
-        //_exportEnv();
-		//printf("export done\n");
-		// Change to the script directory
-		//std::string scriptPath = _scriptPath;
-		std::string scriptPath = "www/cgi-bin/" + handler.getHeaderInfo().getFilename();
-		std::string scriptName = scriptPath.substr(scriptPath.find_last_of('/') + 1);
-		// while (scriptPath.back() != '/')
-		// 	scriptPath.pop_back();
-		scriptPath = "./" + scriptPath;
-		
-		//printf("scriptPath: %s\n", scriptPath.c_str());
-        // Change to the script directory
-        // if (chdir(scriptPath.c_str()) < 0) {
-        //     exit(1);
-        // }
-
-		std::cout << "scriptPath: " << scriptPath << std::endl;
-		std::cout << "scriptName: " << scriptName << std::endl;
-		if (execve(scriptPath.c_str(), NULL, _envp) < 0) {
-			printf("execve failed\n");
-			exit(1);
-		}
-    } else { // Parent process
-        // Write the HTTP request body to the CGI script, if necessary
-        printf("in parent\n");
-		if (handler.getHeaderInfo().getMethod() == "POST") {
-            _writeCgiInput();
-        }
-        // Close the other ends of the pipes
-        close(_cgiInputFd[0]);
-        close(_cgiOutputFd[1]);
-		close(_cgiInputFd[1]);
-
-		std::cout << "Waiting for CGI script to finish execution" << std::endl;
-        // Wait for the CGI script to finish execution
-        int status;
-        if (waitpid(pid, &status, 0) < 0) {
-            throw CustomException("CgiResponse: Failed to wait for CGI script");
-        }
-
-		std::cout << "WEXITSTATUS: " << WEXITSTATUS(status) << std::endl;
-		std::cout << "WIFEXITED: " << WIFEXITED(status) << std::endl;
-        // Check the exit status of the CGI script
-        // if (WIFEXITED(status) && WEXITSTATUS(status) != 0){
-		// 	close(_cgiOutputFd[0]);
-        //     handler.setStatus(404);
-        //     throw CustomException("CgiResponse: CGI script failed");
-        // }
-
-        // Read the output of the CGI script
-		_readCgiOutput();
-		close(_cgiOutputFd[0]);
-        // Construct the HTTP response
-			body = "\n\t\t<!DOCTYPE html>\n\t\t<html lang=\"en\">\n\t\t<head>\n\t\t\t<meta charset=\"UTF-8\">\n\t\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n\t\t\t<title>CGI Page</title>\n\t\t</head>\n\t";
-			body.append(_cgiOutputStr);
-			handler.setStatus(200);
-			status_line = createStatusLine();
-			header_fields = createHeaderFields(body);
-    }
-}
-
-std::string	CgiResponse::identifyMIME()
-{
-	// also check against accept header? --> return 406 if the requirement cannot be satisfied
-	// how to best identifyMIME?
-	if (file_type == "html")
-		return ("text/html");
-	else if (file_type == "jpeg")
-		return ("image/jpeg");
-	else if (file_type == "png" || file_type == "ico")
-		return ("image/png");
-	else
-		return ("text/html"); // what should be the default return?
-}
-
-
-std::string	CgiResponse::createHeaderFields(std::string body) // probably don't need parameter anymore
-{
-	std::string	header;
-
-	if (!handler.getLocationConfig().redirect.empty())
-		header.append("Location: " + handler.getLocationConfig().redirect + "\r\n");
-	else
-	{
-		std::string mime_type = identifyMIME(); // should not be called if we have a url redirection
-		if (mime_type.empty()) // only check when body should be sent?
+		std::cout << "line: " << line << std::endl;
+		if (line.find("Status") != std::string::npos)
 		{
-			handler.setStatus(415);
-			throw CustomException("Unsupported Media Type");
+			std::string status;
+			for (std::string::iterator it = line.begin(); it != line.end(); it++)
+			{
+				if (isdigit(*it))
+					status += *it;
+			}
+			handler.setStatus(toInt(status));
+			if (toInt(status) >= 400)
+				throw CustomException("CGI Error");
 		}
+		else if (!line.empty())
+			header_fields.append(line + "\r\n");
 		else
+			break;
+		
+	}
+	file_position = body_file.tellg();
+	file_pos_offset = file_position;
+	body_size = body_size - file_position;
+}
+
+void	CGIResponse::readHeaderFields()
+{
+	unsigned char	ch;
+	std::string		header_name = "";
+	std::string		header_value = "";
+
+	// what to do if there is a syntax error?
+	while (!cgi_he_complete && ((handler.cgi_buf_pos)++ < handler.cgi_bytes_read))
+	{
+		ch = handler.cgi_buf[handler.cgi_buf_pos];
+
+		switch (cgi_resp_he_state)
 		{
-			std::ostringstream length_conversion;
-			length_conversion << body.size();
-			header.append("Content-Type: " + mime_type + "\r\n");
-			header.append("Content-Length: "); // alternatively TE: chunked?
-			header.append(length_conversion.str() + "\r\n");
-			// header.append("Location: url"); // redirect client to a different url or new path 
-			// what other headers to include?
-			// send Repsonses in Chunks?
-			// header.append("Transfer-Encoding: chunked");
-			// header.append("Cache-Control: no-cache");
-			// header.append("Set-Cookie: preference=darkmode; Domain=example.com");
-			// header.append("Server: nginx/1.21.0");
-			// header.append("Expires: Sat, 08 May 2023 12:00:00 GMT"); // If a client requests the same resource before the expiration date has passed, the server can return a cached copy of the resource.
-			// header.append("Last-Modified: Tue, 04 May 2023 16:00:00 GMT"); // This header specifies the date and time when the content being sent in the response was last modified. This can be used by clients to determine if the resource has changed since it was last requested.
-			// header.append("ETag: "abc123""); //This header provides a unique identifier for the content being sent in the response. This can be used by clients to determine if the resource has changed since it was last requested, without having to download the entire resource again.
-			// header.append("Keep-Alive: timeout=5, max=100"); // used to enable persistent connections between the client and the server, allowing multiple requests and responses to be sent over a single TCP connection
-			// Access-Control-Allow-Origin; X-Frame-Options; X-XSS-Protection; Referrer-Policy; X-Forwarded-For; X-Powered-By; 
-			header.append("\r\n");
+			case he_start:
+				if (ch == CR)
+				{
+					cgi_resp_he_state = he_end;
+					break;
+				}
+				else if (ch == LF)
+				{
+					cgi_he_complete = 1;
+					break;
+				}
+				else
+					cgi_resp_he_state = he_name;
+
+			case he_name: 
+				if (ch == ':')
+				{
+					cgi_resp_he_state = he_ws;
+					break;
+				}
+				else
+				{
+					header_name.append(1, ch);
+					break;
+				}
+
+			case he_ws:
+				if (ch == SP)
+					break;
+				else
+					cgi_resp_he_state = he_value;
+				
+			case he_value:
+				if (ch == CR)
+					break;
+				if (ch == LF)
+					cgi_resp_he_state = he_done;
+				else
+				{
+					header_value.append(1, ch);
+					break;
+				}
+
+			case he_done:
+				if (header_name == "Status")
+				{
+					std::string status;
+					for (std::string::iterator it = header_value.begin(); it != header_value.end(); it++)
+					{
+						if (isdigit(*it))
+							status += *it;
+					}
+					handler.setStatus(toInt(status));
+					if (toInt(status) >= 400)
+						throw CustomException("CGI Error");
+				}
+				cgi_header_fields.insert(std::pair<std::string, std::string>(header_name, header_value));
+				header_name.clear();
+				header_value.clear();
+				cgi_resp_he_state = he_start;
+				break;
+
+			case he_end:
+				if (ch == LF)
+				{
+					cgi_he_complete = 1;
+					break;
+				}
+				handler.setStatus(500);
+				throw CustomException("Internal Server Error");
 		}
 	}
-	return (header);
+}
+
+void	CGIResponse::storeBody()
+{
+	handler.cgi_buf_pos++;
+	int to_write = handler.cgi_bytes_read - handler.cgi_buf_pos;
+	outfile.open(temp_body_filepath, std::ios::app | std::ios::binary);
+	outfile.write(reinterpret_cast<const char*>(&handler.cgi_buf[handler.cgi_buf_pos]), to_write);
+	handler.cgi_buf_pos += to_write;
+	body_size += to_write;
+	outfile.close();
+}
+
+
+bool	CGIResponse::processBuffer()
+{
+	if (!cgi_he_complete)
+		readHeaderFields();
+	if (cgi_he_complete)
+	{
+
+		if (cgi_header_fields.find("Location") != cgi_header_fields.end()) 
+			return (1);
+		else if (cgi_header_fields.find("Content-Type") != cgi_header_fields.end())
+		{
+			if (temp_body_filepath.empty())
+				temp_body_filepath = createTmpFilePath();
+			storeBody();
+		}
+		else if (cgi_header_fields.find("Status") == cgi_header_fields.end())
+		{
+			handler.setStatus(500);
+			throw CustomException("Internal Server Error");
+		}
+	}
+	return (0);
+}
+
+void	CGIResponse::createHeaderFields()
+{
+	for (std::map<std::string, std::string>::iterator it = cgi_header_fields.begin(); it != cgi_header_fields.end(); it++)
+	{
+		if (it->first != "Status" || it->first != "Content-Length") // also remove any non-standard HTTP-headers here (probably provide a list and check)
+			header_fields.append(it->first + ": " + it->second + "\r\n");
+	}
+	header_fields.append("Content-Length: " + toString(body_size) + "\r\n");
+	header_fields.append("\r\n");
+}
+
+void	CGIResponse::createResponse()
+{
+	status_line = createStatusLine();
+	createHeaderFields();
+	if (cgi_header_fields.find("Content-Type") != cgi_header_fields.end())
+	{
+		openBodyFile(temp_body_filepath);
+		body = createBodyChunk();
+		chunked_body = 1;
+	}
 }

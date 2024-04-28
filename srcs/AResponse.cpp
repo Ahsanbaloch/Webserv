@@ -4,12 +4,12 @@
 ///////// CONSTRUCTORS & DESTRUCTORS ///////////
 
 AResponse::AResponse()
-	: handler(*new RequestHandler())
+	: handler(*new RequestHandler()), body_size(0), file_position(0), file_pos_offset(0)
 {
 }
 
 AResponse::AResponse(RequestHandler& request_handler) 
-	: handler(request_handler)
+	: handler(request_handler), body_size(0), file_position(0), file_pos_offset(0)
 {
 }
 
@@ -18,7 +18,7 @@ AResponse::~AResponse()
 }
 
 AResponse::AResponse(const AResponse& src)
-	: handler(src.handler)
+	: handler(src.handler), body_size(src.body_size), file_position(src.body_size)
 {
 	file_type = src.file_type;
 	full_file_path = src.full_file_path;
@@ -37,6 +37,9 @@ AResponse& AResponse::operator=(const AResponse& src)
 		body = src.body;
 		status_line = src.status_line;
 		header_fields = src.header_fields;
+		file_position = src.file_position;
+		file_pos_offset = src.file_pos_offset;
+		body_size = src.body_size;
 	}
 	return (*this);
 }
@@ -68,7 +71,70 @@ bool	AResponse::getChunkedBodyStatus() const
 	return (chunked_body);
 }
 
+std::ifstream&	AResponse::getBodyFile()
+{
+	return (body_file);
+}
+
+std::streampos	AResponse::getBodySize() const
+{
+	return (body_size);
+}
+
+std::streampos	AResponse::getFilePosition() const
+{
+	return (file_position);
+}
+
+
+std::streampos	AResponse::getFilePosOffset() const
+{
+	return (file_pos_offset);
+}
+
+
 ///////// METHODS ///////////
+
+
+void	AResponse::incrementFilePosition(std::streampos position_increment)
+{
+	file_position += position_increment;
+}
+
+void	AResponse::openBodyFile(std::string filepath)
+{
+	full_file_path = filepath;
+	body_file.open(full_file_path, std::ios::binary);
+	if (!body_file.is_open()) 
+	{
+		handler.setStatus(404);
+		throw CustomException("Not found");
+	}
+	body_file.seekg(0, std::ios::end);
+	body_size = body_file.tellg();
+	body_file.seekg(std::ios::beg);
+	std::cout << "file size: " << body_size << std::endl;
+}
+
+std::string	AResponse::createBodyChunk()
+{
+	char	buffer[BUFFER_SIZE];
+
+	body_file.seekg(file_position);
+	body_file.read(buffer, BUFFER_SIZE);
+	if (body_file.fail())
+	{
+		if (!body_file.eof())
+		{
+			handler.setStatus(500);
+			body_file.close();
+			throw CustomException("Internal Server Error");
+		}
+	}
+	std::streampos bytes_read = body_file.gcount();
+	std::string chunk_content(buffer, bytes_read);
+	return (chunk_content);
+}
 
 std::string	AResponse::createStatusLine()
 {

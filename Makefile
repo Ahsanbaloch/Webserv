@@ -6,7 +6,7 @@ CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -pedantic -fsanitize=address -g
 
 SRCS_DIR = ./srcs/
 
-SRCS := $(addprefix $(SRCS_DIR),ListeningSocket.cpp ListeningSocketsBlock.cpp RequestHandler.cpp CgiResponse.cpp RequestHeader.cpp AResponse.cpp GETResponse.cpp DELETEResponse.cpp ERRORResponse.cpp POSTResponse.cpp REDIRECTResponse.cpp ConnectionHandler.cpp AUploadModule.cpp UploadMultipart.cpp UploadPlain.cpp UploadUrlencoded.cpp BodyExtractor.cpp main.cpp config/config_pars_utils.cpp config/config_pars.cpp config/exception_parsing.cpp)
+SRCS := $(addprefix $(SRCS_DIR),utils.cpp ListeningSocket.cpp ListeningSocketsBlock.cpp RequestHandler.cpp CGIHandler.cpp RequestHeader.cpp AResponse.cpp CGIResponse.cpp GETResponse.cpp DELETEResponse.cpp ERRORResponse.cpp POSTResponse.cpp REDIRECTResponse.cpp ConnectionHandler.cpp AUploadModule.cpp UploadMultipart.cpp UploadPlain.cpp UploadUrlencoded.cpp BodyExtractor.cpp main.cpp config/config_pars_utils.cpp config/config_pars.cpp config/exception_parsing.cpp)
 
 ifeq ($(shell uname -s), Darwin)
     SRCS += $(addprefix $(SRCS_DIR),DarwinWorker.cpp KQueue.cpp)

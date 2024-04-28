@@ -4,12 +4,12 @@
 ///////// CONSTRUCTORS & DESTRUCTORS ///////////
 
 RequestHandler::RequestHandler()
-	: request_header(*this)
+	: request_header(*this), Q(*new KQueue())
 {
 }
 
-RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_config)
-	: request_header(*this)
+RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_config,  const KQueue& q)
+	: request_header(*this), Q(q)
 {
 	std::cout << "request handler constructed" << std::endl;
 	this->server_config = server_config;
@@ -20,13 +20,14 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	bytes_read = 0;
 	response_ready = 0;
 	request_length = 0;
-	cgi_post_int_redirect = 0;
 	internal_redirect = 0;
 	num_response_chunks_sent = 0;
 	all_chunks_sent = 0;
+	cgi_detected = 0;
 	// total_bytes_sent = 0;
 
 	buf_pos = -1;
+	cgi_buf_pos = -1;
 
 	 // also add in copy constructor etc.
 	chunk_length = 0;
@@ -38,6 +39,7 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	response = NULL;
 	uploader = NULL;
 	body_extractor = NULL;
+	cgi_handler = NULL;
 	memset(&buf, 0, sizeof(buf));
 }
 
@@ -45,13 +47,16 @@ RequestHandler::~RequestHandler()
 {
 	std::cout << "request handler destroyed" << std::endl;
 	delete response;
-	delete uploader;
-	if (body_extractor != NULL) // needed?
+	if (uploader != NULL) // needed?
+		delete uploader;
+	if (body_extractor != NULL)
 		delete body_extractor;
+	if (cgi_handler != NULL)
+		delete cgi_handler;
 }
 
 RequestHandler::RequestHandler(const RequestHandler& src)
-	: request_header(src.request_header)
+	: request_header(src.request_header), Q(src.Q)
 {
 	// tbd
 }
@@ -71,7 +76,6 @@ RequestHandler& RequestHandler::operator=(const RequestHandler& src)
 		request_length = src.request_length;
 		internal_redirect = src.internal_redirect;
 		num_response_chunks_sent = src.num_response_chunks_sent;
-		cgi_post_int_redirect = src.cgi_post_int_redirect;
 		buf_pos = src.buf_pos;
 		response = src.response;
 		uploader = src.uploader;
@@ -123,6 +127,11 @@ const RequestHeader&	RequestHandler::getHeaderInfo()
 	return (request_header);
 }
 
+CGIHandler*	RequestHandler::getCGI()
+{
+	return (cgi_handler);
+}
+
 t_server_config	RequestHandler::getSelectedServer() const
 {
 	return (server_config[selected_server]);
@@ -138,25 +147,20 @@ std::string	RequestHandler::getTempBodyFilepath() const
 	return (body_extractor->getTempBodyFilepath());
 }
 
-bool	RequestHandler::getIntRedirStatus() const
-{
-	return (internal_redirect);
-}
-
 std::string	RequestHandler::getIntRedirRefPath() const
 {
 	return (int_redir_referer_path);
-}
-
-std::string	RequestHandler::getNewFilePath() const
-{
-	return (new_file_path);
 }
 
 AUploadModule*	RequestHandler::getUploader() const
 {
 	return (uploader);
 }
+
+// AResponse*	RequestHandler::getResponse() const
+// {
+// 	return (response);
+// }
 
 int	RequestHandler::getNumResponseChunks() const
 {
@@ -167,6 +171,8 @@ bool	RequestHandler::getChunksSentCompleteStatus() const
 {
 	return (all_chunks_sent);
 }
+
+
 
 ///////// SETTERS ///////////
 
@@ -187,14 +193,7 @@ void	RequestHandler::sendResponse()
 		if (num_response_chunks_sent > 0)
 		{
 			std::string body_chunk;
-			GETResponse* get = dynamic_cast<GETResponse*>(response);
-			if (get)
-				body_chunk = get->getBodyFromFile(); // need to catch errors thrown in here also somewhere and provide error response
-			else
-			{
-				// need to send a error response in this case
-				throw CustomException("failed when reading from file");
-			}
+			body_chunk = response->createBodyChunk();
 			resp = body_chunk;
 		}
 		else
@@ -204,7 +203,6 @@ void	RequestHandler::sendResponse()
 	else
 		resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
 	
-
 	int bytes_sent = send(connection_fd, resp.c_str(), resp.length(), 0);
 	if (bytes_sent == -1)
 	{
@@ -214,29 +212,21 @@ void	RequestHandler::sendResponse()
 	}
 	if (response->getChunkedBodyStatus())
 	{
-		GETResponse* get = dynamic_cast<GETResponse*>(response);
-		if (get)
+		if (num_response_chunks_sent == 1)
+			bytes_sent -= response->getResponseStatusLine().length() + response->getRespondsHeaderFields().length();
+		if (bytes_sent > 0)
+			response->incrementFilePosition(bytes_sent);
+		if (response->getFilePosition() - response->getFilePosOffset() == response->getBodySize())
 		{
-			if (num_response_chunks_sent == 1)
-				bytes_sent -= response->getResponseStatusLine().length() + response->getRespondsHeaderFields().length();
-			if (bytes_sent > 0)
-				get->incrementFilePosition(bytes_sent);
-			if (get->getFilePosition() == get->getFileSize())
-			{
-				all_chunks_sent = 1;
-				get->getInputFile().close();
-			}
-		}
-		else
-		{
-			// need to send a error response in this case
-			std::cout << "error resetting file position" << std::endl;
+			all_chunks_sent = 1;
+			response->getBodyFile().close();
 		}
 	}
 }
 
 void	RequestHandler::processRequest()
 {
+	// always memset(buffer, 0, sizeof(buffer)) after buffer has been handled?
 	buf_pos = -1;
 	bytes_read = recv(connection_fd, buf, BUFFER_SIZE, 0);
 	if (bytes_read == -1)
@@ -272,6 +262,7 @@ void	RequestHandler::processRequest()
 		if (request_header.getHeaderStatus())
 		{
 			request_header.checkHeader();
+			checkForCGI();
 
 			//for testing: print received headers
 			printf("\nheaders\n");
@@ -298,12 +289,11 @@ void	RequestHandler::processRequest()
 					unchunkBody();
 				if (!getHeaderInfo().getTEStatus() || body_unchunked)
 				{
-					if (request_header.getFileExtension() == ".py") // what if other cgi extension?
+					if (cgi_detected)
 					{
 						if (body_extractor == NULL)
 							body_extractor = new BodyExtractor(*this);
 						body_extractor->extractBody();
-						std::cout << body_extractor->getTempBodyFilepath() << std::endl;
 					}
 					else
 					{
@@ -318,6 +308,13 @@ void	RequestHandler::processRequest()
 			if (!request_header.getBodyStatus() || (uploader != NULL && uploader->getUploadStatus())
 				|| !getLocationConfig().redirect.empty() || (body_extractor != NULL && body_extractor->getExtractionStatus()))
 			{
+				if (cgi_detected) // also check for content type
+				{
+					std::cout << "CGI response" << std::endl;
+					cgi_handler->execute();
+					return ;
+				}
+
 				// std::cout << "body content: " << request_body.body << std::endl;
 				response = prepareResponse(); // how to handle errors in here?
 				response->createResponse(); // how to handle errors in here?
@@ -327,15 +324,93 @@ void	RequestHandler::processRequest()
 	}
 	catch(const std::exception& e)
 	{
-		// delete response before reassigning if response != NULL ?
-		response = new ERRORResponse(*this); // need to free this somewhere
+		removeTempFiles();
+		if (response != NULL)
+			delete response;
+		response = new ERRORResponse(*this);
 		response->createResponse();
 		response_ready = 1;
 		std::cerr << e.what() << '\n';
 	}
 }
 
-void		RequestHandler::checkAllowedMethods()
+void	RequestHandler::checkForCGI()
+{
+	if (getLocationConfig().path == "/cgi-bin")
+	{
+		if (find(getLocationConfig().cgi_ext.begin(), getLocationConfig().cgi_ext.end(), request_header.getFileExtension()) == getLocationConfig().cgi_ext.end())
+		{
+			status = 403; // which status should be set here? 
+			throw CustomException("Forbidden");
+		}
+		else
+		{
+			cgi_detected = 1;
+			cgi_handler = new CGIHandler(*this);
+			// add cgi_out to multiplexer
+			struct kevent cgi_event;
+			// may make kqeue ref not constant so that identifier can be set
+			std::cout << "origin connectionf fd: " << connection_fd << std::endl;
+			EV_SET(&cgi_event, cgi_handler->cgi_out[0], EVFILT_READ, EV_ADD, 0, 0, &connection_fd);
+			if (kevent(Q.getKQueueFD(), &cgi_event, 1, NULL, 0, NULL) == -1)
+			{
+				perror("Failure: ");
+				throw CustomException("Failed when registering events for CGI output\n");
+			}
+		}
+	}
+
+	// also check execution rights here?
+}
+
+
+void	RequestHandler::readCGIResponse()
+{
+	try
+	{
+		cgi_buf_pos = -1;
+		cgi_bytes_read = read(cgi_handler->cgi_out[0], cgi_buf, BUFFER_SIZE);
+		if (cgi_bytes_read == -1)
+			perror("recv");
+		else if (cgi_bytes_read == 0)
+		{
+			close(cgi_handler->cgi_out[0]);
+			response->createResponse();
+			response_ready = 1;
+		}
+		else
+		{
+			cgi_buf[bytes_read] = '\0';
+
+			CGIResponse* cgiResponse = dynamic_cast<CGIResponse*>(response);
+			if (cgiResponse != NULL)
+			{
+				if (cgiResponse->processBuffer())
+				{
+					close(cgi_handler->cgi_out[0]);
+					request_header.makeInternalRedirect(cgiResponse->cgi_header_fields["Location"]);
+					findLocationBlock();
+					delete response;
+					response = new GETResponse(*this);
+					response->createResponse();
+					response_ready = 1;
+				}
+			}
+		}
+	}
+	catch(const std::exception& e)
+	{
+		removeTempFiles();
+		if (response != NULL)
+			delete response;
+		response = new ERRORResponse(*this);
+		response->createResponse();
+		response_ready = 1;
+		std::cerr << e.what() << '\n';
+	}
+}
+
+void	RequestHandler::checkAllowedMethods()
 {
 	if (request_header.getMethod() == "GET" && !getLocationConfig().GET)
 	{
@@ -358,7 +433,8 @@ void RequestHandler::checkInternalRedirect()
 {
 	if (request_header.getFileExtension().empty())
 	{
-		new_file_path = getLocationConfig().index;
+		std::cout << "initial path: " << request_header.getPath() << std::endl;
+		std::string new_file_path = getLocationConfig().index;
 		if (access(new_file_path.c_str(), F_OK) == 0)
 		{
 			internal_redirect = 1;
@@ -368,12 +444,10 @@ void RequestHandler::checkInternalRedirect()
 			checkAllowedMethods();
 			if (!getLocationConfig().redirect.empty())
 				return ;
-			new_file_path = getLocationConfig().root + new_file_path.substr(orig_root.length());
-			if (getLocationConfig().path == "/cgi-bin" && new_file_path.substr(new_file_path.find_last_of('.')) == ".py")
-				cgi_post_int_redirect = 1;
+			new_file_path = new_file_path.substr(orig_root.length());
+			request_header.makeInternalRedirect(new_file_path);
+			std::cout << "new path: " << request_header.getPath() << std::endl;
 		}
-		else
-			new_file_path.erase();
 	}
 }
 
@@ -388,28 +462,20 @@ void RequestHandler::determineLocationBlock()
 		findLocationBlock();
 }
 
+void	RequestHandler::setCGIResponse()
+{
+	if (response == NULL)
+		response = new CGIResponse(*this);
+}
+
 AResponse* RequestHandler::prepareResponse()
 {
-	// when checking for cgi, also check "cgi_post_int_redirect" status
-	// inside cgi should check internal redirect status. If true, then different path has to be selected
-	if (cgi_post_int_redirect)
-	{
-		setStatus(501);
-		throw CustomException("Not implemented");
-	}
-
 	if (!getLocationConfig().redirect.empty())
 		return (new REDIRECTResponse(*this));
-	if (request_header.getFileExtension() == ".py")
-	{
-		std::cout << "CGI response" << std::endl;
-		return (new CgiResponse(*this)); // need to free this somewhere
-	}
-	//CGi Extension Check to be done here
 	else if (request_header.getMethod() == "GET")
-		return (new GETResponse(*this)); // need to free this somewhere
+		return (new GETResponse(*this));
 	else if (request_header.getMethod() == "DELETE")
-		return (new DELETEResponse(*this)); // need to free this somewhere
+		return (new DELETEResponse(*this));
 	else if (request_header.getMethod() == "POST")
 		return (new POSTResponse(*this));
 	else
@@ -417,7 +483,6 @@ AResponse* RequestHandler::prepareResponse()
 		setStatus(501);
 		throw CustomException("Not implemented");
 	}
-		
 }
 
 
@@ -454,15 +519,7 @@ AUploadModule*	RequestHandler::checkContentType()
 
 void	RequestHandler::findLocationBlock()
 {
-	std::vector<std::string> uri_path_items;
-	if (response == NULL && !internal_redirect)
-		uri_path_items = splitPath(request_header.getPath(), '/');
-	else
-	{
-		std::string temp = new_file_path.substr(getLocationConfig().root.length()); // replace after config parser update
-		// std::string temp = response->getFullFilePath().substr(getLocationConfig().root.length());
-		uri_path_items = splitPath(temp, '/');
-	}
+	std::vector<std::string> uri_path_items = splitPath(request_header.getPath(), '/');
 	int	size = server_config[selected_server].locations.size();
 	int	max = 0;
 	for (int i = 0; i < size; i++)
@@ -521,8 +578,6 @@ void	RequestHandler::findServerBlock()
 	}
 }
 
-
-
 std::string	RequestHandler::getUnchunkedDataFile() const
 {
 	return (temp_filename_unchunked);
@@ -536,10 +591,7 @@ int			RequestHandler::getTotalChunkSize() const
 void	RequestHandler::storeChunkedData()
 {
 	if (temp_filename_unchunked.empty())
-	{
-		g_num_temp_unchunked_files++;
-		temp_filename_unchunked = "www/temp/" + toString(g_num_temp_unchunked_files) + ".bin";
-	}
+		temp_filename_unchunked = createTmpFilePath();
 
 	temp_unchunked.open(temp_filename_unchunked, std::ios::app | std::ios::binary);
 	int to_write = std::min(getBytesRead() - buf_pos, chunk_length);
@@ -548,6 +600,20 @@ void	RequestHandler::storeChunkedData()
 	chunk_length -= to_write;
 	temp_unchunked.close();
 
+}
+
+void	RequestHandler::removeTempFiles()
+{
+	if (body_extractor != NULL && !getTempBodyFilepath().empty())
+		remove(getTempBodyFilepath().c_str());
+	if (!temp_filename_unchunked.empty())
+		remove(temp_filename_unchunked.c_str());
+	CGIResponse* cgiResponse = dynamic_cast<CGIResponse*>(response);
+	if (cgiResponse != NULL)
+	{
+		if (!cgiResponse->getTempBodyFilePath().empty())
+			remove(cgiResponse->getTempBodyFilePath().c_str());
+	}
 }
 
 void	RequestHandler::checkMaxBodySize()

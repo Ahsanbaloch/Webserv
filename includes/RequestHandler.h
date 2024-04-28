@@ -7,6 +7,7 @@
 # include <vector>
 # include <sstream>
 # include <cstdio>
+# include <algorithm>
 # include "CustomException.h"
 # include "RequestHeader.h"
 # include "AUploadModule.h"
@@ -17,12 +18,15 @@
 # include "GETResponse.h"
 # include "DELETEResponse.h"
 # include "ERRORResponse.h"
-# include "CgiResponse.hpp"
+# include "CGIHandler.h"
+# include "CGIResponse.h"
 # include "POSTResponse.h"
 # include "REDIRECTResponse.h"
 # include "BodyExtractor.h"
+# include "KQueue.h"
 # include "config/config_pars.hpp"
 # include "defines.h"
+# include "utils.h"
 # include "utils.tpp"
 
 
@@ -30,13 +34,14 @@ class RequestHandler
 {
 private:
 	RequestHeader					request_header;
+	CGIHandler*						cgi_handler;
 	AUploadModule*					uploader;
 	AResponse*						response;
 	BodyExtractor*					body_extractor;
+	const KQueue&					Q;
 
 	// vars
 	std::vector<t_server_config>	server_config;
-	std::string						new_file_path; // add to header?
 	std::string						int_redir_referer_path;
 	int								status;
 	int								selected_location;
@@ -55,9 +60,9 @@ private:
 
 	// flags
 	bool							response_ready;
-	bool							internal_redirect;
-	bool							cgi_post_int_redirect;
+	bool							internal_redirect; // needed?
 	bool							all_chunks_sent;
+	bool							cgi_detected;
 	
 	// states
 	enum {
@@ -83,13 +88,14 @@ public:
 	// constructors & destructors
 	RequestHandler();
 	RequestHandler& operator=(const RequestHandler&);
-	RequestHandler(int, std::vector<t_server_config>); // get ServerConfig as a reference? // might be able to remove int connection_fd as this is now part of the connection handler
+	RequestHandler(int, std::vector<t_server_config>, const KQueue&); // get ServerConfig as a reference? // might be able to remove int connection_fd as this is now part of the connection handler
 	~RequestHandler();
 
 	// getters
 	std::vector<t_server_config>	getServerConfig() const;
 	s_location_config				getLocationConfig() const;
 	AUploadModule*					getUploader() const;
+	// AResponse*						getResponse() const;
 	int								getSelectedLocation() const; // only for testing purposes
 	t_server_config					getSelectedServer() const; /// should probably return t_server_config
 	int								getStatus() const;
@@ -97,13 +103,12 @@ public:
 	int								getBytesRead() const;
 	int								getRequestLength() const;
 	const RequestHeader&			getHeaderInfo();
+	CGIHandler*						getCGI();
 	std::string						getUnchunkedDataFile() const;
 	int								getTotalChunkSize() const;
 	bool							getUnchunkingStatus() const;
 	std::string						getTempBodyFilepath() const;
 	std::string						getIntRedirRefPath() const;
-	bool							getIntRedirStatus() const;
-	std::string						getNewFilePath() const;
 	int								getNumResponseChunks() const;
 
 	bool							getChunksSentCompleteStatus() const;
@@ -115,6 +120,11 @@ public:
 	unsigned char					buf[BUFFER_SIZE + 1];
 	int								buf_pos;
 	
+	unsigned char					cgi_buf[BUFFER_SIZE + 1];
+	int								cgi_buf_pos;
+	// std::string						test_cgi;
+	int								cgi_bytes_read;
+
 	// methods
 	void							determineLocationBlock();
 	void							processRequest();
@@ -128,6 +138,10 @@ public:
 	std::vector<std::string>		splitPath(std::string input, char delim);
 	AResponse*						prepareResponse();
 	AUploadModule*					checkContentType();
+	void							checkForCGI();
+	void							setCGIResponse();
+	void							readCGIResponse();
+	void							removeTempFiles();
 
 	// make private?
 	enum {

@@ -59,9 +59,12 @@ void	UploadUrlencoded::storeInJSON()
 {
 	std::string data = convertToJSON();
 
-	g_num_form++;
-	filepath_outfile = "www/form_data/user" + toString(g_num_form) + ".json";
-
+	while (1)
+	{
+		filepath_outfile = "www/form_data/" + genRandomFileName(10) + ".json";
+		if (access(filepath_outfile.c_str(), F_OK) != 0)
+			break;
+	}
 	
 	std::ofstream file(filepath_outfile.c_str());
 	if (file.is_open())
