@@ -23,12 +23,12 @@ int	main(int argc, char **argv)
 
 		
 		// for testing
-		for (std::map<std::string, std::vector<t_server_config> >::iterator it = serverConfigsMap.begin(); it != serverConfigsMap.end(); it++)
-		{
-			for (std::vector<t_server_config>::iterator it2 = it->second.begin(); it2 != it->second.end(); it2++)
-			{
-				std::cout << "port and server name: " << it2->port << " " << it2->serverName << std::endl;
-				std::cout << "timeout : " << it2->timeout << std::endl;
+		// for (std::map<std::string, std::vector<t_server_config> >::iterator it = serverConfigsMap.begin(); it != serverConfigsMap.end(); it++)
+		// {
+		// 	for (std::vector<t_server_config>::iterator it2 = it->second.begin(); it2 != it->second.end(); it2++)
+		// 	{
+		// 		std::cout << "port and server name: " << it2->port << " " << it2->serverName << std::endl;
+		// 		std::cout << "timeout : " << it2->timeout << std::endl;
 		// 		for (std::vector<t_location_config>::iterator it3 = it2->locations.begin(); it3 != it2->locations.end(); it3++)
 		// 		{
 		// 			std::cout << "error page : "  << it3->errorPage.html_page << std::endl;
@@ -50,8 +50,8 @@ int	main(int argc, char **argv)
 		// 			}
 		// 		std::cout << "..." << std::endl;
 		// 		}
-			}
-		}
+		// 	}
+		// }
 
 		// Create Server object (create listening sockets, bind, set non-blocking, listen)
 		ListeningSocketsBlock SocketsBlock(serverConfigsMap); // here goes the config vector; objects will be added to correct listeningSocket (alt: create and return map<socket_fd, ConfigData obj>)
