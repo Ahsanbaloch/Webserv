@@ -143,6 +143,8 @@ public:
 	void							readCGIResponse();
 	void							removeTempFiles();
 
+	bool							check_header;
+
 	// make private?
 	enum {
 		unknown = 0,
