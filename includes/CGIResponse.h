@@ -7,6 +7,7 @@
 # include "RequestHandler.h"
 # include "AResponse.h"
 # include "CGIHandler.h"
+# include "utils.h"
 # include "utils.tpp"
 
 class CGIResponse: public AResponse
@@ -20,6 +21,7 @@ private:
 	enum {
 		he_start = 0,
 		he_name,
+		he_ws,
 		he_value,
 		he_done,
 		he_end

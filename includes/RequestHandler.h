@@ -26,6 +26,7 @@
 # include "KQueue.h"
 # include "config/config_pars.hpp"
 # include "defines.h"
+# include "utils.h"
 # include "utils.tpp"
 
 

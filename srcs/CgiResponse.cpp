@@ -77,7 +77,7 @@ void	CGIResponse::readHeaderFields()
 			case he_name: 
 				if (ch == ':')
 				{
-					cgi_resp_he_state = he_value;
+					cgi_resp_he_state = he_ws;
 					break;
 				}
 				else
@@ -85,11 +85,15 @@ void	CGIResponse::readHeaderFields()
 					header_name.append(1, ch);
 					break;
 				}
-				
-			case he_value:
+
+			case he_ws:
 				if (ch == SP)
 					break;
-				else if (ch == CR)
+				else
+					cgi_resp_he_state = he_value;
+				
+			case he_value:
+				if (ch == CR)
 					break;
 				if (ch == LF)
 					cgi_resp_he_state = he_done;
@@ -112,8 +116,7 @@ void	CGIResponse::readHeaderFields()
 					if (toInt(status) >= 400)
 						throw CustomException("CGI Error");
 				}
-				else
-					cgi_header_fields.insert(std::pair<std::string, std::string>(header_name, header_value));
+				cgi_header_fields.insert(std::pair<std::string, std::string>(header_name, header_value));
 				header_name.clear();
 				header_value.clear();
 				cgi_resp_he_state = he_start;
@@ -125,7 +128,7 @@ void	CGIResponse::readHeaderFields()
 					cgi_he_complete = 1;
 					break;
 				}
-				handler.setStatus(500); // different error
+				handler.setStatus(500);
 				throw CustomException("Internal Server Error");
 		}
 	}
@@ -133,7 +136,6 @@ void	CGIResponse::readHeaderFields()
 
 void	CGIResponse::storeBody()
 {
-	// also might do content length check
 	handler.cgi_buf_pos++;
 	int to_write = handler.cgi_bytes_read - handler.cgi_buf_pos;
 	outfile.open(temp_body_filepath, std::ios::app | std::ios::binary);
@@ -152,22 +154,17 @@ bool	CGIResponse::processBuffer()
 	{
 
 		if (cgi_header_fields.find("Location") != cgi_header_fields.end()) 
-		{
-			// check if the file specified by location is existing
-				// if not do something
-				// else perform internal redirect (probably based on the file type)
 			return (1);
-		}
 		else if (cgi_header_fields.find("Content-Type") != cgi_header_fields.end())
 		{
 			if (temp_body_filepath.empty())
-				temp_body_filepath = "www/temp_body/testcgi.bin";
+				temp_body_filepath = createTmpFilePath();
 			storeBody();
 		}
-		else 
+		else if (cgi_header_fields.find("Status") == cgi_header_fields.end())
 		{
 			handler.setStatus(500);
-			throw CustomException("CGI Error"); // should this be done?
+			throw CustomException("Internal Server Error");
 		}
 	}
 	return (0);
@@ -175,64 +172,23 @@ bool	CGIResponse::processBuffer()
 
 void	CGIResponse::createHeaderFields()
 {
-	// for testing
-	header_fields.append("Content-Type: text/html\r\n");
+	for (std::map<std::string, std::string>::iterator it = cgi_header_fields.begin(); it != cgi_header_fields.end(); it++)
+	{
+		if (it->first != "Status" || it->first != "Content-Length") // also remove any non-standard HTTP-headers here (probably provide a list and check)
+			header_fields.append(it->first + ": " + it->second + "\r\n");
+	}
 	header_fields.append("Content-Length: " + toString(body_size) + "\r\n");
 	header_fields.append("\r\n");
-
 }
 
 void	CGIResponse::createResponse()
 {
 	status_line = createStatusLine();
 	createHeaderFields();
-	// if (header_fields.find("Location") != std::string::npos)
-	// {
-	// 	; // make internal redirect
-	// }
 	if (cgi_header_fields.find("Content-Type") != cgi_header_fields.end())
 	{
 		openBodyFile(temp_body_filepath);
 		body = createBodyChunk();
 		chunked_body = 1;
 	}
-
-
-
-
-	// openBodyFile(handler.getCGI()->getCGIOutput());
-	// readCGIHeader();
-	// if (header_fields.find("Location") != std::string::npos)
-	// 	body = "";
-	// else if (header_fields.find("Content-Type") != std::string::npos)
-	// {
-	// 	if (header_fields.find("Content-Length") == std::string::npos)
-	// 		header_fields.append("Content-Length: " + toString(body_size) + "\r\n");
-	// 	body = createBodyChunk();
-	// 	chunked_body = 1;
-	// }
-	// else
-	// {
-	// 	handler.setStatus(500);
-	// 	throw CustomException("CGI Error"); // should this be done?
-	// }
-	// header_fields.append("\r\n");
-	// status_line = createStatusLine();
-
-	// need to read the header line of the CGI response
-	// needs to be at least one line seperated by newline
-	// may include status code
-		
-		// Content-Type --> if html has been created (e.g. form); status: 200
-		
-
-	// if (handler.getHeaderInfo().getMethod() == "GET")
-	// {
-		//	Content-Type --> if html has been created (e.g. form); status: 200
-	// }
-	// else
-	// {
-	// 	handler.setStatus(200);
-
-	// }
 }

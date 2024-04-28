@@ -367,41 +367,46 @@ void	RequestHandler::checkForCGI()
 
 void	RequestHandler::readCGIResponse()
 {
-	cgi_buf_pos = -1;
-
-	cgi_bytes_read = read(cgi_handler->cgi_out[0], cgi_buf, BUFFER_SIZE);
-	if (cgi_bytes_read == -1)
-		perror("recv");
-	else if (cgi_bytes_read == 0)
+	try
 	{
-		close(cgi_handler->cgi_out[0]);
-		// std::cout << "cgi content: " << test_cgi << std::endl;
-		response->createResponse();
-		response_ready = 1;
-		// throw CustomException("test end");
-		// call cgi_create response
-		// then set response status to finished
-	}
-	else
-	{
-		cgi_buf[bytes_read] = '\0';
-		
-		std::cout << "buffer: " << cgi_buf << std::endl;
-
-		CGIResponse* cgiResponse = dynamic_cast<CGIResponse*>(response);
-		if (cgiResponse != NULL)
+		cgi_buf_pos = -1;
+		cgi_bytes_read = read(cgi_handler->cgi_out[0], cgi_buf, BUFFER_SIZE);
+		if (cgi_bytes_read == -1)
+			perror("recv");
+		else if (cgi_bytes_read == 0)
 		{
-			if (cgiResponse->processBuffer())
+			close(cgi_handler->cgi_out[0]);
+			response->createResponse();
+			response_ready = 1;
+		}
+		else
+		{
+			cgi_buf[bytes_read] = '\0';
+
+			CGIResponse* cgiResponse = dynamic_cast<CGIResponse*>(response);
+			if (cgiResponse != NULL)
 			{
-				close(cgi_handler->cgi_out[0]);
-				request_header.makeInternalRedirect(cgiResponse->cgi_header_fields["Location"]);
-				findLocationBlock();
-				delete response;
-				response = new GETResponse(*this);
-				response->createResponse();
-				response_ready = 1;
+				if (cgiResponse->processBuffer())
+				{
+					close(cgi_handler->cgi_out[0]);
+					request_header.makeInternalRedirect(cgiResponse->cgi_header_fields["Location"]);
+					findLocationBlock();
+					delete response;
+					response = new GETResponse(*this);
+					response->createResponse();
+					response_ready = 1;
+				}
 			}
 		}
+	}
+	catch(const std::exception& e)
+	{
+		if (response != NULL)
+			delete response;
+		response = new ERRORResponse(*this);
+		response->createResponse();
+		response_ready = 1;
+		std::cerr << e.what() << '\n';
 	}
 }
 
@@ -573,8 +578,6 @@ void	RequestHandler::findServerBlock()
 	}
 }
 
-
-
 std::string	RequestHandler::getUnchunkedDataFile() const
 {
 	return (temp_filename_unchunked);
@@ -588,10 +591,7 @@ int			RequestHandler::getTotalChunkSize() const
 void	RequestHandler::storeChunkedData()
 {
 	if (temp_filename_unchunked.empty())
-	{
-		g_num_temp_unchunked_files++;
-		temp_filename_unchunked = "www/temp/" + toString(g_num_temp_unchunked_files) + ".bin";
-	}
+		temp_filename_unchunked = createTmpFilePath();
 
 	temp_unchunked.open(temp_filename_unchunked, std::ios::app | std::ios::binary);
 	int to_write = std::min(getBytesRead() - buf_pos, chunk_length);

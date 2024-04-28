@@ -7,5 +7,6 @@
 # include <string>
 
 std::string	createTmpFilePath();
+std::string	genRandomFileName(int);
 
 #endif

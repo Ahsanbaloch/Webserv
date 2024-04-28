@@ -1,4 +1,5 @@
 
+#include <string>
 #include "utils.h"
 
 std::string	genRandomFileName(int len)
@@ -17,7 +18,6 @@ std::string	createTmpFilePath()
 {
 	std::string filepath;
 
-	std::cout << "here" << std::endl;
 	while(1)
 	{
 		filepath = "www/temp/" + genRandomFileName(10) + ".bin";

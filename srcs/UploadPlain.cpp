@@ -63,8 +63,12 @@ void	UploadPlain::uploadData()
 		}
 		else
 		{
-			g_num_temp_files++;
-			filepath_outfile = handler.getLocationConfig().uploadDir + "/" + "textfile" + toString(g_num_temp_files) + ".txt";
+			while (1)
+			{
+				filepath_outfile = handler.getLocationConfig().uploadDir + "/" + genRandomFileName(10) + ".txt";
+				if (access(filepath_outfile.c_str(), F_OK) != 0)
+					break;
+			}
 		}
 	}
 
