@@ -45,7 +45,7 @@ CGIHandler &CGIHandler::operator=(const CGIHandler &other)
 		argv = other.argv;
 		handler = other.handler;
 	}
-	return *this;
+	return (*this);
 }
 
 

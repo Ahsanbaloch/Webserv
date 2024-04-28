@@ -231,10 +231,17 @@ void	RequestHeader::checkHeader()
 
 void	RequestHeader::checkFields()
 {
-	// others check such as empty host field value, TE != chunked etc. is done in parsing
+	if (header_fields.find("content-length") != header_fields.end() && method == "POST")
+	{
+		if (body_length == 0)
+		{
+			handler.setStatus(400);
+			throw CustomException("Bad request: POST without body");
+		}
+	}
 	if (header_fields.find("host") == header_fields.end())
 	{
-		handler.setStatus(410);
+		handler.setStatus(400);
 		throw CustomException("Bad request 1");
 	}
 	if (!transfer_encoding_exists && !content_length_exists && method == "POST") // if both exist at the same time is check when parsing

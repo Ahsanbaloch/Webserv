@@ -606,7 +606,7 @@ void	RequestHandler::storeChunkedData()
 
 void	RequestHandler::removeTempFiles()
 {
-	if (!getTempBodyFilepath().empty())
+	if (body_extractor != NULL && !getTempBodyFilepath().empty())
 		remove(getTempBodyFilepath().c_str());
 	if (!temp_filename_unchunked.empty())
 		remove(temp_filename_unchunked.c_str());
