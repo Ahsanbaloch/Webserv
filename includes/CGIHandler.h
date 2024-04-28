@@ -22,9 +22,6 @@ public:
     CGIHandler &operator=(const CGIHandler &other);
 
 	void execute();
-	std::string	getCGIOutput();
-
-	std::string _cgiOutputStr;
 
 	int	cgi_out[2];
 
@@ -34,8 +31,6 @@ private:
 
     std::string createHeaderFields(std::string);
     std::string identifyMIME();
-    void _writeCgiInput();
-    void _readCgiOutput();
     void _execCgi();
    
     std::string identifyPathInfo();
@@ -45,12 +40,6 @@ private:
 
     char **_envp;
 	char** argv;
-	std::string	temp_file_path;
-
-
-    int _cgiOutputFd[2];
-    int _cgiInputFd[2];
-	int fd_out;
   
 };
 

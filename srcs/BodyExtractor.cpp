@@ -64,7 +64,7 @@ void	BodyExtractor::extractBody()
 		if (temp_body_filepath.empty())
 		{
 			g_num_temp_raw_body++;
-			temp_body_filepath = "www/temp_body/temp" + toString(g_num_temp_raw_body) + ".bin";
+			temp_body_filepath = "www/temp/" + toString(g_num_temp_raw_body) + ".bin";
 		}
 
 		handler.buf_pos++;

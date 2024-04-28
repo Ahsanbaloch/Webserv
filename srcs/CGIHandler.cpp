@@ -1,16 +1,12 @@
 #include "CGIHandler.h"
 #include "RequestHandler.h"
 
-bool is_fd_open(int fd) {
-    return fcntl(fd, F_GETFD) != -1 || errno != EBADF;
-}
-
 CGIHandler::CGIHandler()
 	: handler(*new RequestHandler())
 {}
 
 CGIHandler::CGIHandler(RequestHandler& src)
-	: handler(src), _envp(), _cgiOutputFd(), _cgiInputFd()
+	: handler(src), _envp()
 {
 	if (pipe(cgi_out) < 0)
 		throw CustomException("CGIHandler: Failed to create pipes");
@@ -31,15 +27,10 @@ CGIHandler &CGIHandler::operator=(const CGIHandler &other)
 		_envp = other._envp;
 		argv = other.argv;
 		handler = other.handler;
-		_cgiOutputStr = other._cgiOutputStr;
-	}
+		}
 	return *this;
 }
 
-std::string	CGIHandler::getCGIOutput()
-{
-	return (temp_file_path);
-}
 
 void CGIHandler::execute()
 {
@@ -57,8 +48,6 @@ std::string	CGIHandler::identifyPathInfo()
 	return (path_info);
 }
 
-
-// what if internal redirect --> then path needs to be identified differently
 void	CGIHandler::setEnv()
 {
 	std::vector<std::string> temp;
@@ -100,17 +89,6 @@ void	CGIHandler::setEnv()
 		std::cout << "envp[" << i << "]: " << _envp[i] << std::endl;
 }
 
-void CGIHandler::_readCgiOutput() {
-	char buf[10];
-	int bytes_read;
-	while ((bytes_read = read(_cgiOutputFd[0], buf, 9)) > 0) {
-		buf[bytes_read] = '\0';		
-		_cgiOutputStr += buf;
-	}
-	if (bytes_read == -1)
-		perror("read");
-}
-
 void	CGIHandler::createArgument()
 {
 	std::string file_path = "./www/cgi-bin/" + handler.getHeaderInfo().getFilename();
@@ -130,108 +108,60 @@ void	CGIHandler::createArgument()
 	}
 }
 
-void	CGIHandler::createTempFile()
+void CGIHandler::_execCgi() 
 {
-	temp_file_path = "www/temp/cgi.bin";
-	fd_out = open(temp_file_path.c_str(), O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
-	if (fd_out == -1)
-		throw CustomException("CGIHandler: Failed to create temp file");
-}
-
-void CGIHandler::_execCgi() {
-    // Create pipes for input and output
-
 	createArgument();
-	// createTempFile();
-    // if (pipe(_cgiInputFd) < 0 || pipe(_cgiOutputFd) < 0) {
-    //     throw CustomException("CGIHandler: Failed to create pipes");
-    // }
-	
-	// printf("pipe done\n");
-    // // Fork a new process
-    pid_t pid = fork();
+
+	// // Fork a new process
+	pid_t pid = fork();
 	printf("fork done\n");
-    if (pid < 0) {
-        throw CustomException("CGIHandler: Failed to fork process");
+	if (pid < 0)
+	{
+		throw CustomException("CGIHandler: Failed to fork process");
     }
 
-    if (pid == 0) { // Child process
-        // Redirect standard input and output to the pipes
-		printf("in child\n");
-		// dup2(_cgiInputFd[0], 0);
-		// dup2(_cgiOutputFd[1], 1);
-		// dup2(fd_out, STDOUT_FILENO);
+	if (pid == 0) { // Child process
+		// Redirect standard output to the pipe
 		dup2(cgi_out[1], STDOUT_FILENO);
 		// check for error
 
+		// close the end of the pipes
 		close(cgi_out[0]);
 		close(cgi_out[1]);
 
-        // Close the other ends of the pipes
-        // close(_cgiInputFd[1]);
-        // close(_cgiOutputFd[0]);
-		// close(_cgiInputFd[0]);
-		// close(_cgiOutputFd[1]);
-
-        // Set up the environment for the CGI script
-        //_exportEnv();
-		//printf("export done\n");
-		// Change to the script directory
-		//std::string scriptPath = _scriptPath;
-		std::string scriptPath = "www/cgi-bin/" + handler.getHeaderInfo().getFilename();
-		std::string scriptName = scriptPath.substr(scriptPath.find_last_of('/') + 1);
-		// while (scriptPath.back() != '/')
-		// 	scriptPath.pop_back();
-		scriptPath = "./" + scriptPath;
-		
+		// Change to the script directory?
 		//printf("scriptPath: %s\n", scriptPath.c_str());
-        // Change to the script directory
-        // if (chdir(scriptPath.c_str()) < 0) {
-        //     exit(1);
-        // }
+		// Change to the script directory
+		// if (chdir(scriptPath.c_str()) < 0) {
+		//     exit(1);
+		// }
 
-		// std::cout << "scriptPath: " << scriptPath << std::endl;
-		// std::cout << "scriptName: " << scriptName << std::endl;
-		if (execve(scriptPath.c_str(), argv, _envp) < 0) {
+		if (execve(argv[0], argv, _envp) < 0)
+		{
 			perror("execve failure");
-			printf("execve failed\n");
 			exit(1);
 		}
-    } else { // Parent process
-        // Write the HTTP request body to the CGI script, if necessary
-        printf("in parent\n");
-		// if (handler.getHeaderInfo().getMethod() == "POST") {
-        //     _writeCgiInput();
-        // }
-        // Close the other ends of the pipes
+	}
+	else 
+	{
 		close(cgi_out[1]);
-        // close(_cgiInputFd[0]);
-        // close(_cgiOutputFd[1]);
-		// close(_cgiInputFd[1]);
 
+		// put this somewhere else? // also introduce timer
 		std::cout << "Waiting for CGI script to finish execution" << std::endl;
-        // Wait for the CGI script to finish execution
-        int status;
-        if (waitpid(pid, &status, 0) < 0) {
-            throw CustomException("CGIHandler: Failed to wait for CGI script");
-        }
+		int status;
+		if (waitpid(pid, &status, 0) < 0) {
+			throw CustomException("CGIHandler: Failed to wait for CGI script");
+		}
 		if (handler.getHeaderInfo().getMethod() == "POST")
 			remove(handler.getTempBodyFilepath().c_str());
 		std::cout << "WEXITSTATUS: " << WEXITSTATUS(status) << std::endl;
 		std::cout << "WIFEXITED: " << WIFEXITED(status) << std::endl;
-        // Check the exit status of the CGI script
-        // if (WIFEXITED(status) && WEXITSTATUS(status) != 0){
+		// Check the exit status of the CGI script
+		// if (WIFEXITED(status) && WEXITSTATUS(status) != 0){
 		// 	close(_cgiOutputFd[0]);
-        //     handler.setStatus(404);
-        //     throw CustomException("CGIHandler: CGI script failed");
-        // }
-		// close(cgi_out[0]);
-        // Read the output of the CGI script
-		// _readCgiOutput();
-		// close(_cgiOutputFd[0]);
-		// close(fd_out);
-        // Construct the HTTP response
-		
-    }
+		//     handler.setStatus(404);
+		//     throw CustomException("CGIHandler: CGI script failed");
+		// }
+	}
 }
 

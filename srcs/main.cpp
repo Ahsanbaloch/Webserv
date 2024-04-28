@@ -8,6 +8,7 @@
 #endif
 #include "ListeningSocketsBlock.h"
 #include "config/config_pars.hpp"
+#include "utils.h"
 #include "defines.h"
 
 int g_num_temp_files = 0;
@@ -25,6 +26,12 @@ int	main(int argc, char **argv)
 	// std::vector<int> ports_test;
 	// ports_test.push_back(4141);
 	// ports_test.push_back(8181);
+	srand(time(0));
+	std::cout << createTmpFilePath() << std::endl;
+	std::cout << createTmpFilePath() << std::endl;
+	std::cout << createTmpFilePath() << std::endl;
+	std::cout << createTmpFilePath() << std::endl;
+	std::cout << createTmpFilePath() << std::endl;
 
 	try
 	{
