@@ -23,6 +23,7 @@
 # include "POSTResponse.h"
 # include "REDIRECTResponse.h"
 # include "BodyExtractor.h"
+# include "ChunkDecoder.h"
 # include "KQueue.h"
 # include "config/config_pars.hpp"
 # include "defines.h"
@@ -33,12 +34,14 @@
 class RequestHandler
 {
 private:
+	// objects
 	RequestHeader					request_header;
+	ChunkDecoder*					chunk_decoder;
 	CGIHandler*						cgi_handler;
 	AUploadModule*					uploader;
 	AResponse*						response;
 	BodyExtractor*					body_extractor;
-	const KQueue&					Q;
+	const KQueue&					Q; // only relevant for MacOS // may just need fd?
 
 	// vars
 	std::vector<t_server_config>	server_config;
@@ -51,35 +54,15 @@ private:
 	int								request_length;
 	int								num_response_chunks_sent;
 
-	int								chunk_length;
-	int								total_chunk_size;
-	std::ofstream					temp_unchunked;
-	bool							trailer_exists;
-	bool							body_unchunked;
-	std::string						temp_filename_unchunked;
-
 	// flags
 	bool							response_ready;
 	bool							internal_redirect; // needed?
 	bool							all_chunks_sent;
 	bool							cgi_detected;
 	
-	// states
-	enum {
-		body_start = 0,
-		chunk_size,
-		chunk_size_cr,
-		chunk_extension,
-		chunk_data,
-		chunk_data_cr,
-		chunk_trailer,
-		chunk_trailer_cr,
-		body_end_cr,
-		body_end
-	} te_state;
 
-	void			unchunkBody();
-	void			storeChunkedData();
+	// void			unchunkBody();
+	// void			storeChunkedData();
 
 	// constructors
 	RequestHandler(const RequestHandler&);
@@ -95,7 +78,7 @@ public:
 	std::vector<t_server_config>	getServerConfig() const;
 	s_location_config				getLocationConfig() const;
 	AUploadModule*					getUploader() const;
-	// AResponse*						getResponse() const;
+	ChunkDecoder*					getChunkDecoder() const;
 	int								getSelectedLocation() const; // only for testing purposes
 	t_server_config					getSelectedServer() const; /// should probably return t_server_config
 	int								getStatus() const;
@@ -104,9 +87,9 @@ public:
 	int								getRequestLength() const;
 	const RequestHeader&			getHeaderInfo();
 	CGIHandler*						getCGI();
-	std::string						getUnchunkedDataFile() const;
-	int								getTotalChunkSize() const;
-	bool							getUnchunkingStatus() const;
+	// std::string						getUnchunkedDataFile() const;
+	// int								getTotalChunkSize() const;
+	// bool							getUnchunkingStatus() const;
 	std::string						getTempBodyFilepath() const;
 	std::string						getIntRedirRefPath() const;
 	int								getNumResponseChunks() const;
@@ -122,7 +105,6 @@ public:
 	
 	unsigned char					cgi_buf[BUFFER_SIZE + 1];
 	int								cgi_buf_pos;
-	// std::string						test_cgi;
 	int								cgi_bytes_read;
 
 	// methods
@@ -133,7 +115,7 @@ public:
 	void							findLocationBlock();
 	void							checkAllowedMethods();
 	void							checkInternalRedirect();
-	void							checkMaxBodySize();
+	// void							checkMaxBodySize();
 	int								calcMatches(std::vector<std::string>&, std::vector<std::string>&); // make private?
 	std::vector<std::string>		splitPath(std::string input, char delim);
 	AResponse*						prepareResponse();
@@ -142,6 +124,7 @@ public:
 	void							setCGIResponse();
 	void							readCGIResponse();
 	void							removeTempFiles();
+	void							processBody();
 
 	bool							check_header;
 

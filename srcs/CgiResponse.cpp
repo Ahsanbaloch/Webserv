@@ -159,7 +159,7 @@ bool	CGIResponse::processBuffer()
 	if (cgi_he_complete)
 	{
 
-		if (cgi_header_fields.find("Location") != cgi_header_fields.end()) 
+		if (cgi_header_fields.find("Location") != cgi_header_fields.end())
 			return (1);
 		else if (cgi_header_fields.find("Content-Type") != cgi_header_fields.end())
 		{

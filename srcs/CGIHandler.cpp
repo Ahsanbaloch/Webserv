@@ -187,8 +187,6 @@ void CGIHandler::_execCgi()
 			handler.setStatus(500);
 			throw CustomException("Internal Server Error");
 		}
-		if (handler.getHeaderInfo().getMethod() == "POST")
-			remove(handler.getTempBodyFilepath().c_str());
 	}
 }
 

@@ -208,9 +208,9 @@ void	UploadUrlencoded::decode(std::string& sequence)
 
 void	UploadUrlencoded::uploadData()
 {
-	if (handler.getHeaderInfo().getTEStatus())
+	if (handler.getChunkDecoder() != NULL)
 	{
-		input.open(handler.getUnchunkedDataFile(), std::ios::ate);
+		input.open(handler.getChunkDecoder()->getUnchunkedDataFile(), std::ios::ate);
 		if (!input.is_open())
 		{
 			handler.setStatus(500); // or 403 or other code?
@@ -226,7 +226,7 @@ void	UploadUrlencoded::uploadData()
 		}
 		storeInDatabase();
 		body_read = 1;
-		remove(handler.getUnchunkedDataFile().c_str()); // check if file was removed
+		remove(handler.getChunkDecoder()->getUnchunkedDataFile().c_str()); // check if file was removed
 		input.close();
 	}
 	else

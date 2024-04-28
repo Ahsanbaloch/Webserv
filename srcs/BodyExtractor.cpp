@@ -54,9 +54,9 @@ bool	BodyExtractor::getExtractionStatus() const
 
 void	BodyExtractor::extractBody()
 {
-	if (handler.getUnchunkingStatus())
+	if (handler.getChunkDecoder() != NULL)
 	{
-		temp_body_filepath = handler.getUnchunkedDataFile();
+		temp_body_filepath = handler.getChunkDecoder()->getUnchunkedDataFile();
 		extraction_status = 1;
 	}
 	else
