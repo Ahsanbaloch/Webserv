@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Multiple JSON Files</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+<div class="container mt-5">
+    <h1>Data from Multiple JSON Files</h1>
+    
+    <h2>Users List</h2>
+    <div id="usersContainer"></div>
+    
+    <h2>Products List</h2>
+    <div id="productsContainer"></div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Function to fetch JSON data and handle errors
+    const fetchJson = (url) => {
+        return fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Failed to load data from " + url);
+                }
+                return response.json();
+            });
+    };
+
+    // Fetch users data and create a table
+    fetchJson("users.json")
+        .then(data => {
+            const table = document.createElement("table");
+            table.className = "table table-striped";
+
+            const thead = document.createElement("thead");
+            const headerRow = document.createElement("tr");
+            ["Name", "Age", "City"].forEach(headerText => {
+                const th = document.createElement("th");
+                th.textContent = headerText;
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            const tbody = document.createElement("tbody");
+            data.forEach(user => {
+                const row = document.createElement("tr");
+                ["name", "age", "city"].forEach(key => {
+                    const td = document.createElement("td");
+                    td.textContent = user[key];
+                    row.appendChild(td);
+                });
+                tbody.appendChild(row);
+            });
+            table.appendChild(tbody);
+
+            document.getElementById("usersContainer").appendChild(table);
+        })
+        .catch(error => console.error("Error fetching users:", error));
+
+    // Fetch products data and create a table
+    fetchJson("products.json")
+        .then(data => {
+            const table = document.createElement("table");
+            table.className = "table table-striped";
+
+            const thead = document.createElement("thead");
+            const headerRow = document.createElement("tr");
+            ["ID", "Name", "Price"].forEach(headerText => {
+                const th = document.createElement("th");
+                th.textContent = headerText;
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            const tbody = document.createElement("tbody");
+            data.forEach(product => {
+                const row = document.createElement("tr");
+                ["id", "name", "price"].forEach(key => {
+                    const td = document.createElement("td");
+                    td.textContent = product[key];
+                    row.appendChild(td);
+                });
+                tbody.appendChild(row);
+            });
+            table.appendChild(tbody);
+
+            document.getElementById("productsContainer").appendChild(table);
+        })
+        .catch(error => console.error("Error fetching products:", error));
+});
+</script>
+</body>
+</html>
