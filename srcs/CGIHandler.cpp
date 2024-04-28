@@ -166,12 +166,10 @@ void CGIHandler::_execCgi()
 	else
 	{
 		close(cgi_out[1]);
-		if (handler.getHeaderInfo().getMethod() == "POST")
-			remove(handler.getTempBodyFilepath().c_str());
 		int status;
 		time_t start;
 		std::time(&start);
-		while (std::difftime(std::time(NULL), start) < 10)
+		while (std::difftime(std::time(NULL), start) < 30)
 		{
 			waitpid(cgi_pid, &status, WNOHANG);
 			if (WIFEXITED(status))
@@ -189,6 +187,8 @@ void CGIHandler::_execCgi()
 			handler.setStatus(500);
 			throw CustomException("Internal Server Error");
 		}
+		if (handler.getHeaderInfo().getMethod() == "POST")
+			remove(handler.getTempBodyFilepath().c_str());
 	}
 }
 

@@ -26,6 +26,8 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	cgi_detected = 0;
 	// total_bytes_sent = 0;
 
+	check_header = 0;
+
 	buf_pos = -1;
 	cgi_buf_pos = -1;
 
@@ -239,7 +241,7 @@ void	RequestHandler::processRequest()
 	request_length += bytes_read;
 
 	printf("read %i bytes\n", bytes_read);
-	printf("buffer content: \n%s\n", buf);
+	// printf("buffer content: \n%s\n", buf);
 
 	try
 	{
@@ -261,8 +263,12 @@ void	RequestHandler::processRequest()
 
 		if (request_header.getHeaderStatus())
 		{
-			request_header.checkHeader();
-			checkForCGI();
+			if (!check_header)
+			{
+				request_header.checkHeader();
+				checkForCGI();
+				check_header = 1;
+			}
 
 			//for testing: print received headers
 			printf("\nheaders\n");
