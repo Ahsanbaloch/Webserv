@@ -32,14 +32,14 @@ int	main(int argc, char **argv)
 		// 		for (std::vector<t_location_config>::iterator it3 = it2->locations.begin(); it3 != it2->locations.end(); it3++)
 		// 		{
 		// 			std::cout << "error page : "  << it3->errorPage.html_page << std::endl;
-		// 			// std::cout << "error status : "  << it3->errorPage.error_page_status << std::endl;
-		// 			// std::cout << "upload: " << it3->uploadDir << std::endl;
-		//  			// std::cout << "root : " << it3->root << std::endl;
-		// 			// std::cout << "url : " << it3->redirect << std::endl;
-		// 			// std::cout << "Path : " << it3->path << std::endl;
-		// 			// std::cout << "Index : " << it3->index << std::endl;
-		// // 			//std::cout << "cgi_ext size: " << it3->cgi_ext.size() << std::endl;
-		// // 			//std::cout << "upload: " << it3->uploadDir << std::endl;
+		// 			std::cout << "error status : "  << it3->errorPage.error_page_status << std::endl;
+		// 			std::cout << "upload: " << it3->uploadDir << std::endl;
+		//  			std::cout << "root : " << it3->root << std::endl;
+		// 			std::cout << "url : " << it3->redirect << std::endl;
+		// 			std::cout << "Path : " << it3->path << std::endl;
+		// 			std::cout << "Index : " << it3->index << std::endl;
+		// 			std::cout << "cgi_ext size: " << it3->cgi_ext.size() << std::endl;
+		// 			std::cout << "upload: " << it3->uploadDir << std::endl;
 		// // 			std::cout << "GET : " << it3->GET << " POST : " << it3->POST << std::endl;
 		// 			std::cout << it3->cgi_ext.size() << std::endl;
 

@@ -42,7 +42,6 @@ private:
 	AUploadModule*					uploader;
 	AResponse*						response;
 	BodyExtractor*					body_extractor;
-	// const KQueue&					Q; // only relevant for MacOS // may just need fd?
 
 	// vars
 	std::vector<t_server_config>	server_config;

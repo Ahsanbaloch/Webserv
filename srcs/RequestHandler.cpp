@@ -406,7 +406,6 @@ AUploadModule*	RequestHandler::checkContentType()
 {
 	std::string value = getHeaderInfo().getHeaderFields()["content-type"];
 	std::string type;
-	
 	std::size_t delim_pos = value.find(';');
 	if (delim_pos != std::string::npos)
 		type = value.substr(0, delim_pos);
@@ -536,7 +535,7 @@ void	RequestHandler::processRequest()
 		{
 			if (!header_check_done)
 				checkHeader();			
-			if (request_header.getBodyExpectanceStatus() && request_header.getMethod() == "POST" && getLocationConfig().redirect.empty())
+			if (request_header.getBodyExpectanceStatus() && getLocationConfig().redirect.empty())
 				processBody();
 			if (!request_header.getBodyExpectanceStatus() || (uploader != NULL && uploader->getUploadStatus())
 				|| !getLocationConfig().redirect.empty() || (body_extractor != NULL && body_extractor->getExtractionStatus()))
@@ -612,6 +611,7 @@ void	RequestHandler::readCGIResponse()
 	}
 	catch(const std::exception& e)
 	{
+		close(cgi_handler->cgi_out[0]);
 		makeErrorResponse();
 		std::cerr << e.what() << '\n';
 	}

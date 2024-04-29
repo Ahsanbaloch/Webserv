@@ -33,7 +33,11 @@ private:
 	// helper methods
 	void	addToConnectedClients(ListeningSocket&);
 	void	closeConnection(int);
-	
+	void	acceptConnections(int);
+	void	handleReadEvent(int);
+	void	handleWriteEvent(int);
+	void	handleCGIResponse(int);
+
 	// constructors
 	DarwinWorker();
 	DarwinWorker(const DarwinWorker&);
