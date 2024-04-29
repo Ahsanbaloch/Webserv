@@ -233,7 +233,6 @@ void	RequestHandler::setStatus(int status)
 
 void	RequestHandler::receiveRequest()
 {
-	memset(buf, 0, sizeof(buf));
 	buf_pos = -1;
 	bytes_read = recv(connection_fd, buf, BUFFER_SIZE, 0);
 	if (bytes_read == -1)
@@ -241,7 +240,7 @@ void	RequestHandler::receiveRequest()
 	if (bytes_read == 0)
 		throw CustomException("Stream socket peer has performed an orderly shutdown. Connection will be closed");
 	request_length += bytes_read;
-
+	buf[bytes_read] = '\0';
 	// printf("read %i bytes\n", bytes_read);
 	// printf("buffer content: \n%s\n", buf);
 }
@@ -597,7 +596,6 @@ void	RequestHandler::readCGIResponse()
 {
 	try
 	{
-		memset(cgi_buf, 0, sizeof(cgi_buf));
 		cgi_buf_pos = -1;
 		cgi_bytes_read = read(cgi_handler->cgi_out[0], cgi_buf, BUFFER_SIZE);
 		if (cgi_bytes_read == -1)
@@ -618,6 +616,7 @@ void	RequestHandler::readCGIResponse()
 		}
 		else
 		{
+			cgi_buf[cgi_bytes_read] = '\0';
 			CGIResponse* cgiResponse = dynamic_cast<CGIResponse*>(response);
 			if (cgiResponse != NULL)
 			{
