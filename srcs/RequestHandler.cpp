@@ -359,19 +359,14 @@ void RequestHandler::checkInternalRedirect()
 {
 	if (request_header.getFileExtension().empty())
 	{
-		std::cout << "initial path: " << request_header.getPath() << std::endl;
 		std::string new_file_path = getLocationConfig().index;
 		if (access(new_file_path.c_str(), F_OK) == 0)
 		{
 			int_redir_referer_path = "http://localhost:" + toString(getSelectedServer().port) + getLocationConfig().path;
-			std::string	orig_root = getLocationConfig().root;
+			new_file_path = new_file_path.substr(getLocationConfig().root.length());
+			request_header.makeInternalRedirect(new_file_path);
 			findLocationBlock();
 			checkAllowedMethods();
-			if (!getLocationConfig().redirect.empty())
-				return ;
-			new_file_path = new_file_path.substr(orig_root.length());
-			request_header.makeInternalRedirect(new_file_path);
-			std::cout << "new path: " << request_header.getPath() << std::endl;
 		}
 	}
 }
