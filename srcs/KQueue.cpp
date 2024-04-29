@@ -61,8 +61,6 @@ int	KQueue::getConnectionSocketIdent() const
 
 void	KQueue::attachListeningSockets(ListeningSocketsBlock& SocketsBlock)
 {
-	// define what events we are interested in (in case of the listening socket we are only interested in the EVFILT_READ
-	// since it is only used for accepting incoming connections)
 	struct kevent* listening_event = new struct kevent[SocketsBlock.getNumListeningSockets()];
 	int i = 0;
 

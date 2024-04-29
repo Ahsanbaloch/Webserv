@@ -108,7 +108,6 @@ public:
 	void								checkHeader();
 	void								makeInternalRedirect(std::string);
 
-
 };
 
 #endif

@@ -32,12 +32,6 @@ GETResponse& GETResponse::operator=(const GETResponse& src)
 	return (*this);
 }
 
-
-
-//////////// GETTTER ///////////
-
-
-
 /////////// HELPER METHODS ///////////
 
 // store in file?
@@ -87,11 +81,10 @@ std::string	GETResponse::createHeaderFields(std::string body) // probably don't 
 	std::string	header;
 	std::string mime_type = identifyMIME();
 
-
 	header.append("Content-Type: " + mime_type + "\r\n");
-	if (auto_index || (handler.getHeaderInfo().getFileExtension() == ".py"))
+	if (auto_index)
 	{
-		header.append("Content-Length: "); // alternatively TE: chunked?
+		header.append("Content-Length: ");
 		header.append(toString(body.size()) + "\r\n");
 	}
 	else
@@ -111,7 +104,6 @@ std::string	GETResponse::createHeaderFields(std::string body) // probably don't 
 
 void	GETResponse::determineOutput()
 {
-	// if the request is not for a file (otherwise the location has already been found)
 	if (handler.getHeaderInfo().getFileExtension().empty())
 	{
 		if (handler.getLocationConfig().autoIndex)
@@ -128,9 +120,7 @@ void	GETResponse::determineOutput()
 	else
 	{
 		file_type = handler.getHeaderInfo().getFileExtension();
-		std::cout << "file_type: " << file_type << std::endl;
 		full_file_path = handler.getLocationConfig().root + handler.getHeaderInfo().getPath();
-		std::cout << "full_file_path: " << full_file_path << std::endl;
 	}
 }
 
@@ -192,7 +182,7 @@ void	GETResponse::createResponse()
 
 	status_line = createStatusLine();
 	if ((handler.getStatus() >= 100 && handler.getStatus() <= 103) || handler.getStatus() == 204 || handler.getStatus() == 304)
-		body = ""; // or just initialize it like that // here no body should be created
+		body = "";
 	else
 		body = createBody();
 	

@@ -57,7 +57,7 @@ void	REDIRECTResponse::createResponse()
 	{
 		handler.setStatus(307);
 		status_line = createStatusLine();
-		body = ""; // or just initialize it like that // here no body should be created
+		body = "";
 		header_fields = createHeaderFields();
 	}
 }
