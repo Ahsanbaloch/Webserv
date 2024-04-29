@@ -130,8 +130,10 @@ std::string	GETResponse::identifyMIME()
 		return ("text/plain");
 	else if (file_type == ".html")
 		return ("text/html");
-	else if (file_type == ".jpeg" || file_type == ".jpg")
+	else if (file_type == ".jpeg")
 		return ("image/jpeg");
+	else if (file_type == ".ico")
+		return ("image/x-icon");
 	else if (file_type == ".png" || file_type == ".ico")
 		return ("image/png");
 	else if (file_type == ".bin")
