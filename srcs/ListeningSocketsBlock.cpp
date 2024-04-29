@@ -69,8 +69,6 @@ void	ListeningSocketsBlock::createSockets(std::map<std::string, std::vector<t_se
 			serverSocket.setNonblocking(serverSocket.getSocketFd());
 		#endif
 		serverSocket.makeListen();
-
-		// storing all socket data in a vector (at least for now)
 		listening_sockets.insert(std::pair<int, ListeningSocket> (socket_fd, serverSocket));
 	}
 }

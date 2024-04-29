@@ -20,7 +20,6 @@ private:
 	bool			auto_index;
 
 	// helper methods
-	
 	std::string		getBodyFromDir();
 	std::string		createBody();
 	std::string		createHeaderFields(std::string);
@@ -37,12 +36,8 @@ public:
 	explicit GETResponse(RequestHandler&);
 	~GETResponse();
 
-	// getter
-	// std::ifstream&	getInputFile();
-
 	// main method
 	void			createResponse();
-	
 	
 };
 

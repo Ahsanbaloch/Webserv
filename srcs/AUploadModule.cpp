@@ -5,17 +5,13 @@
 ///////// CONSTRUCTORS & DESTRUCTORS ///////////
 
 AUploadModule::AUploadModule()
-	: handler(*new RequestHandler())
+	: handler(*new RequestHandler()), body_read(0), body_parsing_done(0)
 {
-	body_read = 0;
-	body_parsing_done = 0;
 }
 
 AUploadModule::AUploadModule(RequestHandler& src)
-	: handler(src)
+	: handler(src), body_read(0), body_parsing_done(0)
 {
-	body_read = 0;
-	body_parsing_done = 0;
 }
 
 AUploadModule::~AUploadModule()
@@ -25,9 +21,9 @@ AUploadModule::~AUploadModule()
 AUploadModule::AUploadModule(const AUploadModule& src)
 	: handler(src.handler)
 {
+	filepath_outfile = src.filepath_outfile;
 	body_read = src.body_read;
 	body_parsing_done = src.body_parsing_done;
-	filepath_outfile = src.filepath_outfile;
 }
 
 AUploadModule& AUploadModule::operator=(const AUploadModule& src)
@@ -35,9 +31,9 @@ AUploadModule& AUploadModule::operator=(const AUploadModule& src)
 	if (this != &src)
 	{
 		handler = src.handler;
+		filepath_outfile = src.filepath_outfile;
 		body_read = src.body_read;
 		body_parsing_done = src.body_parsing_done;
-		filepath_outfile = src.filepath_outfile;
 	}
 	return (*this);
 }

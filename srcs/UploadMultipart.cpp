@@ -356,20 +356,8 @@ void	UploadMultipart::storeFileData()
 	std::cout << "Boundary size: " << boundary.size() << std::endl;
 	std::cout << "write size: " << write_size << std::endl;
 
-	// body_beginning = 340 
-	// boundary = 50
-	// total_read = 8192 / 11644
-	// body_len = 11303
-	// meta_data = 149
-	// file_size = 11104
-	// writes: 7702 + 3401
-	// bytes_written: 7702 + 3394 = 11096
-
 	outfile.write(reinterpret_cast<const char*>(&handler.buf[handler.buf_pos]), write_size);
-	handler.buf_pos += write_size; // +/- 1?
-
-	// printf("handler pos: %i, %c\n", handler.buf[handler.buf_pos], handler.buf[handler.buf_pos]);
-	// printf("handler pos - 1: %i, %c\n", handler.buf[handler.buf_pos - 1], handler.buf[handler.buf_pos - 1]);
+	handler.buf_pos += write_size;
 	outfile.close();
 }
 
@@ -513,6 +501,4 @@ void	UploadMultipart::uploadData()
 			parseBody(ch);
 		}
 	}
-	std::cout << "filepath: " << filepath_outfile << std::endl;
-	// might what to store filename here
 }

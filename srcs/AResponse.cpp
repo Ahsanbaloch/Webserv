@@ -4,12 +4,12 @@
 ///////// CONSTRUCTORS & DESTRUCTORS ///////////
 
 AResponse::AResponse()
-	: handler(*new RequestHandler()), body_size(0), file_position(0), file_pos_offset(0)
+	: handler(*new RequestHandler()), body_size(0), file_position(0), file_pos_offset(0), chunked_body(0)
 {
 }
 
 AResponse::AResponse(RequestHandler& request_handler) 
-	: handler(request_handler), body_size(0), file_position(0), file_pos_offset(0)
+	: handler(request_handler), body_size(0), file_position(0), file_pos_offset(0), chunked_body(0)
 {
 }
 
@@ -18,13 +18,19 @@ AResponse::~AResponse()
 }
 
 AResponse::AResponse(const AResponse& src)
-	: handler(src.handler), body_size(src.body_size), file_position(src.body_size)
+	: handler(src.handler)
 {
 	file_type = src.file_type;
 	full_file_path = src.full_file_path;
 	body = src.body;
 	status_line = src.status_line;
 	header_fields = src.header_fields;
+	body_size = src.body_size;
+	file_position = src.file_position;
+	file_pos_offset = src.file_pos_offset;
+	chunked_body = src.chunked_body;
+	
+
 }
 
 AResponse& AResponse::operator=(const AResponse& src)
@@ -37,12 +43,14 @@ AResponse& AResponse::operator=(const AResponse& src)
 		body = src.body;
 		status_line = src.status_line;
 		header_fields = src.header_fields;
+		body_size = src.body_size;
 		file_position = src.file_position;
 		file_pos_offset = src.file_pos_offset;
-		body_size = src.body_size;
+		chunked_body = src.chunked_body;
 	}
 	return (*this);
 }
+
 
 ////////// GETTERS ///////////
 
@@ -113,7 +121,6 @@ void	AResponse::openBodyFile(std::string filepath)
 	body_file.seekg(0, std::ios::end);
 	body_size = body_file.tellg();
 	body_file.seekg(std::ios::beg);
-	std::cout << "file size: " << body_size << std::endl;
 }
 
 std::string	AResponse::createBodyChunk()
@@ -128,7 +135,7 @@ std::string	AResponse::createBodyChunk()
 		{
 			handler.setStatus(500);
 			body_file.close();
-			throw CustomException("Internal Server Error");
+			throw CustomException("Internal Server Error: failed to create response chunk");
 		}
 	}
 	std::streampos bytes_read = body_file.gcount();
@@ -140,8 +147,8 @@ std::string	AResponse::createStatusLine()
 {
 	std::string status_line;
 
-	status_line.append("HTTP/1.1 "); // alternative handler.head.version
+	status_line.append("HTTP/1.1 ");
 	status_line.append(toString(handler.getStatus()));
-	status_line.append(" \r\n");  //A server MUST send the space that separates the status-code from the reason-phrase even when the reason-phrase is absent (i.e., the status-line would end with the space)
+	status_line.append(" \r\n"); //A server MUST send the space that separates the status-code from the reason-phrase even when the reason-phrase is absent (i.e., the status-line would end with the space)
 	return (status_line);
 }

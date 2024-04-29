@@ -27,3 +27,14 @@ std::string	createTmpFilePath()
 	return (filepath);
 }
 
+std::vector<std::string>	splitPath(std::string input, char delim)
+{
+	std::istringstream			iss(input);
+	std::string					item;
+	std::vector<std::string>	result;
+	
+	while (std::getline(iss, item, delim))
+		result.push_back("/" + item);
+
+	return (result);
+}

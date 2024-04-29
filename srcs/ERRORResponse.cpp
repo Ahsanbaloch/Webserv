@@ -46,8 +46,8 @@ std::string	ERRORResponse::getDefaultErrorMessage(std::string status_code)
 std::string	ERRORResponse::createBody(std::string status_code)
 {
 	std::string body;
-	std::string html_var = "ERROR_CODE";
-	std::string err_file = "./www/default_error.html";
+	std::string html_var = "ERROR";
+	std::string err_file = "./www/error.html";
 
 	if (handler.getStatus() == handler.getLocationConfig().errorPage.error_page_status)
 		err_file = handler.getLocationConfig().errorPage.html_page;
@@ -98,8 +98,6 @@ void	ERRORResponse::appendAllowedMethods()
 	}
 	header_fields.append("\r\n");
 }
-
-
 
 
 ///////// MAIN METHOD //////////

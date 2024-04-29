@@ -5,9 +5,11 @@
 /////////////// CONSTRUCTORS & DESTRUCTORS //////////////////
 
 RequestHeader::RequestHeader()
-	: handler(*new RequestHandler()) // is there a better way to initialize the RequestHeader reference?
+	: handler(*new RequestHandler())
 {
 	// is there a better way to initialize the variables?
+	body_beginning = 0;
+	body_length = 0;
 	header_complete = 0;
 	rl_parsing_done = 0;
 	headers_parsing_done = 0;
@@ -19,8 +21,6 @@ RequestHeader::RequestHeader()
 	dot_in_path = 0;
 	body_expected = 0;
 	expect_exists = 0;
-	body_beginning = 0;
-	body_length = 0;
 	headers_state = he_start;
 	rl_state = rl_start;
 }
@@ -28,7 +28,8 @@ RequestHeader::RequestHeader()
 RequestHeader::RequestHeader(RequestHandler& src)
 	: handler(src)
 {
-	// is there a better way to initialize the variables?
+	body_beginning = 0;
+	body_length = 0;
 	header_complete = 0;
 	rl_parsing_done = 0;
 	headers_parsing_done = 0;
@@ -40,8 +41,6 @@ RequestHeader::RequestHeader(RequestHandler& src)
 	dot_in_path = 0;
 	body_expected = 0;
 	expect_exists = 0;
-	body_beginning = 0;
-	body_length = 0;
 	headers_state = he_start;
 	rl_state = rl_start;
 }
@@ -49,12 +48,15 @@ RequestHeader::RequestHeader(RequestHandler& src)
 RequestHeader::RequestHeader(const RequestHeader& src)
 	: handler(src.handler)
 {
-	// is there a better way to initialize the variables?
 	method = src.method;
 	path = src.path;
 	query = src.query;
 	version = src.version;
 	header_fields = src.header_fields;
+	filename = src.filename;
+	file_ext = src.file_ext;
+	body_beginning = src.body_beginning;
+	body_length = src.body_length;
 	header_complete = src.header_complete;
 	rl_parsing_done = src.rl_parsing_done;
 	headers_parsing_done = src.headers_parsing_done;
@@ -66,8 +68,6 @@ RequestHeader::RequestHeader(const RequestHeader& src)
 	dot_in_path = src.dot_in_path;
 	body_expected = src.body_expected;
 	expect_exists = src.expect_exists;
-	body_beginning = src.body_beginning;
-	body_length = src.body_length;
 	headers_state = src.headers_state;
 	rl_state = src.rl_state;
 }
@@ -81,6 +81,10 @@ RequestHeader& RequestHeader::operator=(const RequestHeader& src)
 		query = src.query;
 		version = src.version;
 		header_fields = src.header_fields;
+		filename = src.filename;
+		file_ext = src.file_ext;
+		body_beginning = src.body_beginning;
+		body_length = src.body_length;
 		header_complete = src.header_complete;
 		rl_parsing_done = src.rl_parsing_done;
 		headers_parsing_done = src.headers_parsing_done;
@@ -92,8 +96,6 @@ RequestHeader& RequestHeader::operator=(const RequestHeader& src)
 		dot_in_path = src.dot_in_path;
 		body_expected = src.body_expected;
 		expect_exists = src.expect_exists;
-		body_beginning = src.body_beginning;
-		body_length = src.body_length;
 		headers_state = src.headers_state;
 		rl_state = src.rl_state;
 	}
@@ -126,7 +128,7 @@ std::string RequestHeader::getPath() const
 	return (path);
 }
 
-bool	RequestHeader::getHeaderStatus() const
+bool	RequestHeader::getHeaderProcessingStatus() const
 {
 	return (header_complete);
 }
@@ -151,9 +153,12 @@ std::string RequestHeader::getFileExtension() const
 	return (file_ext);
 }
 
-bool	RequestHeader::getBodyStatus() const
+bool	RequestHeader::getBodyExpectanceStatus() const
 {
-	return (body_expected);
+	if (method == "POST")
+		return (body_expected);
+	else
+		return (0);
 }
 
 bool	RequestHeader::getHeaderExpectedStatus() const
@@ -213,7 +218,6 @@ void	RequestHeader::identifyFileName()
 			filename = path.substr(found + 1, extra_path_found);
 		}
 	}
-	std::cout << "name: " << filename << " ext: " << file_ext << std::endl;
 }
 
 void	RequestHeader::checkHeader()
@@ -221,12 +225,10 @@ void	RequestHeader::checkHeader()
 	checkFields();
 	if (dot_in_path)
 		removeDots();
-	// Decoding to do?: A common defense against response splitting is to filter requests for data that looks like encoded CR and LF (e.g., "%0D" and "%0A") --> What to do then?
 	if (path_encoded)
 		decode(path);
 	if (query_encoded)
 		decode(query);
-	std::cout << "RequestHeader parsing complete\n";
 }
 
 void	RequestHeader::checkFields()
@@ -295,7 +297,7 @@ void	RequestHeader::decode(std::string& sequence)
 void	RequestHeader::removeDots()
 {
 	std::vector<std::string> updated_path;
-	std::vector<std::string> parts = handler.splitPath(path, '/');
+	std::vector<std::string> parts = splitPath(path, '/');
 
 	if (parts.size() > 1)
 		parts.erase(parts.begin());
