@@ -126,7 +126,7 @@ std::string RequestHeader::getPath() const
 	return (path);
 }
 
-bool	RequestHeader::getHeaderStatus() const
+bool	RequestHeader::getHeaderProcessingStatus() const
 {
 	return (header_complete);
 }
@@ -151,9 +151,12 @@ std::string RequestHeader::getFileExtension() const
 	return (file_ext);
 }
 
-bool	RequestHeader::getBodyStatus() const
+bool	RequestHeader::getBodyExpectanceStatus() const
 {
-	return (body_expected);
+	if (method == "POST")
+		return (body_expected);
+	else
+		return (0);
 }
 
 bool	RequestHeader::getHeaderExpectedStatus() const

@@ -124,27 +124,43 @@ void	DarwinWorker::runEventLoop()
 			{
 				if (event_lst[i].filter == EVFILT_READ)
 				{
-					if (connected_clients[event_lst[i].ident]->getRequestHandler() == NULL)
-						connected_clients[event_lst[i].ident]->initRequestHandler();
-					connected_clients[event_lst[i].ident]->getRequestHandler()->processRequest();
-					connected_clients[event_lst[i].ident]->setResponseStatus(connected_clients[event_lst[i].ident]->getRequestHandler()->getResponseStatus());
+					try
+					{
+						if (connected_clients[event_lst[i].ident]->getRequestHandler() == NULL)
+							connected_clients[event_lst[i].ident]->initRequestHandler();
+						connected_clients[event_lst[i].ident]->getRequestHandler()->processRequest();
+						connected_clients[event_lst[i].ident]->setResponseStatus(connected_clients[event_lst[i].ident]->getRequestHandler()->getResponseStatus());
+					}
+					catch(const std::exception& e)
+					{
+						closeConnection(i);
+						std::cerr << e.what() << '\n';
+					}
 				}
 				else if (connected_clients[event_lst[i].ident]->getRequestHandler() != NULL && connected_clients[event_lst[i].ident]->getResponseStatus() && event_lst[i].filter == EVFILT_WRITE)
 				{
-					connected_clients[event_lst[i].ident]->getRequestHandler()->sendResponse();
-					if (connected_clients[event_lst[i].ident]->getRequestHandler()->getNumResponseChunks() == 0 || connected_clients[event_lst[i].ident]->getRequestHandler()->getChunksSentCompleteStatus() == 1)
+					try
 					{
-						if (connected_clients[event_lst[i].ident]->getRequestHandler()->getHeaderInfo().getHeaderFields()["connection"] == "close"
-						|| connected_clients[event_lst[i].ident]->getRequestHandler()->getStatus() >= 400)
+						connected_clients[event_lst[i].ident]->getRequestHandler()->sendResponse();
+						if (connected_clients[event_lst[i].ident]->getRequestHandler()->getNumResponseChunks() == 0 || connected_clients[event_lst[i].ident]->getRequestHandler()->getChunksSentCompleteStatus() == 1)
 						{
-							std::cout << "disconnected by server\n";
-							closeConnection(i);
+							if (connected_clients[event_lst[i].ident]->getRequestHandler()->getHeaderInfo().getHeaderFields()["connection"] == "close"
+							|| connected_clients[event_lst[i].ident]->getRequestHandler()->getStatus() >= 400)
+							{
+								std::cout << "disconnected by server\n";
+								closeConnection(i);
+							}
+							else
+							{
+								connected_clients[event_lst[i].ident]->setResponseStatus(0);
+								connected_clients[event_lst[i].ident]->removeRequestHandler();
+							}
 						}
-						else
-						{
-							connected_clients[event_lst[i].ident]->setResponseStatus(0);
-							connected_clients[event_lst[i].ident]->removeRequestHandler();
-						}
+					}
+					catch(const std::exception& e)
+					{
+						closeConnection(i);
+						std::cerr << e.what() << '\n';
 					}
 				}
 			}

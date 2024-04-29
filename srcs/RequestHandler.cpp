@@ -26,7 +26,7 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	cgi_detected = 0;
 	// total_bytes_sent = 0;
 
-	check_header = 0;
+	header_check_done = 0;
 
 	buf_pos = -1;
 	cgi_buf_pos = -1;
@@ -138,11 +138,6 @@ t_server_config	RequestHandler::getSelectedServer() const
 	return (server_config[selected_server]);
 }
 
-// bool	RequestHandler::getUnchunkingStatus() const
-// {
-// 	return (body_unchunked);
-// }
-
 std::string	RequestHandler::getTempBodyFilepath() const
 {
 	return (body_extractor->getTempBodyFilepath());
@@ -157,11 +152,6 @@ AUploadModule*	RequestHandler::getUploader() const
 {
 	return (uploader);
 }
-
-// AResponse*	RequestHandler::getResponse() const
-// {
-// 	return (response);
-// }
 
 int	RequestHandler::getNumResponseChunks() const
 {
@@ -180,7 +170,6 @@ ChunkDecoder*	RequestHandler::getChunkDecoder() const
 }
 
 
-
 ///////// SETTERS ///////////
 
 void	RequestHandler::setStatus(int status)
@@ -189,142 +178,52 @@ void	RequestHandler::setStatus(int status)
 }
 
 
-///////// METHODS ///////////
+////////// HELPER METHODS ////////
 
-void	RequestHandler::sendResponse()
+void	RequestHandler::receiveRequest()
 {
-	std::string resp;
-
-	if (response->getChunkedBodyStatus() && status < 400)
-	{
-		if (num_response_chunks_sent > 0)
-		{
-			std::string body_chunk;
-			body_chunk = response->createBodyChunk();
-			resp = body_chunk;
-		}
-		else
-			resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
-		num_response_chunks_sent++;
-	}
-	else
-		resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
-	
-	int bytes_sent = send(connection_fd, resp.c_str(), resp.length(), 0);
-	if (bytes_sent == -1)
-	{
-		// handle properly (also check for bytes_sent == 0)
-		std::cout << "error when sending data" << std::endl;
-		// break;
-	}
-	if (response->getChunkedBodyStatus())
-	{
-		if (num_response_chunks_sent == 1)
-			bytes_sent -= response->getResponseStatusLine().length() + response->getRespondsHeaderFields().length();
-		if (bytes_sent > 0)
-			response->incrementFilePosition(bytes_sent);
-		if (response->getFilePosition() - response->getFilePosOffset() == response->getBodySize())
-		{
-			all_chunks_sent = 1;
-			response->getBodyFile().close();
-		}
-	}
-}
-
-void	RequestHandler::processRequest()
-{
-	// always memset(buffer, 0, sizeof(buffer)) after buffer has been handled?
+	memset(buf, 0, sizeof(buf));
 	buf_pos = -1;
 	bytes_read = recv(connection_fd, buf, BUFFER_SIZE, 0);
 	if (bytes_read == -1)
-		throw CustomException("Failed when processing read request\n");
+		throw CustomException("Recv failed. Close connection\n");
 	if (bytes_read == 0)
-		return ; // also throw exception. Need to check the exception exactly // also close connection?
-	// close fd in case bytes_read == 0 ???
-	
-	buf[bytes_read] = '\0';
+		throw CustomException("Client disconnected\n");
 	request_length += bytes_read;
 
-	printf("read %i bytes\n", bytes_read);
-	printf("buffer content: \n%s\n", buf);
+	// printf("read %i bytes\n", bytes_read);
+	// printf("buffer content: \n%s\n", buf);
+}
 
-	try
+void	RequestHandler::processHeader()
+{
+	if (!request_header.getRequestLineStatus())
+		request_header.parseRequestLine();
+	if (request_header.getRequestLineStatus())
 	{
-		// check if headers have already been read
-		if (!request_header.getHeaderStatus())
-		{
-			if (!request_header.getRequestLineStatus())
-				request_header.parseRequestLine();
-			if (request_header.getRequestLineStatus())
-			{
-				request_header.identifyFileName();
-				determineLocationBlock();
-				checkAllowedMethods(); // check if method is allowed in selected location
-				if (request_header.getMethod() == "GET")
-					checkInternalRedirect();
-				request_header.parseHeaderFields();
-			}
-		}
-
-		if (request_header.getHeaderStatus())
-		{
-			if (!check_header)
-			{
-				request_header.checkHeader();
-				checkForCGI();
-				check_header = 1;
-			}
-			if (request_header.getHeaderExpectedStatus()) // this is relevant for POST only, should this be done in another place? (e.g. POST request class)
-			{
-				// check value of expect field?
-				// check content-length field before accepting?
-				// create response signalling the client that the body can be send
-				// make reponse
-				// in this case we don't want to destroy the requesthandler object
-			}
-			// if body is expected, read the body (unless the selected location demands a redirect or it is not a POST request) 
-			if (request_header.getBodyStatus() && request_header.getMethod() == "POST" && getLocationConfig().redirect.empty())
-				processBody();
-
-			// check how getBodyStatus() gets set (does it already check for request method?)
-			if (!request_header.getBodyStatus() || (uploader != NULL && uploader->getUploadStatus())
-				|| !getLocationConfig().redirect.empty() || (body_extractor != NULL && body_extractor->getExtractionStatus()))
-			{
-				if (cgi_detected)
-				{
-					// do this later; just before executing the CGI
-					cgi_handler = new CGIHandler(*this);
-					struct kevent cgi_event;
-					std::cout << "origin connectionf fd: " << connection_fd << std::endl;
-					if (fcntl(cgi_handler->cgi_out[0], F_SETFL, O_NONBLOCK) == -1)
-						throw CustomException("Failed when calling fcntl() and setting fds to non-blocking\n");
-					EV_SET(&cgi_event, cgi_handler->cgi_out[0], EVFILT_READ, EV_ADD, 0, 0, &connection_fd);
-					if (kevent(Q.getKQueueFD(), &cgi_event, 1, NULL, 0, NULL) == -1)
-					{
-						perror("Failure: ");
-						throw CustomException("Failed when registering events for CGI output\n");
-					}
-					cgi_handler->execute();
-					return ;
-				}
-				response = prepareResponse();
-				response->createResponse();
-				response_ready = 1;
-			}
-		}
-	}
-	catch(const std::exception& e)
-	{
-		removeTempFiles();
-		if (response != NULL)
-			delete response;
-		response = new ERRORResponse(*this);
-		response->createResponse();
-		response_ready = 1;
-		std::cerr << e.what() << '\n';
+		request_header.identifyFileName();
+		determineLocationBlock();
+		checkAllowedMethods();
+		if (request_header.getMethod() == "GET")
+			checkInternalRedirect();
+		request_header.parseHeaderFields();
 	}
 }
 
+void	RequestHandler::checkHeader()
+{
+	request_header.checkHeader();
+	checkForCGI();
+	if (request_header.getHeaderExpectedStatus()) // this is relevant for POST only, should this be done in another place? (e.g. POST request class)
+	{
+		// check value of expect field?
+		// check content-length field before accepting?
+		// create response signalling the client that the body can be send
+		// make reponse
+		// in this case we don't want to destroy the requesthandler object
+	}
+	header_check_done = 1;
+}
 
 void	RequestHandler::processBody()
 {
@@ -350,6 +249,125 @@ void	RequestHandler::processBody()
 		}
 	}
 }
+
+void	RequestHandler::addCGIToQueue()
+{
+	cgi_handler = new CGIHandler(*this);
+	struct kevent cgi_event;
+	if (fcntl(cgi_handler->cgi_out[0], F_SETFL, O_NONBLOCK) == -1)
+		throw CustomException("Failed when calling fcntl() and setting fds to non-blocking\n");
+	EV_SET(&cgi_event, cgi_handler->cgi_out[0], EVFILT_READ, EV_ADD, 0, 0, &connection_fd);
+	if (kevent(Q.getKQueueFD(), &cgi_event, 1, NULL, 0, NULL) == -1)
+		throw CustomException("Failed when registering events for CGI output\n");
+}
+
+void	RequestHandler::makeErrorResponse()
+{
+	removeTempFiles();
+	if (response != NULL)
+		delete response;
+	response = new ERRORResponse(*this);
+	response->createResponse();
+	response_ready = 1;
+}
+
+
+
+
+///////// METHODS ///////////
+
+void	RequestHandler::processRequest()
+{
+	receiveRequest();
+	try
+	{
+		if (!request_header.getHeaderProcessingStatus())
+			processHeader();
+		if (request_header.getHeaderProcessingStatus())
+		{
+			if (!header_check_done)
+				checkHeader();			
+			if (request_header.getBodyExpectanceStatus() && request_header.getMethod() == "POST" && getLocationConfig().redirect.empty())
+				processBody();
+			if (!request_header.getBodyExpectanceStatus() || (uploader != NULL && uploader->getUploadStatus())
+				|| !getLocationConfig().redirect.empty() || (body_extractor != NULL && body_extractor->getExtractionStatus()))
+			{
+				if (cgi_detected)
+				{
+					addCGIToQueue();
+					cgi_handler->execute();
+					return ;
+				}
+				response = prepareResponse();
+				response->createResponse();
+				response_ready = 1;
+			}
+		}
+	}
+	catch(const std::exception& e)
+	{
+		makeErrorResponse();
+		std::cerr << e.what() << '\n';
+	}
+}
+
+void	RequestHandler::sendResponse()
+{
+	std::string resp;
+
+	if (response->getChunkedBodyStatus() && status < 400)
+	{
+		if (num_response_chunks_sent > 0)
+		{
+			std::string body_chunk;
+			body_chunk = response->createBodyChunk();
+			resp = body_chunk;
+		}
+		else
+			resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
+		num_response_chunks_sent++;
+	}
+	else
+		resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
+	
+	int bytes_sent = send(connection_fd, resp.c_str(), resp.length(), 0);
+	if (bytes_sent == -1)
+	{
+		throw CustomException("Error when sending data. Closing connection");
+	}
+	if (bytes_sent == 0)
+	{
+		throw CustomException("Connection closed");
+	}
+	if (response->getChunkedBodyStatus())
+	{
+		if (num_response_chunks_sent == 1)
+			bytes_sent -= response->getResponseStatusLine().length() + response->getRespondsHeaderFields().length();
+		if (bytes_sent > 0)
+			response->incrementFilePosition(bytes_sent);
+		if (response->getFilePosition() - response->getFilePosOffset() == response->getBodySize())
+		{
+			all_chunks_sent = 1;
+			response->getBodyFile().close();
+		}
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void	RequestHandler::checkForCGI()
 {

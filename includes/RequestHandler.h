@@ -59,10 +59,15 @@ private:
 	bool							internal_redirect; // needed?
 	bool							all_chunks_sent;
 	bool							cgi_detected;
+	bool							header_check_done;
 	
-
-	// void			unchunkBody();
-	// void			storeChunkedData();
+	// helper methods
+	void							receiveRequest();
+	void							processHeader();
+	void							checkHeader();
+	void							processBody();
+	void							addCGIToQueue();
+	void							makeErrorResponse();
 
 	// constructors
 	RequestHandler(const RequestHandler&);
@@ -87,9 +92,6 @@ public:
 	int								getRequestLength() const;
 	const RequestHeader&			getHeaderInfo();
 	CGIHandler*						getCGI();
-	// std::string						getUnchunkedDataFile() const;
-	// int								getTotalChunkSize() const;
-	// bool							getUnchunkingStatus() const;
 	std::string						getTempBodyFilepath() const;
 	std::string						getIntRedirRefPath() const;
 	int								getNumResponseChunks() const;
@@ -115,7 +117,6 @@ public:
 	void							findLocationBlock();
 	void							checkAllowedMethods();
 	void							checkInternalRedirect();
-	// void							checkMaxBodySize();
 	int								calcMatches(std::vector<std::string>&, std::vector<std::string>&); // make private?
 	std::vector<std::string>		splitPath(std::string input, char delim);
 	AResponse*						prepareResponse();
@@ -124,9 +125,14 @@ public:
 	void							setCGIResponse();
 	void							readCGIResponse();
 	void							removeTempFiles();
-	void							processBody();
+	
+	
+	
+	
+	
+	
 
-	bool							check_header;
+	
 
 	// make private?
 	enum {

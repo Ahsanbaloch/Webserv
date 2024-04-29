@@ -93,8 +93,8 @@ public:
 	std::string							getFilename() const;
 	std::string							getFileExtension() const;
 	bool								getRequestLineStatus() const;
-	bool								getHeaderStatus() const;
-	bool								getBodyStatus() const;
+	bool								getHeaderProcessingStatus() const;
+	bool								getBodyExpectanceStatus() const;
 	bool								getHeaderExpectedStatus() const;
 	bool								getTEStatus() const;
 	int									getBodyBeginning() const;
