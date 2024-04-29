@@ -237,9 +237,9 @@ void	RequestHandler::receiveRequest()
 	buf_pos = -1;
 	bytes_read = recv(connection_fd, buf, BUFFER_SIZE, 0);
 	if (bytes_read == -1)
-		throw CustomException("Recv failed. Close connection\n");
+		throw CustomException("Failed to receive request. Connection will be closed");
 	if (bytes_read == 0)
-		throw CustomException("Client disconnected\n");
+		throw CustomException("Stream socket peer has performed an orderly shutdown. Connection will be closed");
 	request_length += bytes_read;
 
 	// printf("read %i bytes\n", bytes_read);
@@ -314,6 +314,12 @@ void	RequestHandler::addCGIToQueue()
 
 void	RequestHandler::makeErrorResponse()
 {
+	if (response != NULL)
+	{
+		CGIResponse* cgiResponse = dynamic_cast<CGIResponse*>(response);
+		if (cgiResponse != NULL)
+			close(cgi_handler->cgi_out[0]);
+	}
 	removeTempFiles();
 	if (response != NULL)
 		delete response;
@@ -561,13 +567,22 @@ void	RequestHandler::processRequest()
 
 void	RequestHandler::sendResponse()
 {
-	std::string resp = fetchResponseChunk();
+	std::string resp;
+	try
+	{
+		resp = fetchResponseChunk();
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+		makeErrorResponse();
+	}
 	
 	int bytes_sent = send(connection_fd, resp.c_str(), resp.length(), 0);
 	if (bytes_sent == -1)
-		throw CustomException("Error when sending data. Closing connection");
+		throw CustomException("Error when sending data. Connection will be closed");
 	if (bytes_sent == 0)
-		throw CustomException("Connection closed");
+		throw CustomException("Client not able to receive response. Connection will be closed");
 	if (response->getChunkedBodyStatus())
 	{
 		if (num_response_chunks_sent == 1)
@@ -611,7 +626,6 @@ void	RequestHandler::readCGIResponse()
 	}
 	catch(const std::exception& e)
 	{
-		close(cgi_handler->cgi_out[0]);
 		makeErrorResponse();
 		std::cerr << e.what() << '\n';
 	}

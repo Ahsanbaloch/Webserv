@@ -63,7 +63,6 @@ void	DarwinWorker::addToConnectedClients(ListeningSocket& socket)
 void	DarwinWorker::closeConnection(int connect_ev)
 {
 	connected_clients[event_lst[connect_ev].ident]->removeRequestHandler();
-	connected_clients[event_lst[connect_ev].ident]->setResponseStatus(0);
 	delete connected_clients[event_lst[connect_ev].ident];
 	close(event_lst[connect_ev].ident);
 	connected_clients.erase(event_lst[connect_ev].ident);
@@ -75,11 +74,10 @@ void	DarwinWorker::acceptConnections(int connect_ev)
 	while (1)
 	{
 		int connection_fd = accept(event_lst[connect_ev].ident, (struct sockaddr *)&client_addr, &addr_size);
-		if (connection_fd == -1) // if we have handled all connection requests related to the specific event notification
+		if (connection_fd == -1)
 		{
 			if (errno == EAGAIN || errno == EWOULDBLOCK)
 			{
-				// need to free memory when fails?
 				Q.attachConnectionSockets(pending_fds);
 				std::map<int, ListeningSocket>::iterator it = listening_sockets.find(event_lst[connect_ev].ident);
 				if (it != listening_sockets.end())
@@ -123,7 +121,6 @@ void	DarwinWorker::handleWriteEvent(int connect_ev)
 			if (connected_clients[event_lst[connect_ev].ident]->getRequestHandler()->getHeaderInfo().getHeaderFields()["connection"] == "close"
 			|| connected_clients[event_lst[connect_ev].ident]->getRequestHandler()->getStatus() >= 400)
 			{
-				std::cout << "disconnected by server\n";
 				closeConnection(connect_ev);
 			}
 			else
@@ -142,10 +139,17 @@ void	DarwinWorker::handleWriteEvent(int connect_ev)
 
 void	DarwinWorker::handleCGIResponse(int connect_ev)
 {
-	// exception handling?
-	connected_clients[*reinterpret_cast<int*>(event_lst[connect_ev].udata)]->getRequestHandler()->initCGIResponse();
-	connected_clients[*reinterpret_cast<int*>(event_lst[connect_ev].udata)]->getRequestHandler()->readCGIResponse();
-	connected_clients[*reinterpret_cast<int*>(event_lst[connect_ev].udata)]->setResponseStatus(connected_clients[*reinterpret_cast<int*>(event_lst[connect_ev].udata)]->getRequestHandler()->getResponseStatus());
+	try
+	{
+		connected_clients[*reinterpret_cast<int*>(event_lst[connect_ev].udata)]->getRequestHandler()->initCGIResponse();
+		connected_clients[*reinterpret_cast<int*>(event_lst[connect_ev].udata)]->getRequestHandler()->readCGIResponse();
+		connected_clients[*reinterpret_cast<int*>(event_lst[connect_ev].udata)]->setResponseStatus(connected_clients[*reinterpret_cast<int*>(event_lst[connect_ev].udata)]->getRequestHandler()->getResponseStatus());
+	}
+	catch(const std::exception& e)
+	{
+		closeConnection(connect_ev);
+		std::cerr << e.what() << '\n';
+	}
 }
 
 
@@ -157,7 +161,7 @@ void	DarwinWorker::runEventLoop()
 	{
 		int new_events = kevent(Q.getKQueueFD(), NULL, 0, event_lst, MAX_EVENTS, NULL);
 		if (new_events == -1)
-			throw CustomException("Failed when checking for new events\n");
+			throw CustomException("Failed when checking for new events");
 		for (int connect_ev = 0; new_events > connect_ev; connect_ev++)
 		{
 			if (*reinterpret_cast<int*>(event_lst[connect_ev].udata) == Q.getConnectionSocketIdent() && event_lst[connect_ev].flags & EV_EOF)
@@ -166,14 +170,17 @@ void	DarwinWorker::runEventLoop()
 					closeConnection(connect_ev);
 			}
 			else if (*reinterpret_cast<int*>(event_lst[connect_ev].udata) == Q.getListeningSocketIdent())
-				acceptConnections(connect_ev);	
-			else if (*reinterpret_cast<int*>(event_lst[connect_ev].udata) == Q.getConnectionSocketIdent() && connected_clients[event_lst[connect_ev].ident] != NULL)
+			{
+				// how to handle exceptions in here?
+				acceptConnections(connect_ev);
+			}
+			else if (*reinterpret_cast<int*>(event_lst[connect_ev].udata) == Q.getConnectionSocketIdent()
+					&& connected_clients[event_lst[connect_ev].ident] != NULL)
 			{
 				if (event_lst[connect_ev].filter == EVFILT_READ)
-				{
 					handleReadEvent(connect_ev);
-				}
-				else if (connected_clients[event_lst[connect_ev].ident]->getRequestHandler() != NULL && connected_clients[event_lst[connect_ev].ident]->getResponseStatus() && event_lst[connect_ev].filter == EVFILT_WRITE)
+				else if (connected_clients[event_lst[connect_ev].ident]->getRequestHandler() != NULL
+					&& connected_clients[event_lst[connect_ev].ident]->getResponseStatus() && event_lst[connect_ev].filter == EVFILT_WRITE)
 				{
 					handleWriteEvent(connect_ev);
 				}

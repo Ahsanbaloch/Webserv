@@ -92,7 +92,7 @@ void	KQueue::attachConnectionSockets(std::vector<int> pending_fds)
 	if (kevent(kqueue_fd, connection_event, size * 2, NULL, 0, NULL) < 0)
 	{
 		delete[] connection_event;
-		throw CustomException("Failed when registering events for conncetion sockets\n");
+		throw CustomException("Failed when registering events for connection sockets\n");
 	}
 	delete[] connection_event;
 }
