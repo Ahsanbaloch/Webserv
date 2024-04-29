@@ -8,6 +8,12 @@
 ChunkDecoder::ChunkDecoder() 
 	: handler(*new RequestHandler())
 {
+	chunk_length = 0;
+	total_chunk_size = 0;
+	trailer_exists = 0;
+	body_unchunked = 0;
+	te_state = body_start;
+
 }
 
 ChunkDecoder::ChunkDecoder(RequestHandler& src)
@@ -22,6 +28,32 @@ ChunkDecoder::ChunkDecoder(RequestHandler& src)
 
 ChunkDecoder::~ChunkDecoder()
 {
+}
+
+ChunkDecoder::ChunkDecoder(const ChunkDecoder& src)
+	: handler(src.handler)
+{
+	chunk_length = src.chunk_length;
+	total_chunk_size = src.total_chunk_size;
+	temp_filename_unchunked = src.temp_filename_unchunked;
+	trailer_exists = src.trailer_exists;
+	body_unchunked = src.body_unchunked;
+	te_state = body_start;
+}
+
+ChunkDecoder& ChunkDecoder::operator=(const ChunkDecoder& src)
+{
+	if (this != &src)
+	{
+		handler = src.handler;
+		chunk_length = src.chunk_length;
+		total_chunk_size = src.total_chunk_size;
+		temp_filename_unchunked = src.temp_filename_unchunked;
+		trailer_exists = src.trailer_exists;
+		body_unchunked = src.body_unchunked;
+		te_state = body_start;
+	}
+	return (*this);
 }
 
 
@@ -44,8 +76,6 @@ bool	ChunkDecoder::getDecodingStatus() const
 
 
 ////////// HELPER METHODS //////////
-
-
 
 void	ChunkDecoder::storeChunkedData()
 {
@@ -105,8 +135,8 @@ void	ChunkDecoder::unchunkBody()
 					break;
 				else
 				{
-					handler.setStatus(400); // what is the correct error code?
-					throw CustomException("Bad request 1"); // other exception?
+					handler.setStatus(400);
+					throw CustomException("Bad request: detected when unchunking body");
 				}
 
 			case chunk_size:
@@ -125,7 +155,7 @@ void	ChunkDecoder::unchunkBody()
 					chunk_length = chunk_length * 16 + (ch - 'A' + 10);
 					break;
 				}
-				else if (chunk_length == 0) // how to end if body is distributed over multiple requests?
+				else if (chunk_length == 0)
 				{
 					if (ch == CR)
 					{
@@ -139,13 +169,13 @@ void	ChunkDecoder::unchunkBody()
 					}
 					else if (ch == ';')
 					{
-						te_state = chunk_extension; // are there more seperators? // seperate state for last extension?
+						te_state = chunk_extension;
 						break;
 					}
 					else
 					{
-						handler.setStatus(400); // what is the correct error code?
-						throw CustomException("Bad request 2"); // other exception?
+						handler.setStatus(400);
+						throw CustomException("Bad request: detected when unchunking body");
 					}
 				}
 				else if (ch == CR)
@@ -171,8 +201,8 @@ void	ChunkDecoder::unchunkBody()
 				}
 				else
 				{
-					handler.setStatus(400); // what is the correct error code?
-					throw CustomException("Bad request 3"); // other exception?
+					handler.setStatus(400);
+					throw CustomException("Bad request: detected when unchunking body");
 				}
 			
 			case chunk_size_cr:
@@ -188,12 +218,11 @@ void	ChunkDecoder::unchunkBody()
 				}
 				else
 				{
-					handler.setStatus(400); // what is the correct error code?
-					throw CustomException("Bad request 4"); // other exception?
+					handler.setStatus(400);
+					throw CustomException("Bad request: detected when unchunking body");
 				}
 
-			case chunk_extension: // skip over chunk_extension // could also be done in a for loop // limit max size of chunk extension -- vulnerabilities
-			// A server ought to limit the total length of chunk extensions received in a request to an amount reasonable for the services provided, in the same way that it applies length limitations and timeouts for other parts of a message, and generate an appropriate 4xx (Client Error) response if that amount is exceeded
+			case chunk_extension:
 				if (ch == CR)
 				{
 					te_state = chunk_size_cr;
@@ -212,7 +241,7 @@ void	ChunkDecoder::unchunkBody()
 				else
 					break;
 
-			case chunk_data: // Limit for chunk length?
+			case chunk_data:
 				storeChunkedData();
 				ch = handler.buf[handler.buf_pos];
 				if (ch == CR)
@@ -226,11 +255,6 @@ void	ChunkDecoder::unchunkBody()
 					break;
 				}
 				break;
-				// else
-				// {
-				// 	handler.setStatus(400); // what is the correct error code?
-				// 	throw CustomException("Bad request 5"); // other exception?
-				// }
 
 			case chunk_data_cr:
 				if (ch == LF)
@@ -240,14 +264,10 @@ void	ChunkDecoder::unchunkBody()
 				}
 				else
 				{
-					printf("prev char: %i, %c\n", handler.buf[handler.buf_pos - 1], handler.buf[handler.buf_pos - 1]);
-					printf("bad char: %i, %c\n", ch, ch);
-					std::cout << "buf pos: " << handler.buf_pos << std::endl;
-					handler.setStatus(400); // what is the correct error code?
-					throw CustomException("Bad request 5"); // other exception?
+					handler.setStatus(400);
+					throw CustomException("Bad request: detected when unchunking body");
 				}
 			
-			// is the existence of trailers indicated in the headers
 			case chunk_trailer:
 				if (ch == CR)
 				{
@@ -259,13 +279,11 @@ void	ChunkDecoder::unchunkBody()
 					te_state = body_end;
 					break;
 				}
-				else // maybe skip trailer in a for loop? // limit size of trailer?
+				else
 				{
-					trailer_exists = 1; // create loop so that this is not set every time
+					trailer_exists = 1;
 					break;
 				}
-				// trailer fields can be useful for supplying message integrity checks, digital signatures, delivery metrics, or post-processing status information
-				// probably can just discard this section --> how to identify end?
 
 			case chunk_trailer_cr:
 				if (ch == LF)
@@ -275,22 +293,20 @@ void	ChunkDecoder::unchunkBody()
 				}
 				else
 				{
-					handler.setStatus(400); // what is the correct error code?
-					throw CustomException("Bad request 6"); // other exception?
+					handler.setStatus(400);
+					throw CustomException("Bad request: detected when unchunking body");
 				}
 
 			case body_end_cr:
 				if (ch == LF)
 				{
-					// body_parsing_done = 1;
-					// body_read = 1;
 					body_unchunked = 1;
 					break;
 				}
 				else
 				{
-					handler.setStatus(400); // what is the correct error code?
-					throw CustomException("Bad request 7"); // other exception?
+					handler.setStatus(400);
+					throw CustomException("Bad request: detected when unchunking body");
 				}
 
 			case body_end:
@@ -301,15 +317,13 @@ void	ChunkDecoder::unchunkBody()
 				}
 				else if (ch == LF || !trailer_exists)
 				{
-					// body_parsing_done = 1;
-					// body_read = 1;
 					body_unchunked = 1;
 					break;
 				}
 				else
 				{
-					handler.setStatus(400); // what is the correct error code?
-					throw CustomException("Bad request 8"); // other exception?
+					handler.setStatus(400);
+					throw CustomException("Bad request: detected when unchunking body");
 				}
 		}
 	}

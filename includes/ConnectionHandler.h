@@ -30,7 +30,7 @@ public:
 
 	// getters
 	RequestHandler*					getRequestHandler();
-	int								getResponseStatus();
+	int								getResponseStatus() const;
 
 	// setters
 	void							initRequestHandler();

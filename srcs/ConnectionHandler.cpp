@@ -1,6 +1,17 @@
 
 #include "ConnectionHandler.h"
 
+////////// CONSTRUCTORS & DESTRUCTORS //////////
+
+ConnectionHandler::ConnectionHandler(int fd, std::vector<t_server_config> server_config, int q_fd)
+{
+	connection_fd = fd;
+	kernel_q_fd = q_fd;
+	response_ready = 0;
+	this->server_config = server_config;
+	handler = NULL;
+}
+
 ConnectionHandler::ConnectionHandler()
 {
 	connection_fd = -1;
@@ -9,9 +20,15 @@ ConnectionHandler::ConnectionHandler()
 	handler = NULL;
 }
 
-ConnectionHandler::ConnectionHandler(const ConnectionHandler& src)
+ConnectionHandler::~ConnectionHandler()
 {
-	handler = src.handler;
+	if (handler != NULL)
+		delete handler;
+}
+
+ConnectionHandler::ConnectionHandler(const ConnectionHandler& src)
+	: handler(src.handler)
+{
 	server_config = src.server_config;
 	connection_fd = src.connection_fd;
 	kernel_q_fd = src.kernel_q_fd;
@@ -31,40 +48,34 @@ ConnectionHandler&	ConnectionHandler::operator=(const ConnectionHandler& src)
 	return (*this);
 }
 
-ConnectionHandler::ConnectionHandler(int fd, std::vector<t_server_config> server_config, int q_fd)
-{
-	connection_fd = fd;
-	kernel_q_fd = q_fd;
-	response_ready = 0;
-	this->server_config = server_config;
-	handler = NULL;
-}
 
-ConnectionHandler::~ConnectionHandler()
-{
-	if (handler != NULL)
-		delete handler;
-}
+////////// GETTERS //////////
 
 RequestHandler*	ConnectionHandler::getRequestHandler()
 {
 	return (handler);
 }
 
+int	ConnectionHandler::getResponseStatus() const
+{
+	return (response_ready);
+}
+
+
+////////// SETTERS //////////
+
 void	ConnectionHandler::initRequestHandler()
 {
 	handler = new RequestHandler(connection_fd, server_config, kernel_q_fd);
-}
-
-int	ConnectionHandler::getResponseStatus()
-{
-	return (response_ready);
 }
 
 void	ConnectionHandler::setResponseStatus(bool response_status)
 {
 	response_ready = response_status;
 }
+
+
+////////// METHODS //////////
 
 void	ConnectionHandler::removeRequestHandler()
 {

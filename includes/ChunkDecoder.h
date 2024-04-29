@@ -12,17 +12,18 @@ private:
 	RequestHandler&	handler;
 
 	// vars
-	int								chunk_length;
-	int								total_chunk_size;
-	std::ofstream					temp_unchunked;
-	std::string						temp_filename_unchunked;
+	int				chunk_length;
+	int				total_chunk_size;
+	std::ofstream	temp_unchunked;
+	std::string		temp_filename_unchunked;
 	
 	// flags
-	bool							trailer_exists;
-	bool							body_unchunked;
+	bool			trailer_exists;
+	bool			body_unchunked;
 
-	void	storeChunkedData();
-	void	checkMaxBodySize();
+	// helper methods
+	void			storeChunkedData();
+	void			checkMaxBodySize();
 
 	// states
 	enum {
@@ -38,19 +39,23 @@ private:
 		body_end
 	} te_state;
 
+	// constructors
+	ChunkDecoder();
+	ChunkDecoder(const ChunkDecoder&);
+	ChunkDecoder& operator=(const ChunkDecoder&);
+
 public:
-	ChunkDecoder(/* args */);
-	ChunkDecoder(RequestHandler& handler);
+	// constructors & destructors
+	explicit ChunkDecoder(RequestHandler&);
 	~ChunkDecoder();
 
 	// getters
-	std::string		getUnchunkedDataFile() const;
-	int				getTotalChunkSize() const;
-	bool			getDecodingStatus() const;
+	std::string			getUnchunkedDataFile() const;
+	int					getTotalChunkSize() const;
+	bool				getDecodingStatus() const;
 
 	// main method
-	void			unchunkBody();
-
+	void				unchunkBody();
 
 };
 

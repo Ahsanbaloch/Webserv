@@ -72,6 +72,6 @@ void	BodyExtractor::extractBody()
 		body_bytes_consumed += to_write;
 		if (body_bytes_consumed >= handler.getHeaderInfo().getBodyLength())
 			extraction_status = 1;
-		outfile.close();;
+		outfile.close();
 	}
 }
