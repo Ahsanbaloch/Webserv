@@ -271,10 +271,182 @@ void	RequestHandler::makeErrorResponse()
 	response_ready = 1;
 }
 
+void	RequestHandler::checkForCGI()
+{
+	if (getLocationConfig().path == "/cgi-bin")
+	{
+		if (find(getLocationConfig().cgi_ext.begin(), getLocationConfig().cgi_ext.end(), request_header.getFileExtension()) == getLocationConfig().cgi_ext.end())
+		{
+			status = 403; // which status should be set here? 
+			throw CustomException("Forbidden");
+		}
+		else
+			cgi_detected = 1;
+	}
+	// also check execution rights here?
+}
+
+void	RequestHandler::checkAllowedMethods()
+{
+	if (request_header.getMethod() == "GET" && !getLocationConfig().GET)
+	{
+		setStatus(405);
+		throw CustomException("Method Not Allowed");
+	}
+	else if (request_header.getMethod() == "POST" && !getLocationConfig().POST)
+	{
+		setStatus(405);
+		throw CustomException("Method Not Allowed");
+	}
+	else if (request_header.getMethod() == "DELETE" && !getLocationConfig().DELETE)
+	{
+		setStatus(405);
+		throw CustomException("Method Not Allowed");
+	}
+}
+
+void RequestHandler::checkInternalRedirect()
+{
+	if (request_header.getFileExtension().empty())
+	{
+		std::cout << "initial path: " << request_header.getPath() << std::endl;
+		std::string new_file_path = getLocationConfig().index;
+		if (access(new_file_path.c_str(), F_OK) == 0)
+		{
+			internal_redirect = 1;
+			int_redir_referer_path = "http://localhost:" + toString(getSelectedServer().port) + getLocationConfig().path;
+			std::string	orig_root = getLocationConfig().root;
+			findLocationBlock();
+			checkAllowedMethods();
+			if (!getLocationConfig().redirect.empty())
+				return ;
+			new_file_path = new_file_path.substr(orig_root.length());
+			request_header.makeInternalRedirect(new_file_path);
+			std::cout << "new path: " << request_header.getPath() << std::endl;
+		}
+	}
+}
+
+void RequestHandler::determineLocationBlock()
+{
+	// find server block if there are multiple that match (this applies to all request types)
+	if (server_config.size() > 1)
+		findServerBlock();
+	
+	// find location block within server block if multiple exist (this applies to all request types; for GET requests there might be an internal redirect happening later on)
+	if (server_config[selected_server].locations.size() > 1)
+		findLocationBlock();
+}
+
+AResponse* RequestHandler::prepareResponse()
+{
+	if (!getLocationConfig().redirect.empty())
+		return (new REDIRECTResponse(*this));
+	else if (request_header.getMethod() == "GET")
+		return (new GETResponse(*this));
+	else if (request_header.getMethod() == "DELETE")
+		return (new DELETEResponse(*this));
+	else if (request_header.getMethod() == "POST")
+		return (new POSTResponse(*this));
+	else
+	{
+		setStatus(501);
+		throw CustomException("Not implemented");
+	}
+}
+
+AUploadModule*	RequestHandler::checkContentType()
+{
+	std::string value = getHeaderInfo().getHeaderFields()["content-type"];
+	std::string type;
+	
+	// identify content type
+	std::size_t delim_pos = value.find(';');
+	if (delim_pos != std::string::npos)
+		type = value.substr(0, delim_pos);
+	else
+		type = value;
+	
+	if (type == "multipart/form-data")
+	{
+		content_type = multipart_form;
+		return (new UploadMultipart(*this));
+	}
+	else if (type == "application/x-www-form-urlencoded")
+	{
+		content_type = urlencoded;
+		return (new UploadUrlencoded(*this));
+	}
+	else
+	{
+		// or throwException if type is not supported?
+		content_type = text_plain;
+		return (new UploadPlain(*this));
+	}
+}
+
+void	RequestHandler::findLocationBlock()
+{
+	std::vector<std::string> uri_path_items = splitPath(request_header.getPath(), '/');
+	int	size = server_config[selected_server].locations.size();
+	int	max = 0;
+	for (int i = 0; i < size; i++)
+	{
+		std::vector<std::string> location_path_items = splitPath(server_config[selected_server].locations[i].path, '/');
+		int matches = calcMatches(uri_path_items, location_path_items);
+		if (matches > max)
+		{
+			selected_location = i;
+			max = matches;
+		}
+	}
+}
+
+int	RequestHandler::calcMatches(std::vector<std::string>& uri_path_items, std::vector<std::string>& location_path_items)
+{
+	int	matches = 0;
+	int num_path_items = uri_path_items.size();
+	for (std::vector<std::string>::iterator it = location_path_items.begin(); it != location_path_items.end(); it++)
+	{
+		if (matches >= num_path_items)
+			break;
+		if (*it != uri_path_items[matches])
+			break;
+		matches++;
+	}
+	return (matches);
+}
+
+void	RequestHandler::findServerBlock()
+{
+	int size = server_config.size();
+
+	for (int i = 0; i < size; i++)
+	{
+		if (server_config[i].serverName == request_header.getHeaderFields()["host"])
+		{
+			selected_server = i;
+			break;
+		}
+	}
+}
+
+void	RequestHandler::removeTempFiles()
+{
+	if (body_extractor != NULL && !getTempBodyFilepath().empty())
+		remove(getTempBodyFilepath().c_str());
+	if (chunk_decoder != NULL && !chunk_decoder->getUnchunkedDataFile().empty())
+		remove(chunk_decoder->getUnchunkedDataFile().c_str());
+	CGIResponse* cgiResponse = dynamic_cast<CGIResponse*>(response);
+	if (cgiResponse != NULL)
+	{
+		if (!cgiResponse->getTempBodyFilePath().empty())
+			remove(cgiResponse->getTempBodyFilePath().c_str());
+	}
+}
 
 
-
-///////// METHODS ///////////
+///////// MAIN METHODS ///////////
 
 void	RequestHandler::processRequest()
 {
@@ -353,41 +525,6 @@ void	RequestHandler::sendResponse()
 	}
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void	RequestHandler::checkForCGI()
-{
-	if (getLocationConfig().path == "/cgi-bin")
-	{
-		if (find(getLocationConfig().cgi_ext.begin(), getLocationConfig().cgi_ext.end(), request_header.getFileExtension()) == getLocationConfig().cgi_ext.end())
-		{
-			status = 403; // which status should be set here? 
-			throw CustomException("Forbidden");
-		}
-		else
-		{
-			cgi_detected = 1;
-		}
-	}
-
-	// also check execution rights here?
-}
-
-
 void	RequestHandler::readCGIResponse()
 {
 	try
@@ -428,139 +565,15 @@ void	RequestHandler::readCGIResponse()
 	}
 	catch(const std::exception& e)
 	{
-		removeTempFiles();
-		if (response != NULL)
-			delete response;
-		response = new ERRORResponse(*this);
-		response->createResponse();
-		response_ready = 1;
+		makeErrorResponse();
 		std::cerr << e.what() << '\n';
 	}
 }
 
-void	RequestHandler::checkAllowedMethods()
-{
-	if (request_header.getMethod() == "GET" && !getLocationConfig().GET)
-	{
-		setStatus(405);
-		throw CustomException("Method Not Allowed");
-	}
-	else if (request_header.getMethod() == "POST" && !getLocationConfig().POST)
-	{
-		setStatus(405);
-		throw CustomException("Method Not Allowed");
-	}
-	else if (request_header.getMethod() == "DELETE" && !getLocationConfig().DELETE)
-	{
-		setStatus(405);
-		throw CustomException("Method Not Allowed");
-	}
-}
-
-void RequestHandler::checkInternalRedirect()
-{
-	if (request_header.getFileExtension().empty())
-	{
-		std::cout << "initial path: " << request_header.getPath() << std::endl;
-		std::string new_file_path = getLocationConfig().index;
-		if (access(new_file_path.c_str(), F_OK) == 0)
-		{
-			internal_redirect = 1;
-			int_redir_referer_path = "http://localhost:" + toString(getSelectedServer().port) + getLocationConfig().path;
-			std::string	orig_root = getLocationConfig().root;
-			findLocationBlock();
-			checkAllowedMethods();
-			if (!getLocationConfig().redirect.empty())
-				return ;
-			new_file_path = new_file_path.substr(orig_root.length());
-			request_header.makeInternalRedirect(new_file_path);
-			std::cout << "new path: " << request_header.getPath() << std::endl;
-		}
-	}
-}
-
-void RequestHandler::determineLocationBlock()
-{
-	// find server block if there are multiple that match (this applies to all request types)
-	if (server_config.size() > 1)
-		findServerBlock();
-	
-	// find location block within server block if multiple exist (this applies to all request types; for GET requests there might be an internal redirect happening later on)
-	if (server_config[selected_server].locations.size() > 1)
-		findLocationBlock();
-}
-
-void	RequestHandler::setCGIResponse()
+void	RequestHandler::initCGIResponse()
 {
 	if (response == NULL)
 		response = new CGIResponse(*this);
-}
-
-AResponse* RequestHandler::prepareResponse()
-{
-	if (!getLocationConfig().redirect.empty())
-		return (new REDIRECTResponse(*this));
-	else if (request_header.getMethod() == "GET")
-		return (new GETResponse(*this));
-	else if (request_header.getMethod() == "DELETE")
-		return (new DELETEResponse(*this));
-	else if (request_header.getMethod() == "POST")
-		return (new POSTResponse(*this));
-	else
-	{
-		setStatus(501);
-		throw CustomException("Not implemented");
-	}
-}
-
-
-AUploadModule*	RequestHandler::checkContentType()
-{
-	std::string value = getHeaderInfo().getHeaderFields()["content-type"];
-	std::string type;
-	
-	// identify content type
-	std::size_t delim_pos = value.find(';');
-	if (delim_pos != std::string::npos)
-		type = value.substr(0, delim_pos);
-	else
-		type = value;
-	
-	if (type == "multipart/form-data")
-	{
-		content_type = multipart_form;
-		return (new UploadMultipart(*this));
-	}
-	else if (type == "application/x-www-form-urlencoded")
-	{
-		content_type = urlencoded;
-		return (new UploadUrlencoded(*this));
-	}
-	else
-	{
-		// or throwException if type is not supported?
-		content_type = text_plain;
-		return (new UploadPlain(*this));
-	}
-}
-
-
-void	RequestHandler::findLocationBlock()
-{
-	std::vector<std::string> uri_path_items = splitPath(request_header.getPath(), '/');
-	int	size = server_config[selected_server].locations.size();
-	int	max = 0;
-	for (int i = 0; i < size; i++)
-	{
-		std::vector<std::string> location_path_items = splitPath(server_config[selected_server].locations[i].path, '/');
-		int matches = calcMatches(uri_path_items, location_path_items);
-		if (matches > max)
-		{
-			selected_location = i;
-			max = matches;
-		}
-	}
-	std::cout << "Thats the location block: " << getLocationConfig().path << std::endl;
 }
 
 std::vector<std::string>	RequestHandler::splitPath(std::string input, char delim)
@@ -570,52 +583,7 @@ std::vector<std::string>	RequestHandler::splitPath(std::string input, char delim
 	std::vector<std::string>	result;
 	
 	while (std::getline(iss, item, delim))
-		result.push_back("/" + item); // does adding "/" work in all cases?
+		result.push_back("/" + item);
 
 	return (result);
-}
-
-int	RequestHandler::calcMatches(std::vector<std::string>& uri_path_items, std::vector<std::string>& location_path_items)
-{
-	int	matches = 0;
-	int num_path_items = uri_path_items.size();
-	for (std::vector<std::string>::iterator it = location_path_items.begin(); it != location_path_items.end(); it++)
-	{
-		if (matches >= num_path_items)
-			break;
-		if (*it != uri_path_items[matches])
-			break;
-		matches++;
-	}
-	return (matches);
-}
-
-
-
-void	RequestHandler::findServerBlock()
-{
-	int size = server_config.size();
-
-	for (int i = 0; i < size; i++)
-	{
-		if (server_config[i].serverName == request_header.getHeaderFields()["host"])
-		{
-			selected_server = i;
-			break;
-		}
-	}
-}
-
-void	RequestHandler::removeTempFiles()
-{
-	if (body_extractor != NULL && !getTempBodyFilepath().empty())
-		remove(getTempBodyFilepath().c_str());
-	if (chunk_decoder != NULL && !chunk_decoder->getUnchunkedDataFile().empty())
-		remove(chunk_decoder->getUnchunkedDataFile().c_str());
-	CGIResponse* cgiResponse = dynamic_cast<CGIResponse*>(response);
-	if (cgiResponse != NULL)
-	{
-		if (!cgiResponse->getTempBodyFilePath().empty())
-			remove(cgiResponse->getTempBodyFilePath().c_str());
-	}
 }

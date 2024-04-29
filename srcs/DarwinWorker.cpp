@@ -167,7 +167,7 @@ void	DarwinWorker::runEventLoop()
 			else if (*reinterpret_cast<int*>(event_lst[i].udata) != Q.getListeningSocketIdent()
 					&& *reinterpret_cast<int*>(event_lst[i].udata) != Q.getConnectionSocketIdent())
 			{
-				connected_clients[*reinterpret_cast<int*>(event_lst[i].udata)]->getRequestHandler()->setCGIResponse();
+				connected_clients[*reinterpret_cast<int*>(event_lst[i].udata)]->getRequestHandler()->initCGIResponse();
 				connected_clients[*reinterpret_cast<int*>(event_lst[i].udata)]->getRequestHandler()->readCGIResponse();
 				connected_clients[*reinterpret_cast<int*>(event_lst[i].udata)]->setResponseStatus(connected_clients[*reinterpret_cast<int*>(event_lst[i].udata)]->getRequestHandler()->getResponseStatus());
 			}

@@ -68,6 +68,16 @@ private:
 	void							processBody();
 	void							addCGIToQueue();
 	void							makeErrorResponse();
+	void							checkForCGI();
+	void							checkAllowedMethods();
+	void							checkInternalRedirect();
+	void							determineLocationBlock();
+	void							findServerBlock();
+	void							removeTempFiles();
+	void							findLocationBlock();
+	int								calcMatches(std::vector<std::string>&, std::vector<std::string>&);
+	AResponse*						prepareResponse();
+	AUploadModule*					checkContentType();
 
 	// constructors
 	RequestHandler(const RequestHandler&);
@@ -109,30 +119,14 @@ public:
 	int								cgi_buf_pos;
 	int								cgi_bytes_read;
 
-	// methods
-	void							determineLocationBlock();
+	// main methods
 	void							processRequest();
 	void							sendResponse();
-	void							findServerBlock();
-	void							findLocationBlock();
-	void							checkAllowedMethods();
-	void							checkInternalRedirect();
-	int								calcMatches(std::vector<std::string>&, std::vector<std::string>&); // make private?
-	std::vector<std::string>		splitPath(std::string input, char delim);
-	AResponse*						prepareResponse();
-	AUploadModule*					checkContentType();
-	void							checkForCGI();
-	void							setCGIResponse();
+	void							initCGIResponse();
 	void							readCGIResponse();
-	void							removeTempFiles();
-	
-	
-	
-	
-	
-	
 
-	
+	// put in utils
+	std::vector<std::string>		splitPath(std::string input, char delim);
 
 	// make private?
 	enum {
