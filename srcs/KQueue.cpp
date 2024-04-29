@@ -61,8 +61,6 @@ int	KQueue::getConnectionSocketIdent() const
 
 void	KQueue::attachListeningSockets(ListeningSocketsBlock& SocketsBlock)
 {
-	// define what events we are interested in (in case of the listening socket we are only interested in the EVFILT_READ
-	// since it is only used for accepting incoming connections)
 	struct kevent* listening_event = new struct kevent[SocketsBlock.getNumListeningSockets()];
 	int i = 0;
 
@@ -92,7 +90,7 @@ void	KQueue::attachConnectionSockets(std::vector<int> pending_fds)
 	if (kevent(kqueue_fd, connection_event, size * 2, NULL, 0, NULL) < 0)
 	{
 		delete[] connection_event;
-		throw CustomException("Failed when registering events for conncetion sockets\n");
+		throw CustomException("Failed when registering events for connection sockets\n");
 	}
 	delete[] connection_event;
 }

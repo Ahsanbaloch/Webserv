@@ -8,6 +8,7 @@
 # include <iostream>
 # include "defines.h"
 # include "CustomException.h"
+# include "utils.h"
 
 class RequestHandler;
 
@@ -93,8 +94,8 @@ public:
 	std::string							getFilename() const;
 	std::string							getFileExtension() const;
 	bool								getRequestLineStatus() const;
-	bool								getHeaderStatus() const;
-	bool								getBodyStatus() const;
+	bool								getHeaderProcessingStatus() const;
+	bool								getBodyExpectanceStatus() const;
 	bool								getHeaderExpectedStatus() const;
 	bool								getTEStatus() const;
 	int									getBodyBeginning() const;
@@ -106,7 +107,6 @@ public:
 	void								identifyFileName();
 	void								checkHeader();
 	void								makeInternalRedirect(std::string);
-
 
 };
 
