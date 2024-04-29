@@ -445,6 +445,37 @@ void	RequestHandler::removeTempFiles()
 	}
 }
 
+std::string	RequestHandler::fetchResponseChunk()
+{
+	std::string resp;
+
+	if (response->getChunkedBodyStatus() && status < 400)
+	{
+		if (num_response_chunks_sent > 0)
+			resp = response->createBodyChunk();
+		else
+			resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
+		num_response_chunks_sent++;
+	}
+	else
+		resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
+	
+	return (resp);
+}
+
+void	RequestHandler::makeInternalRedirectPostCGI(std::string location)
+{
+	close(cgi_handler->cgi_out[0]);
+	request_header.makeInternalRedirect(location);
+	findLocationBlock();
+	delete response;
+	response = new GETResponse(*this);
+	response->createResponse();
+	if (getHeaderInfo().getMethod() == "POST")
+		remove(getTempBodyFilepath().c_str());
+	response_ready = 1;
+}
+
 
 ///////// MAIN METHODS ///////////
 
@@ -485,32 +516,13 @@ void	RequestHandler::processRequest()
 
 void	RequestHandler::sendResponse()
 {
-	std::string resp;
-
-	if (response->getChunkedBodyStatus() && status < 400)
-	{
-		if (num_response_chunks_sent > 0)
-		{
-			std::string body_chunk;
-			body_chunk = response->createBodyChunk();
-			resp = body_chunk;
-		}
-		else
-			resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
-		num_response_chunks_sent++;
-	}
-	else
-		resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
+	std::string resp = fetchResponseChunk();
 	
 	int bytes_sent = send(connection_fd, resp.c_str(), resp.length(), 0);
 	if (bytes_sent == -1)
-	{
 		throw CustomException("Error when sending data. Closing connection");
-	}
 	if (bytes_sent == 0)
-	{
 		throw CustomException("Connection closed");
-	}
 	if (response->getChunkedBodyStatus())
 	{
 		if (num_response_chunks_sent == 1)
@@ -529,10 +541,11 @@ void	RequestHandler::readCGIResponse()
 {
 	try
 	{
+		memset(cgi_buf, 0, sizeof(cgi_buf));
 		cgi_buf_pos = -1;
 		cgi_bytes_read = read(cgi_handler->cgi_out[0], cgi_buf, BUFFER_SIZE);
 		if (cgi_bytes_read == -1)
-			perror("recv");
+			throw CustomException("CGI read failed");
 		else if (cgi_bytes_read == 0)
 		{
 			close(cgi_handler->cgi_out[0]);
@@ -543,23 +556,11 @@ void	RequestHandler::readCGIResponse()
 		}
 		else
 		{
-			cgi_buf[bytes_read] = '\0';
-
 			CGIResponse* cgiResponse = dynamic_cast<CGIResponse*>(response);
 			if (cgiResponse != NULL)
 			{
 				if (cgiResponse->processBuffer())
-				{
-					close(cgi_handler->cgi_out[0]);
-					request_header.makeInternalRedirect(cgiResponse->cgi_header_fields["Location"]);
-					findLocationBlock();
-					delete response;
-					response = new GETResponse(*this);
-					response->createResponse();
-					if (getHeaderInfo().getMethod() == "POST")
-						remove(getTempBodyFilepath().c_str());
-					response_ready = 1;
-				}
+					makeInternalRedirectPostCGI(cgiResponse->cgi_header_fields["Location"]);
 			}
 		}
 	}
@@ -574,16 +575,4 @@ void	RequestHandler::initCGIResponse()
 {
 	if (response == NULL)
 		response = new CGIResponse(*this);
-}
-
-std::vector<std::string>	RequestHandler::splitPath(std::string input, char delim)
-{
-	std::istringstream			iss(input);
-	std::string					item;
-	std::vector<std::string>	result;
-	
-	while (std::getline(iss, item, delim))
-		result.push_back("/" + item);
-
-	return (result);
 }

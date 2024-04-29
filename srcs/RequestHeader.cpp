@@ -298,7 +298,7 @@ void	RequestHeader::decode(std::string& sequence)
 void	RequestHeader::removeDots()
 {
 	std::vector<std::string> updated_path;
-	std::vector<std::string> parts = handler.splitPath(path, '/');
+	std::vector<std::string> parts = splitPath(path, '/');
 
 	if (parts.size() > 1)
 		parts.erase(parts.begin());

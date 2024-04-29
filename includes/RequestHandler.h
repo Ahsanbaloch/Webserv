@@ -75,7 +75,9 @@ private:
 	void							findServerBlock();
 	void							removeTempFiles();
 	void							findLocationBlock();
+	void							makeInternalRedirectPostCGI(std::string);
 	int								calcMatches(std::vector<std::string>&, std::vector<std::string>&);
+	std::string						fetchResponseChunk();
 	AResponse*						prepareResponse();
 	AUploadModule*					checkContentType();
 
@@ -105,37 +107,32 @@ public:
 	std::string						getTempBodyFilepath() const;
 	std::string						getIntRedirRefPath() const;
 	int								getNumResponseChunks() const;
-
 	bool							getChunksSentCompleteStatus() const;
 
 	// setters
 	void							setStatus(int);
 	
-	// buffer TBD
+	// buffers
 	unsigned char					buf[BUFFER_SIZE + 1];
 	int								buf_pos;
-	
 	unsigned char					cgi_buf[BUFFER_SIZE + 1];
 	int								cgi_buf_pos;
-	int								cgi_bytes_read;
 
 	// main methods
 	void							processRequest();
 	void							sendResponse();
-	void							initCGIResponse();
 	void							readCGIResponse();
+	void							initCGIResponse();
 
-	// put in utils
-	std::vector<std::string>		splitPath(std::string input, char delim);
+	// make private
+	int								cgi_bytes_read;
 
-	// make private?
 	enum {
 		unknown = 0,
 		multipart_form,
 		text_plain,
 		urlencoded
 	} content_type;
-
 };
 
 #endif

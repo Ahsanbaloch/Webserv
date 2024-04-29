@@ -8,6 +8,7 @@
 # include <iostream>
 # include "defines.h"
 # include "CustomException.h"
+# include "utils.h"
 
 class RequestHandler;
 
