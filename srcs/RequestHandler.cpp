@@ -608,6 +608,12 @@ void	RequestHandler::readCGIResponse()
 			response->createResponse();
 			if (getHeaderInfo().getMethod() == "POST")
 				remove(getTempBodyFilepath().c_str());
+			else if (getHeaderInfo().getMethod() == "GET")
+			{
+				CGIResponse* cgiResponse = dynamic_cast<CGIResponse*>(response);
+				if (cgiResponse != NULL)
+					remove(cgiResponse->getTempBodyFilePath().c_str());
+			}
 			response_ready = 1;
 		}
 		else
