@@ -314,12 +314,6 @@ void	RequestHandler::addCGIToQueue()
 
 void	RequestHandler::makeErrorResponse()
 {
-	if (response != NULL)
-	{
-		CGIResponse* cgiResponse = dynamic_cast<CGIResponse*>(response);
-		if (cgiResponse != NULL)
-			close(cgi_handler->cgi_out[0]);
-	}
 	removeTempFiles();
 	if (response != NULL)
 		delete response;
@@ -330,9 +324,10 @@ void	RequestHandler::makeErrorResponse()
 
 void	RequestHandler::checkForCGI()
 {
+	std::vector<std::string> location_extensions = getLocationConfig().cgi_ext;
 	if (getLocationConfig().path == "/cgi-bin")
 	{
-		if (find(getLocationConfig().cgi_ext.begin(), getLocationConfig().cgi_ext.end(), request_header.getFileExtension()) == getLocationConfig().cgi_ext.end())
+		if (find(location_extensions.begin(), location_extensions.end(), request_header.getFileExtension()) == location_extensions.end())
 		{
 			status = 403; // which status should be set here? 
 			throw CustomException("Forbidden");
@@ -340,7 +335,6 @@ void	RequestHandler::checkForCGI()
 		else
 			cgi_detected = 1;
 	}
-	// also check execution rights here?
 }
 
 void	RequestHandler::checkAllowedMethods()
@@ -560,6 +554,8 @@ void	RequestHandler::processRequest()
 	}
 	catch(const std::exception& e)
 	{
+		if (cgi_handler != NULL)
+			close(cgi_handler->cgi_out[0]);
 		makeErrorResponse();
 		std::cerr << e.what() << '\n';
 	}
@@ -626,6 +622,7 @@ void	RequestHandler::readCGIResponse()
 	}
 	catch(const std::exception& e)
 	{
+		close(cgi_handler->cgi_out[0]);
 		makeErrorResponse();
 		std::cerr << e.what() << '\n';
 	}
