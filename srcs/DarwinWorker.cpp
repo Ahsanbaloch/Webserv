@@ -55,7 +55,7 @@ void	DarwinWorker::addToConnectedClients(ListeningSocket& socket)
 	int size = pending_fds.size();
 	for (int i = 0; i < size; i++)
 	{
-		ConnectionHandler* Handler = new ConnectionHandler(pending_fds[i], socket.getServerConfig(), Q);
+		ConnectionHandler* Handler = new ConnectionHandler(pending_fds[i], socket.getServerConfig(), Q.getKQueueFD());
 		connected_clients.insert(std::pair<int, ConnectionHandler*>(pending_fds[i], Handler));
 	}
 }

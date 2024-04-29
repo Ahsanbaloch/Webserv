@@ -4,49 +4,68 @@
 ///////// CONSTRUCTORS & DESTRUCTORS ///////////
 
 RequestHandler::RequestHandler()
-	: request_header(*this), Q(*new KQueue())
+	: request_header(*this)
 {
-}
-
-RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_config,  const KQueue& q)
-	: request_header(*this), Q(q)
-{
-	std::cout << "request handler constructed" << std::endl;
-	this->server_config = server_config;
-	connection_fd = fd;
+	// throw exception?
+	kernel_q_fd = -1;
+	connection_fd = -1;
 	status = 200;
 	selected_location = 0;
 	selected_server = 0;
 	bytes_read = 0;
-	response_ready = 0;
 	request_length = 0;
-	internal_redirect = 0;
 	num_response_chunks_sent = 0;
+
+	response_ready = 0;
 	all_chunks_sent = 0;
 	cgi_detected = 0;
-	// total_bytes_sent = 0;
-
 	header_check_done = 0;
 
 	buf_pos = -1;
 	cgi_buf_pos = -1;
 
-	 // also add in copy constructor etc.
-
-	
-	response = NULL;
-	uploader = NULL;
-	body_extractor = NULL;
-	cgi_handler = NULL;
 	chunk_decoder = NULL;
-	memset(&buf, 0, sizeof(buf));
+	cgi_handler = NULL;
+	uploader = NULL;
+	response = NULL;
+	body_extractor = NULL;
+}
+
+RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_config, int q_fd)
+	: request_header(*this)
+{
+	std::cout << "request handler constructed" << std::endl;
+	this->server_config = server_config;
+	kernel_q_fd = q_fd;
+	connection_fd = fd;
+	status = 200;
+	selected_location = 0;
+	selected_server = 0;
+	bytes_read = 0;
+	request_length = 0;
+	num_response_chunks_sent = 0;
+
+	response_ready = 0;
+	all_chunks_sent = 0;
+	cgi_detected = 0;
+	header_check_done = 0;
+
+	buf_pos = -1;
+	cgi_buf_pos = -1;
+
+	chunk_decoder = NULL;
+	cgi_handler = NULL;
+	uploader = NULL;
+	response = NULL;
+	body_extractor = NULL;
 }
 
 RequestHandler::~RequestHandler()
 {
 	std::cout << "request handler destroyed" << std::endl;
-	delete response;
-	if (uploader != NULL) // needed?
+	if (response != NULL)
+		delete response;
+	if (uploader != NULL)
 		delete uploader;
 	if (body_extractor != NULL)
 		delete body_extractor;
@@ -57,29 +76,61 @@ RequestHandler::~RequestHandler()
 }
 
 RequestHandler::RequestHandler(const RequestHandler& src)
-	: request_header(src.request_header), Q(src.Q)
+	: request_header(src.request_header)
 {
-	// tbd
+	server_config = src.server_config;
+	int_redir_referer_path = src.int_redir_referer_path;
+	kernel_q_fd = src.kernel_q_fd;
+	connection_fd = src.connection_fd;
+	status = src.status;
+	selected_location = src.selected_location;
+	selected_server = src.selected_server;
+	bytes_read = src.bytes_read;
+	request_length = src.request_length;
+	num_response_chunks_sent = src.num_response_chunks_sent;
+
+	response_ready = src.response_ready;
+	all_chunks_sent = src.all_chunks_sent;
+	cgi_detected = src.cgi_detected;
+	header_check_done = src.header_check_done;
+
+	buf_pos = src.buf_pos;
+	cgi_buf_pos = src.cgi_buf_pos;
+
+	chunk_decoder = src.chunk_decoder;
+	cgi_handler = src.cgi_handler;
+	uploader = src.uploader;
+	response = src.response;
+	body_extractor = src.body_extractor;
 }
 
 RequestHandler& RequestHandler::operator=(const RequestHandler& src)
 {
 	if (this != &src)
 	{
-		request_header = src.request_header;
 		server_config = src.server_config;
+		int_redir_referer_path = src.int_redir_referer_path;
+		kernel_q_fd = src.kernel_q_fd;
+		connection_fd = src.connection_fd;
 		status = src.status;
 		selected_location = src.selected_location;
 		selected_server = src.selected_server;
-		connection_fd = src.connection_fd;
 		bytes_read = src.bytes_read;
-		response_ready = src.response_ready;
 		request_length = src.request_length;
-		internal_redirect = src.internal_redirect;
 		num_response_chunks_sent = src.num_response_chunks_sent;
+
+		response_ready = src.response_ready;
+		all_chunks_sent = src.all_chunks_sent;
+		cgi_detected = src.cgi_detected;
+		header_check_done = src.header_check_done;
+
 		buf_pos = src.buf_pos;
-		response = src.response;
+		cgi_buf_pos = src.cgi_buf_pos;
+
+		chunk_decoder = src.chunk_decoder;
+		cgi_handler = src.cgi_handler;
 		uploader = src.uploader;
+		response = src.response;
 		body_extractor = src.body_extractor;
 	}
 	return (*this);
@@ -88,44 +139,15 @@ RequestHandler& RequestHandler::operator=(const RequestHandler& src)
 
 ///////// GETTERS ///////////
 
-std::vector<t_server_config>	RequestHandler::getServerConfig() const
-{
-	return (server_config);
-}
-
-int	RequestHandler::getStatus() const
-{
-	return (status);
-}
-
-s_location_config	RequestHandler::getLocationConfig() const
-{
-	return (server_config[selected_server].locations[selected_location]);
-}
-
-int	RequestHandler::getSelectedLocation() const
-{
-	return (selected_location);
-}
-
-bool	RequestHandler::getResponseStatus() const
-{
-	return (response_ready);
-}
-
-int		RequestHandler::getBytesRead() const
-{
-	return (bytes_read);
-}
-
-int		RequestHandler::getRequestLength() const
-{
-	return (request_length);
-}
-
 const RequestHeader&	RequestHandler::getHeaderInfo()
 {
 	return (request_header);
+}
+
+// provide a function to get the chunk decoder filepath instead?
+ChunkDecoder*	RequestHandler::getChunkDecoder() const
+{
+	return (chunk_decoder);
 }
 
 CGIHandler*	RequestHandler::getCGI()
@@ -133,14 +155,24 @@ CGIHandler*	RequestHandler::getCGI()
 	return (cgi_handler);
 }
 
+AUploadModule*	RequestHandler::getUploader() const
+{
+	return (uploader);
+}
+
+std::vector<t_server_config>	RequestHandler::getServerConfig() const
+{
+	return (server_config);
+}
+
+s_location_config	RequestHandler::getLocationConfig() const
+{
+	return (server_config[selected_server].locations[selected_location]);
+}
+
 t_server_config	RequestHandler::getSelectedServer() const
 {
 	return (server_config[selected_server]);
-}
-
-std::string	RequestHandler::getTempBodyFilepath() const
-{
-	return (body_extractor->getTempBodyFilepath());
 }
 
 std::string	RequestHandler::getIntRedirRefPath() const
@@ -148,9 +180,29 @@ std::string	RequestHandler::getIntRedirRefPath() const
 	return (int_redir_referer_path);
 }
 
-AUploadModule*	RequestHandler::getUploader() const
+std::string	RequestHandler::getTempBodyFilepath() const
 {
-	return (uploader);
+	return (body_extractor->getTempBodyFilepath());
+}
+
+int	RequestHandler::getStatus() const
+{
+	return (status);
+}
+
+int		RequestHandler::getBytesRead() const
+{
+	return (bytes_read);
+}
+
+int	RequestHandler::getCGIBytesRead() const
+{
+	return (cgi_bytes_read);
+}
+
+int		RequestHandler::getRequestLength() const
+{
+	return (request_length);
 }
 
 int	RequestHandler::getNumResponseChunks() const
@@ -158,15 +210,14 @@ int	RequestHandler::getNumResponseChunks() const
 	return (num_response_chunks_sent);
 }
 
+bool	RequestHandler::getResponseStatus() const
+{
+	return (response_ready);
+}
+
 bool	RequestHandler::getChunksSentCompleteStatus() const
 {
 	return (all_chunks_sent);
-}
-
-// provide a function to get the chunk decoder filepath instead?
-ChunkDecoder*	RequestHandler::getChunkDecoder() const
-{
-	return (chunk_decoder);
 }
 
 
@@ -257,7 +308,7 @@ void	RequestHandler::addCGIToQueue()
 	if (fcntl(cgi_handler->cgi_out[0], F_SETFL, O_NONBLOCK) == -1)
 		throw CustomException("Failed when calling fcntl() and setting fds to non-blocking\n");
 	EV_SET(&cgi_event, cgi_handler->cgi_out[0], EVFILT_READ, EV_ADD, 0, 0, &connection_fd);
-	if (kevent(Q.getKQueueFD(), &cgi_event, 1, NULL, 0, NULL) == -1)
+	if (kevent(kernel_q_fd, &cgi_event, 1, NULL, 0, NULL) == -1)
 		throw CustomException("Failed when registering events for CGI output\n");
 }
 
@@ -313,7 +364,6 @@ void RequestHandler::checkInternalRedirect()
 		std::string new_file_path = getLocationConfig().index;
 		if (access(new_file_path.c_str(), F_OK) == 0)
 		{
-			internal_redirect = 1;
 			int_redir_referer_path = "http://localhost:" + toString(getSelectedServer().port) + getLocationConfig().path;
 			std::string	orig_root = getLocationConfig().root;
 			findLocationBlock();
@@ -329,11 +379,8 @@ void RequestHandler::checkInternalRedirect()
 
 void RequestHandler::determineLocationBlock()
 {
-	// find server block if there are multiple that match (this applies to all request types)
 	if (server_config.size() > 1)
-		findServerBlock();
-	
-	// find location block within server block if multiple exist (this applies to all request types; for GET requests there might be an internal redirect happening later on)
+		findServerBlock();	
 	if (server_config[selected_server].locations.size() > 1)
 		findLocationBlock();
 }
@@ -360,7 +407,6 @@ AUploadModule*	RequestHandler::checkContentType()
 	std::string value = getHeaderInfo().getHeaderFields()["content-type"];
 	std::string type;
 	
-	// identify content type
 	std::size_t delim_pos = value.find(';');
 	if (delim_pos != std::string::npos)
 		type = value.substr(0, delim_pos);

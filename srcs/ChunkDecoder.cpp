@@ -5,7 +5,7 @@
 
 ////////// CONSTRUCTORS & DESTRUCTORS //////////
 
-ChunkDecoder::ChunkDecoder(/* args */) 
+ChunkDecoder::ChunkDecoder() 
 	: handler(*new RequestHandler())
 {
 }

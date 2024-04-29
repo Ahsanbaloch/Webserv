@@ -2,19 +2,19 @@
 #include "ConnectionHandler.h"
 
 ConnectionHandler::ConnectionHandler()
-	: Q(*new KQueue())
 {
-	connection_fd = 0;
+	connection_fd = -1;
+	kernel_q_fd = -1;
 	response_ready = 0;
 	handler = NULL;
 }
 
 ConnectionHandler::ConnectionHandler(const ConnectionHandler& src)
-	: Q(src.Q)
 {
 	handler = src.handler;
 	server_config = src.server_config;
 	connection_fd = src.connection_fd;
+	kernel_q_fd = src.kernel_q_fd;
 	response_ready = src.response_ready;
 }
 
@@ -25,16 +25,16 @@ ConnectionHandler&	ConnectionHandler::operator=(const ConnectionHandler& src)
 		handler = src.handler;
 		server_config = src.server_config;
 		connection_fd = src.connection_fd;
+		kernel_q_fd = src.kernel_q_fd;
 		response_ready = src.response_ready;
-		// Q = src.Q;
 	}
 	return (*this);
 }
 
-ConnectionHandler::ConnectionHandler(int fd, std::vector<t_server_config> server_config, const KQueue& q)
-	: Q(q)
+ConnectionHandler::ConnectionHandler(int fd, std::vector<t_server_config> server_config, int q_fd)
 {
 	connection_fd = fd;
+	kernel_q_fd = q_fd;
 	response_ready = 0;
 	this->server_config = server_config;
 	handler = NULL;
@@ -51,7 +51,7 @@ RequestHandler*	ConnectionHandler::getRequestHandler()
 
 void	ConnectionHandler::initRequestHandler()
 {
-	handler = new RequestHandler(connection_fd, server_config, Q);
+	handler = new RequestHandler(connection_fd, server_config, kernel_q_fd);
 }
 
 int	ConnectionHandler::getResponseStatus()

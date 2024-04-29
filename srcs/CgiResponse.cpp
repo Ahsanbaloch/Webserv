@@ -60,7 +60,7 @@ void	CGIResponse::readHeaderFields()
 	std::string		header_value = "";
 
 	// what to do if there is a syntax error?
-	while (!cgi_he_complete && ((handler.cgi_buf_pos)++ < handler.cgi_bytes_read))
+	while (!cgi_he_complete && ((handler.cgi_buf_pos)++ < handler.getCGIBytesRead()))
 	{
 		ch = handler.cgi_buf[handler.cgi_buf_pos];
 
@@ -143,14 +143,13 @@ void	CGIResponse::readHeaderFields()
 void	CGIResponse::storeBody()
 {
 	handler.cgi_buf_pos++;
-	int to_write = handler.cgi_bytes_read - handler.cgi_buf_pos;
+	int to_write = handler.getCGIBytesRead() - handler.cgi_buf_pos;
 	outfile.open(temp_body_filepath, std::ios::app | std::ios::binary);
 	outfile.write(reinterpret_cast<const char*>(&handler.cgi_buf[handler.cgi_buf_pos]), to_write);
 	handler.cgi_buf_pos += to_write;
 	body_size += to_write;
 	outfile.close();
 }
-
 
 bool	CGIResponse::processBuffer()
 {

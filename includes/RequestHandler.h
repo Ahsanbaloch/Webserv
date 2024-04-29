@@ -2,6 +2,8 @@
 # define REQUESTHANDLER_H
 
 # include <sys/socket.h>
+# include <sys/event.h>
+# include <unistd.h>
 # include <string>
 # include <map>
 # include <vector>
@@ -24,7 +26,6 @@
 # include "REDIRECTResponse.h"
 # include "BodyExtractor.h"
 # include "ChunkDecoder.h"
-# include "KQueue.h"
 # include "config/config_pars.hpp"
 # include "defines.h"
 # include "utils.h"
@@ -41,22 +42,23 @@ private:
 	AUploadModule*					uploader;
 	AResponse*						response;
 	BodyExtractor*					body_extractor;
-	const KQueue&					Q; // only relevant for MacOS // may just need fd?
+	// const KQueue&					Q; // only relevant for MacOS // may just need fd?
 
 	// vars
 	std::vector<t_server_config>	server_config;
 	std::string						int_redir_referer_path;
+	int								kernel_q_fd;
+	int								connection_fd;
 	int								status;
 	int								selected_location;
 	int								selected_server;
-	int								connection_fd;
 	int								bytes_read;
+	int								cgi_bytes_read;
 	int								request_length;
 	int								num_response_chunks_sent;
 
 	// flags
 	bool							response_ready;
-	bool							internal_redirect; // needed?
 	bool							all_chunks_sent;
 	bool							cgi_detected;
 	bool							header_check_done;
@@ -87,26 +89,28 @@ private:
 public:
 	// constructors & destructors
 	RequestHandler();
+	RequestHandler(int, std::vector<t_server_config>, int);
 	RequestHandler& operator=(const RequestHandler&);
-	RequestHandler(int, std::vector<t_server_config>, const KQueue&); // get ServerConfig as a reference? // might be able to remove int connection_fd as this is now part of the connection handler
 	~RequestHandler();
 
 	// getters
+	const RequestHeader&			getHeaderInfo();
+	ChunkDecoder*					getChunkDecoder() const;
+	CGIHandler*						getCGI();
+	AUploadModule*					getUploader() const;
+
 	std::vector<t_server_config>	getServerConfig() const;
 	s_location_config				getLocationConfig() const;
-	AUploadModule*					getUploader() const;
-	ChunkDecoder*					getChunkDecoder() const;
-	int								getSelectedLocation() const; // only for testing purposes
-	t_server_config					getSelectedServer() const; /// should probably return t_server_config
-	int								getStatus() const;
-	bool							getResponseStatus() const;
-	int								getBytesRead() const;
-	int								getRequestLength() const;
-	const RequestHeader&			getHeaderInfo();
-	CGIHandler*						getCGI();
-	std::string						getTempBodyFilepath() const;
+	t_server_config					getSelectedServer() const;
 	std::string						getIntRedirRefPath() const;
+	std::string						getTempBodyFilepath() const;
+	int								getStatus() const;
+	int								getBytesRead() const;
+	int								getCGIBytesRead() const;
+	int								getRequestLength() const;
 	int								getNumResponseChunks() const;
+
+	bool							getResponseStatus() const;
 	bool							getChunksSentCompleteStatus() const;
 
 	// setters
@@ -124,9 +128,7 @@ public:
 	void							readCGIResponse();
 	void							initCGIResponse();
 
-	// make private
-	int								cgi_bytes_read;
-
+	// states
 	enum {
 		unknown = 0,
 		multipart_form,
