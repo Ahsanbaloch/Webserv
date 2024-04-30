@@ -46,9 +46,9 @@ UploadPlain& UploadPlain::operator=(const UploadPlain& src)
 }
 
 
-/////////// METHODS ///////////
+///////// HELPER METHODS ///////////
 
-void	UploadPlain::uploadData()
+void	UploadPlain::checkFilepath()
 {
 	if (filepath_outfile.empty())
 	{
@@ -58,7 +58,7 @@ void	UploadPlain::uploadData()
 			if (access(filepath_outfile.c_str(), F_OK) == 0)
 			{
 				handler.setStatus(403);
-				throw CustomException("Forbidden");
+				throw CustomException("Forbidden: file already exists");
 			}
 		}
 		else
@@ -71,26 +71,37 @@ void	UploadPlain::uploadData()
 			}
 		}
 	}
+}
+
+void	UploadPlain::openFiles()
+{
+	input.open(handler.getChunkDecoder()->getUnchunkedDataFile(), std::ios::ate);
+	if (!input.is_open())
+	{
+		handler.setStatus(500);
+		throw CustomException("Internal Server Error: could not open file");
+	}
+	outfile.open(filepath_outfile, std::ios::app);
+	if (!outfile.is_open())
+	{
+		handler.setStatus(500);
+		throw CustomException("Internal Server Error: could not open file");
+	}
+}
+
+
+/////////// MAIN METHOD ///////////
+
+void	UploadPlain::uploadData()
+{
+	checkFilepath();
 
 	if (handler.getChunkDecoder() != NULL)
 	{
-		input.open(handler.getChunkDecoder()->getUnchunkedDataFile(), std::ios::ate);
-		if (!input.is_open())
-		{
-			handler.setStatus(500); // or 403 or other code?
-			throw CustomException("Internal Server Error");
-		}
+		openFiles();
 		std::streamsize file_size = input.tellg();
 		input.seekg(0, std::ios::beg);
-		outfile.open(filepath_outfile, std::ios::app);
-		if (!outfile.is_open())
-		{
-			handler.setStatus(500); // or 403 or other code?
-			throw CustomException("Internal Server Error");
-		}
-
 		char buffer[BUFFER_SIZE];
-
 		while (file_size > 0)
 		{
 			int write_size = std::min(BUFFER_SIZE, static_cast<int>(file_size));
@@ -100,7 +111,7 @@ void	UploadPlain::uploadData()
 		}
 		body_read = 1;
 		input.close();
-		remove(handler.getChunkDecoder()->getUnchunkedDataFile().c_str()); // check if file was removed
+		remove(handler.getChunkDecoder()->getUnchunkedDataFile().c_str());
 		outfile.close();
 	}
 	else
@@ -110,8 +121,8 @@ void	UploadPlain::uploadData()
 		outfile.open(filepath_outfile, std::ios::app);
 		if (!outfile.is_open())
 		{
-			handler.setStatus(500); // or 403 or other code?
-			throw CustomException("Internal Server Error");
+			handler.setStatus(500);
+			throw CustomException("Internal Server Error: could not open file");
 		}
 		outfile.write(reinterpret_cast<const char*>(&handler.buf[handler.buf_pos]), to_write);
 		handler.buf_pos += to_write;

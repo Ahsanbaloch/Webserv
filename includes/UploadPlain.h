@@ -10,13 +10,17 @@ class UploadPlain: public AUploadModule
 {
 private:
 	// input
-	std::ifstream	input; // needed?
+	std::ifstream	input;
 
 	// output
 	std::ofstream	outfile;
 
 	// vars
 	int				body_bytes_consumed;
+
+	// helper methods
+	void			checkFilepath();
+	void			openFiles();
 
 	// constructors
 	UploadPlain();
