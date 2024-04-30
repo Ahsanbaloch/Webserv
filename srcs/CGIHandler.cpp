@@ -182,8 +182,8 @@ void CGIHandler::_execCgi()
 			handler.setStatus(504);
 			throw CustomException("Gateway Timeout");
 		}
-		if (WEXITSTATUS(status)) {
-			close(cgi_out[0]);
+		if (WEXITSTATUS(status))
+		{
 			handler.setStatus(500);
 			throw CustomException("Internal Server Error");
 		}
