@@ -1,4 +1,4 @@
-<!-- <!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -73,7 +73,7 @@
                 <button type="submit" class="btn btn-primary btn-block">Submit</button>
               </form>
 	</div>
-    <img src="./minion/add_file.jpg" class="img-fluid" alt="Responsive image">
+    <img src="./minion/add_file.jpeg" class="img-fluid" alt="Responsive image">
     </div>
   </div>
 
@@ -127,6 +127,10 @@
 
     // Prevent the form from submitting normally
     e.preventDefault();
+  });
+  $('.custom-file-input').on("change", function() {
+    var fileName = $(this).val().split("\\").pop();
+    $(this).siblings('.custom-file-label').addClass("selected").html(fileName);
   });
 });
   </script>
