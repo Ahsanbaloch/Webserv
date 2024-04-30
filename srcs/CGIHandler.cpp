@@ -167,9 +167,8 @@ void CGIHandler::_execCgi()
 	{
 		close(cgi_out[1]);
 		int status;
-		time_t start;
-		std::time(&start);
-		while (std::difftime(std::time(NULL), start) < 30)
+		time_t start = std::time(NULL);
+		while (std::difftime(std::time(NULL), start) < handler.getSelectedServer().timeout)
 		{
 			waitpid(cgi_pid, &status, WNOHANG);
 			if (WIFEXITED(status))
