@@ -150,7 +150,7 @@ std::string	GETResponse::identifyMIME()
 		return ("text/html");
 	else if (file_type == ".html")
 		return ("text/html");
-	else if (file_type == ".jpeg")
+	else if (file_type == ".jpeg" || file_type == ".jpg")
 		return ("image/jpeg");
 	else if (file_type == ".ico")
 		return ("image/x-icon");

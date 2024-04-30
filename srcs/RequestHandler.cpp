@@ -507,6 +507,7 @@ void	RequestHandler::makeInternalRedirectPostCGI(std::string location)
 	close(cgi_handler->cgi_out[0]);
 	request_header.makeInternalRedirect(location);
 	findLocationBlock();
+	checkInternalRedirect();
 	delete response;
 	response = new GETResponse(*this);
 	response->createResponse();

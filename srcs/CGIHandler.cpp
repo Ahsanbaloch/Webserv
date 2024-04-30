@@ -144,12 +144,12 @@ void CGIHandler::_execCgi()
 		if (dup2(cgi_out[1], STDOUT_FILENO) < 0)
 		{
 			handler.setStatus(500);
-			throw CustomException("Internal Server Error: Failed to dup");
+			exit(1);
 		}
 		if (close(cgi_out[0]) < 0 || close(cgi_out[1] < 0))
 		{
 			handler.setStatus(500);
-			throw CustomException("Internal Server Error: Failed to close pipe ends");
+			exit(1);
 		}
 
 		// Change to the script directory ??
@@ -160,7 +160,7 @@ void CGIHandler::_execCgi()
 		if (execve(argv[0], argv, env) < 0)
 		{
 			handler.setStatus(500);
-			throw CustomException("Internal Server Error: Execve failed");
+			exit(1);
 		}
 	}
 	else
@@ -171,8 +171,8 @@ void CGIHandler::_execCgi()
 		// something does not seem to be correct with the difftime approach --> broken pipe
 		// if "slowed down" by these print statements, then it seems to work
 		// add a usleep?
-		std::cout << "std::difftime(std::time(NULL), start): " << std::difftime(std::time(NULL), start) << std::endl;
-		std::cout << "handler.getSelectedServer().timeout: " << handler.getSelectedServer().timeout << std::endl;
+		// std::cout << "std::difftime(std::time(NULL), start): " << std::difftime(std::time(NULL), start) << std::endl;
+		// std::cout << "handler.getSelectedServer().timeout: " << handler.getSelectedServer().timeout << std::endl;
 		while (std::difftime(std::time(NULL), start) < handler.getSelectedServer().timeout)
 		{
 			waitpid(cgi_pid, &status, WNOHANG);
@@ -186,7 +186,7 @@ void CGIHandler::_execCgi()
 			handler.setStatus(504);
 			throw CustomException("Gateway Timeout");
 		}
-		if (WEXITSTATUS(status))
+		if (WEXITSTATUS(status) || handler.getStatus() == 500)
 		{
 			handler.setStatus(500);
 			throw CustomException("Internal Server Error");
