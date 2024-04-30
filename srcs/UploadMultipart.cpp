@@ -93,8 +93,8 @@ void	UploadMultipart::identifyBoundary()
 		boundary = value.substr(boundary_value_pos + 1);
 	else
 	{
-		handler.setStatus(400); // what is the correct error code?
-		throw CustomException("Could not identify boundary"); // other exception?
+		handler.setStatus(400);
+		throw CustomException("Bad request: boundary not found in request header");
 	}
 }
 
@@ -117,16 +117,17 @@ char	UploadMultipart::advanceChar()
 
 void	UploadMultipart::checkBoundaryID()
 {
-	// why necessary?
 	char ch = advanceChar();
 
-	for (std::string::iterator it = boundary.begin(); it != boundary.end(); it++) // also check handler.buf_pos < handler.getBytesRead()
+	for (std::string::iterator it = boundary.begin(); it != boundary.end(); it++)
 	{
+		if (handler.buf_pos == handler.getBytesRead() - 1)
+			break;
 		ch = advanceChar();
 		if (*it != ch)
 		{
-			handler.setStatus(400); // what is the correct error code?
-			throw CustomException("Issue with boundary ID 1"); // other exception?
+			handler.setStatus(400);
+			throw CustomException("Bad request: could not identify boundary in multipart/form-data");
 		}
 	}
 	ch = advanceChar();
@@ -141,14 +142,14 @@ void	UploadMultipart::checkCleanTermination(char ch)
 		ch = advanceChar();
 		if (ch != LF)
 		{
-			handler.setStatus(400); // what is the correct error code?
-			throw CustomException("Bad request"); // other exception?
+			handler.setStatus(400);
+			throw CustomException("Bad request: when parsing multipart/form-data");
 		}
 	}
 	else if (ch != LF)
 	{
-		handler.setStatus(400); // what is the correct error code?
-		throw CustomException("Bad request"); // other exception?
+		handler.setStatus(400);
+		throw CustomException("Bad request: when parsing multipart/form-data");
 	}
 }
 
@@ -213,11 +214,11 @@ void	UploadMultipart::checkContentDispoChar(char ch)
 
 void	UploadMultipart::checkFileExistence()
 {
-	std::string file_path = handler.getLocationConfig().root + content_disposition["filename"]; // add upload dir
-	if (access(file_path.c_str(), F_OK) == -1)
+	filepath_outfile = handler.getLocationConfig().uploadDir + "/" + content_disposition["filename"];
+	if (access(filepath_outfile.c_str(), F_OK) == 0)
 	{
 		handler.setStatus(403);
-		throw CustomException("Forbidden2");
+		throw CustomException("Forbidden: file already exists");
 	}
 }
 
@@ -248,7 +249,7 @@ void	UploadMultipart::saveContentDispo(char ch)
 	content_disposition.insert(std::pair<std::string, std::string>(temp_key, temp_value));
 	temp_key.erase();
 	temp_value.erase();
-	// checkFileExistence();
+	checkFileExistence();
 	mp_state = mp_content_type;
 }
 
@@ -302,25 +303,16 @@ void	UploadMultipart::saveContentType(char ch)
 void	UploadMultipart::calcFileSize()
 {
 	if (handler.getChunkDecoder() != NULL)
-	{
 		file_data_size = handler.getChunkDecoder()->getTotalChunkSize() - meta_data_size - boundary.size() - 8;
-		// meta_data_size = handler.buf_pos - handler.body_beginning;
-		// may have to adjust the extra padding of 8 (2x CRLFCRLF) based on client
-		// file_data_size = handler.body_length - meta_data_size - boundary.size() - 8;
-		// mp_state = mp_content;
-		printf("file size: %i\n", file_data_size);
-	}
 	else
 	{
 		meta_data_size = handler.buf_pos - handler.getHeaderInfo().getBodyBeginning();
-		// may have to adjust the extra padding of 8 (2x CRLFCRLF) based on client
 		file_data_size = handler.getHeaderInfo().getBodyLength() - meta_data_size - boundary.size() - 8;
 	}
 }
 
 void	UploadMultipart::storeFileData()
 {
-	// may have to adjust the extra padding of 4 (CRLFCRLF) based on client
 	if (handler.getRequestLength() < handler.getHeaderInfo().getBodyBeginning() + handler.getHeaderInfo().getBodyLength() - static_cast<int>(boundary.size()) - 4)
 	{
 		write_size = handler.getBytesRead() - handler.buf_pos;
@@ -332,30 +324,12 @@ void	UploadMultipart::storeFileData()
 		mp_state = mp_boundary_end;
 	}
 
-	if (filepath_outfile.empty())
-	{
-		filepath_outfile = handler.getLocationConfig().uploadDir + "/" + content_disposition["filename"];
-		if (access(filepath_outfile.c_str(), F_OK) == 0)
-		{
-			handler.setStatus(403);
-			throw CustomException("Forbidden3");
-		}
-	}
-
 	outfile.open(filepath_outfile, std::ios::app | std::ios::binary);
 	if (!outfile.is_open())
 	{
-		handler.setStatus(500); // or 403 or other code?
+		handler.setStatus(500);
 		throw CustomException("Internal Server Error");
 	}
-
-	std::cout << "body_beginning: " << handler.getHeaderInfo().getBodyBeginning() << std::endl;
-	std::cout << "total_read " << handler.getRequestLength() << std::endl;
-	std::cout << "meta_data: " << meta_data_size << std::endl;
-	std::cout << "file size: " << file_data_size << std::endl;
-	std::cout << "Boundary size: " << boundary.size() << std::endl;
-	std::cout << "write size: " << write_size << std::endl;
-
 	outfile.write(reinterpret_cast<const char*>(&handler.buf[handler.buf_pos]), write_size);
 	handler.buf_pos += write_size;
 	outfile.close();
@@ -363,25 +337,14 @@ void	UploadMultipart::storeFileData()
 
 void	UploadMultipart::storeUnchunkedFileData()
 {
-	if (filepath_outfile.empty())
-	{
-		filepath_outfile = handler.getLocationConfig().uploadDir + "/" + content_disposition["filename"];
-		if (access(filepath_outfile.c_str(), F_OK) == 0)
-		{
-			handler.setStatus(403);
-			throw CustomException("Forbidden4");
-		}
-	}
-	
 	outfile.open(filepath_outfile, std::ios::app | std::ios::binary);
 	if (!outfile.is_open())
 	{
-		handler.setStatus(500); // or 403 or other code?
+		handler.setStatus(500);
 		throw CustomException("Internal Server Error");
 	}
 
 	char buffer[BUFFER_SIZE];
-
 	while (file_data_size > 0)
 	{
 		write_size = std::min(BUFFER_SIZE, static_cast<int>(file_data_size));
@@ -402,8 +365,8 @@ void	UploadMultipart::parseBody(char ch)
 				mp_state = mp_boundary_id;
 			else
 			{
-				handler.setStatus(400); // what is the correct error code?
-				throw CustomException("Bad request 20"); // other exception?
+				handler.setStatus(400);
+				throw CustomException("Bad request: encountered when parsing multipart/form-data body");
 			}
 
 		case mp_boundary_id:
@@ -412,10 +375,6 @@ void	UploadMultipart::parseBody(char ch)
 		
 		case mp_content_dispo:
 			saveContentDispo(ch);
-			for (std::map<std::string, std::string>::iterator it = content_disposition.begin(); it != content_disposition.end(); it++)
-			{
-				std::cout << "key: " << it->first << " value: " << it->second << std::endl;
-			}
 			break;
 
 		case mp_content_type:
@@ -430,13 +389,12 @@ void	UploadMultipart::parseBody(char ch)
 			else if (ch == 'C')
 			{
 				saveContentType(ch);
-				std::cout << "content type: " << multipart_content_type << std::endl;
 				break;
 			}
 			else
 			{
-				handler.setStatus(400); // what is the correct error code?
-				throw CustomException("Issue with content type"); // other exception?
+				handler.setStatus(400);
+				throw CustomException("Bad request: could not identify content type in multipart/form-data");
 			}
 
 		case mp_empty_line:
@@ -451,8 +409,8 @@ void	UploadMultipart::parseBody(char ch)
 			}
 			else
 			{
-				handler.setStatus(400); // what is the correct error code?
-				throw CustomException("Issue with content type"); // other exception?
+				handler.setStatus(400);
+				throw CustomException("Bad request: could not identify content type in multipart/form-data");
 			}
 
 		case mp_content:
@@ -479,8 +437,8 @@ void	UploadMultipart::uploadData()
 		input.open(handler.getChunkDecoder()->getUnchunkedDataFile(), std::ios::binary);
 		if (!input.is_open())
 		{
-			handler.setStatus(500); // or 403 or other code?
-			throw CustomException("Internal Server Error");
+			handler.setStatus(500);
+			throw CustomException("Internal Server Error: could not open decoded chunked data file");
 		}
 		char ch;
 		while (!body_parsing_done)
@@ -490,7 +448,7 @@ void	UploadMultipart::uploadData()
 			parseBody(ch);
 		}
 		input.close();
-		remove(handler.getChunkDecoder()->getUnchunkedDataFile().c_str()); // check if file was removed
+		remove(handler.getChunkDecoder()->getUnchunkedDataFile().c_str());
 	}
 	else
 	{
