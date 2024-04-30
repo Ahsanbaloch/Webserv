@@ -11,6 +11,7 @@ class POSTResponse: public AResponse
 private:
 	// helper methods
 	void		respondFileUpload();
+	std::string	createBody();
 
 	// constructors
 	POSTResponse();

@@ -5,7 +5,7 @@ import os
 import sys
 
 print("Status: 303")
-print("Location: /index.html")
+print("Location: /upload")
 print()
 
 

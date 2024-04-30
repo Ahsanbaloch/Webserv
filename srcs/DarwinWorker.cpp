@@ -64,8 +64,8 @@ void	DarwinWorker::closeConnection(int connect_ev)
 {
 	connected_clients[event_lst[connect_ev].ident]->removeRequestHandler();
 	delete connected_clients[event_lst[connect_ev].ident];
-	close(event_lst[connect_ev].ident);
 	connected_clients.erase(event_lst[connect_ev].ident);
+	close(event_lst[connect_ev].ident);
 	std::cout << "Connection " << event_lst[connect_ev].ident << " has been closed" << std::endl;
 }
 
