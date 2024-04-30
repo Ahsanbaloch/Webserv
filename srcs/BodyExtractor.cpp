@@ -2,6 +2,9 @@
 #include "BodyExtractor.h"
 #include "RequestHandler.h"
 
+
+///////// CONSTRUCTORS & DESTRUCTORS ///////////
+
 BodyExtractor::BodyExtractor()
 	: handler(*new RequestHandler()), body_bytes_consumed(0), extraction_status(0)
 {
