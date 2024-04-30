@@ -99,7 +99,7 @@ std::string GETResponse::createBody()
 	return (body);
 }
 
-std::string	GETResponse::createHeaderFields(std::string body) // probably don't need parameter anymore
+std::string	GETResponse::createHeaderFields()
 {
 	std::string	header;
 	std::string mime_type = identifyMIME();
@@ -208,5 +208,5 @@ void	GETResponse::createResponse()
 	else
 		body = createBody();
 	
-	header_fields = createHeaderFields(body);
+	header_fields = createHeaderFields();
 }
