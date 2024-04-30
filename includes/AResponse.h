@@ -30,11 +30,11 @@ protected:
 	// flags
 	bool			chunked_body;
 
-	// methods
+	// class methods
 	std::string		createStatusLine();
+	std::string		readHTMLTemplateFile(const std::string&);
 	void			openBodyFile(std::string);
 	
-
 	// constructors
 	AResponse();
 	AResponse(const AResponse&);
@@ -58,7 +58,7 @@ public:
 	std::streampos	getFilePosOffset() const;
 
 
-	// methods
+	// main methods
 	virtual void	createResponse() = 0;
 	void			incrementFilePosition(std::streampos);
 

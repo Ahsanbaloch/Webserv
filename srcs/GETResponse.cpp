@@ -32,22 +32,12 @@ GETResponse& GETResponse::operator=(const GETResponse& src)
 	return (*this);
 }
 
+
 /////////// HELPER METHODS ///////////
-
-
-std::string GETResponse::readFile(const std::string& filename)
-{
-	std::ifstream file(filename.c_str());
-	if (!file)
-		throw CustomException("Could not open file: " + filename);
-	std::stringstream buffer;
-	buffer << file.rdbuf();
-	return (buffer.str());
-}
 
 std::string GETResponse::createHTMLPage(const std::string& directory_name, const std::vector<std::string>& items)
 {
-	std::string html_template = readFile("www/template.html");
+	std::string html_template = readHTMLTemplateFile("www/dir_list_template.html");
 	std::ostringstream directory_items;
 	for (std::vector<std::string>::const_iterator it = items.begin(); it != items.end(); ++it)
 	{
@@ -140,10 +130,7 @@ void	GETResponse::determineOutput()
 	if (handler.getHeaderInfo().getFileExtension().empty())
 	{
 		if (handler.getLocationConfig().autoIndex)
-		{
-			printf("auto index found\n");
 			auto_index = 1;
-		}
 		else
 		{
 			handler.setStatus(404);
@@ -159,7 +146,7 @@ void	GETResponse::determineOutput()
 
 std::string	GETResponse::identifyMIME()
 {	
-	if (auto_index) // probably also rather going to be html
+	if (auto_index)
 		return ("text/html");
 	else if (file_type == ".html")
 		return ("text/html");
@@ -167,7 +154,7 @@ std::string	GETResponse::identifyMIME()
 		return ("image/jpeg");
 	else if (file_type == ".ico")
 		return ("image/x-icon");
-	else if (file_type == ".png" || file_type == ".ico")
+	else if (file_type == ".png")
 		return ("image/png");
 	else if (file_type == ".bin")
 		return ("application/octet-stream");

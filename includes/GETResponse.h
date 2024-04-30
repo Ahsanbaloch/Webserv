@@ -25,7 +25,6 @@ private:
 	std::string		createBody();
 	std::string		createHeaderFields(std::string);
 	std::string		identifyMIME();
-	std::string		readFile(const std::string&);
 	std::string		createHTMLPage(const std::string&, const std::vector<std::string>&);
 	void			determineOutput();
 

@@ -101,13 +101,7 @@ std::streampos	AResponse::getFilePosOffset() const
 }
 
 
-///////// METHODS ///////////
-
-
-void	AResponse::incrementFilePosition(std::streampos position_increment)
-{
-	file_position += position_increment;
-}
+///////// CLASS METHODS ///////////
 
 void	AResponse::openBodyFile(std::string filepath)
 {
@@ -151,4 +145,26 @@ std::string	AResponse::createStatusLine()
 	status_line.append(toString(handler.getStatus()));
 	status_line.append(" \r\n"); //A server MUST send the space that separates the status-code from the reason-phrase even when the reason-phrase is absent (i.e., the status-line would end with the space)
 	return (status_line);
+}
+
+std::string AResponse::readHTMLTemplateFile(const std::string& filename)
+{
+	std::ifstream file(filename.c_str());
+	if (!file)
+	{
+		handler.setStatus(500);
+		throw CustomException("Internal Server Error");
+	}
+	std::stringstream buffer;
+	buffer << file.rdbuf();
+	file.close();
+	return (buffer.str());
+}
+
+
+///////// MAIN METHODS ///////////
+
+void	AResponse::incrementFilePosition(std::streampos position_increment)
+{
+	file_position += position_increment;
 }
