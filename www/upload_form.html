@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -24,6 +24,15 @@
 	height: 100%;
 	border-radius: 5%;
 	}
+
+  @keyframes spin {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+#spinner {
+  animation: spin 2s linear infinite;
+}
   </style>
 </head>
 <body>
@@ -53,7 +62,7 @@
 		
 		<div class="offset-md-2 col-md-8  center">
 			
-            <form method="post" id="signupForm">
+            <form method="post" id="signupForm" enctype="multipart/form-data">
                 <div class="form-group">
                   <label for="customFile">please upload Banana</label>
                   <div class="custom-file">
@@ -61,19 +70,68 @@
                     <label class="custom-file-label" for="customFile">Choose file</label>
                   </div>
                 </div>
+                <button type="submit" class="btn btn-primary btn-block">Submit</button>
               </form>
 	</div>
-    <img src="./minion/add_file.jpg" class="img-fluid" alt="Responsive image">
+    <img src="./minion/add_file.jpeg" class="img-fluid" alt="Responsive image">
     </div>
   </div>
 
   <div class="container mt-5" id="output">
     <!-- Form data will be displayed here -->
   </div>
+<!-- Existing HTML code... -->
 
+<!-- Full-screen overlay -->
+<div id="overlay" style="display: none; position: fixed; width: 100%; height: 100%; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.5); z-index: 2; cursor: pointer;">
+  <div class="spinner-border text-primary spinner-border-sm" role="status" id="spinner" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 3rem; height: 3rem;">
+    <span class="sr-only">Loading...</span>
+  </div>
+</div>
+
+</body>
+</html>
   <!-- Bootstrap JS and jQuery -->
   <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
-</html>
+
+<script>
+ $(document).ready(function() {
+  $('#signupForm').on('submit', function(e) {
+    // Show the overlay
+    $('#overlay').show();
+
+    // Perform the POST request
+    // This is just an example, replace with your actual POST request
+    $.post('/your-post-url', $(this).serialize())
+      .done(function(data) {
+        // Hide the overlay after at least 2 seconds
+        setTimeout(function() {
+          $('#overlay').hide();
+        }, 2000);
+
+        // Handle the response data
+        // ...
+      })
+      .fail(function() {
+        // Hide the overlay after at least 2 seconds
+        setTimeout(function() {
+          $('#overlay').hide();
+        }, 2000);
+
+        // Handle the error
+        // ...
+      });
+
+    // Prevent the form from submitting normally
+    e.preventDefault();
+  });
+  $('.custom-file-input').on("change", function() {
+    var fileName = $(this).val().split("\\").pop();
+    $(this).siblings('.custom-file-label').addClass("selected").html(fileName);
+  });
+});
+  </script>
+</html> 

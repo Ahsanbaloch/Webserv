@@ -1,7 +1,14 @@
+
 #!/usr/bin/env python3
 # Importing the 'cgi' module
+
+
 import cgi
+
 import os
+
+
+
 
 print("<html lang='en'><head><meta charset='UTF-8'>")
 print("<head><title>Webserv CGI</title>")
