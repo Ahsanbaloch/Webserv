@@ -1,6 +1,9 @@
 
 #include "CGIResponse.h"
 
+
+///////// CONSTRUCTORS & DESTRUCTORS ///////////
+
 CGIResponse::CGIResponse(RequestHandler& src)
 	: AResponse(src)
 {
@@ -17,6 +20,14 @@ CGIResponse::~CGIResponse()
 {
 }
 
+
+///////// HELPER METHODS ///////////
+
+
+
+
+
+///////// MAIN METHODS ///////////
 
 std::string	CGIResponse::getTempBodyFilePath()
 {
