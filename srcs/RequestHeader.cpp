@@ -304,7 +304,6 @@ void	RequestHeader::removeDots()
 
 	for (std::vector<std::string>::iterator it = parts.begin(); it != parts.end(); it++)
 	{
-		std::cout << "part: " << *it << std::endl;
 		if (*it == "/.")
 			continue;
 		else if (*it == "/.." && updated_path.size() > 0)
@@ -326,7 +325,6 @@ void	RequestHeader::checkBodyLength(std::string value)
 {
 	// elaborate check --> see RFC for what is an accepted format for providing the length of the body
 
-	std::cout << "Value: " << value << std::endl;
 	for(std::string::iterator it = value.begin(); it != value.end(); it++)
 	{
 		if (*it == '.')
@@ -472,7 +470,6 @@ void	RequestHeader::parseHeaderFields()
 				}
 			
 			case he_done:
-				// std::cout << "header line fully parsed\n";
 				// check if there is a body in the message
 				if (header_name == "content-length")
 				{
@@ -531,7 +528,6 @@ void	RequestHeader::parseHeaderFields()
 					headers_parsing_done = 1;
 					body_beginning = handler.buf_pos;
 					header_complete = 1;
-					// std::cout << "headers fully parsed\n";
 					break;
 				}
 				handler.setStatus(400);
@@ -776,7 +772,6 @@ void	RequestHeader::parseRequestLine()
 				}
 			
 			case rl_done:
-				// std::cout << "request line fully parsed\n";
 				rl_parsing_done = 1;
 				handler.buf_pos--; // Why does this needs to be done?
 				break;

@@ -8,7 +8,7 @@ CGIResponse::CGIResponse(RequestHandler& src)
 	cgi_resp_he_state = he_start;
 }
 
-CGIResponse::CGIResponse(/* args */)
+CGIResponse::CGIResponse()
 	: AResponse()
 {
 }
@@ -29,7 +29,6 @@ void	CGIResponse::readCGIHeader()
 
 	while(std::getline(body_file, line))
 	{
-		std::cout << "line: " << line << std::endl;
 		if (line.find("Status") != std::string::npos)
 		{
 			std::string status;
