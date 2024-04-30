@@ -176,11 +176,21 @@ int		RequestHeader::getBodyLength() const
 	return (body_length);
 }
 
+
+/////////////// SETTERS //////////////////
+
+void	RequestHeader::makeInternalRedirect(std::string new_path)
+{
+	path = new_path;
+	identifyFileName();
+}
+
+
 /////////////// MAIN METHODS //////////////////
 
 void	RequestHeader::identifyFileName()
 {
-	std::size_t found = path.find_last_of('.');
+	std::size_t found = path.find_first_of('.');
 	if (found == std::string::npos)
 	{
 		filename = "";
@@ -188,13 +198,23 @@ void	RequestHeader::identifyFileName()
 	}
 	else
 	{
-		file_ext = path.substr(found);
-		found = path.find_last_of('/');
-		filename = path.substr(found + 1);
+		std::size_t extra_path_found = path.substr(found).find_first_of('/');
+		if (extra_path_found == std::string::npos)
+		{
+			file_ext = path.substr(found);
+			found = path.find_last_of('/');
+			filename = path.substr(found + 1);
+		}
+		else
+		{
+			file_ext = path.substr(found, extra_path_found);
+			found = path.substr(0, found).find_last_of('/');
+			extra_path_found = path.substr(found + 1).find_last_of('/');
+			filename = path.substr(found + 1, extra_path_found);
+		}
 	}
 	std::cout << "name: " << filename << " ext: " << file_ext << std::endl;
 }
-
 
 void	RequestHeader::checkHeader()
 {
@@ -211,10 +231,17 @@ void	RequestHeader::checkHeader()
 
 void	RequestHeader::checkFields()
 {
-	// others check such as empty host field value, TE != chunked etc. is done in parsing
+	if (header_fields.find("content-length") != header_fields.end() && method == "POST")
+	{
+		if (body_length == 0 && header_fields.find("transfer-encoding") == header_fields.end())
+		{
+			handler.setStatus(400);
+			throw CustomException("Bad request: POST without body");
+		}
+	}
 	if (header_fields.find("host") == header_fields.end())
 	{
-		handler.setStatus(410);
+		handler.setStatus(400);
 		throw CustomException("Bad request 1");
 	}
 	if (!transfer_encoding_exists && !content_length_exists && method == "POST") // if both exist at the same time is check when parsing
@@ -345,6 +372,8 @@ void	RequestHeader::parseHeaderFields()
 				else if (ch == LF)
 				{
 					headers_parsing_done = 1;
+					body_beginning = handler.buf_pos; // needed?
+					header_complete = 1; // needed?
 					break;
 				}
 				else
@@ -433,7 +462,7 @@ void	RequestHeader::parseHeaderFields()
 
 			case he_cr:
 				if (ch == LF)
-					rl_state = rl_done;
+					headers_state = he_done;
 				else 
 				{
 					handler.setStatus(400);

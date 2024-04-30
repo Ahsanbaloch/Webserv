@@ -1,0 +1,72 @@
+<!-- <!DOCTYPE html>
+<html>
+<head>
+</head>
+<body>
+
+<form method="POST" action="cgi-bin/form.py" enctype="multipart/form-data">
+  <label for="fname">First name:</label><br>
+  <input type="text" id="fname" name="fname"><br>
+  <label for="lname">Last name:</label><br>
+  <input type="text" id="lname" name="lname"><br>
+  <input type="submit" value="Submit">
+</form>
+
+<div id="displayArea"></div>
+
+</body>
+</html> -->
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- Set the title of the web page -->
+    <title>Hello Form</title>
+    <style>
+        /* Add some basic CSS for styling */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            text-align: center;
+        }
+        h1 {
+            font-size: 24px;
+            color: green; /* Change the heading color to green */
+        }
+        form {
+            padding: 20px;
+            margin: 0 auto;
+            width: 300px;
+        }
+        p {
+            margin: 10px 0;
+        }
+        input[type='text'], input[type='checkbox'], input[type='submit'] {
+            display: block;
+            margin: 5px auto;
+        }
+        .checkbox-label {
+            display: inline-block; /* Display checkboxes inline */
+            margin-right: 10px; /* Add spacing between checkboxes and labels */
+        }
+    </style>
+</head>
+<body>
+    <!-- Green heading with text "GeeksforGeeks" -->
+    <h1>GeeksforGeeks</h1>
+    <!-- Form with method 'post' and action 'hello_process.py' -->
+    <form method='post' action='cgi-bin/form_file_path.py' enctype='application/x-www-form-urlencoded'>
+        <!-- Name input field -->
+        <p><label for="name">Name:</label> <input type='text' name='name' id="name" /></p>
+        <!-- Happy checkbox with label and ID 'happy'
+        <label class="checkbox-label" for="happy">&#128512; Happy</label>
+        <input type='checkbox' name='happy' id="happy" />
+        Sad checkbox with label and ID 'sad' -->
+        <!-- <label class="checkbox-label" for="sad">&#128546; Sad</label>
+        <input type='checkbox' name='sad' id="sad" /> -->
+        <!-- Submit button -->
+        <input type='submit' value='Submit' />
+    </form>
+</body>
+</html>

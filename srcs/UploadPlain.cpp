@@ -63,14 +63,18 @@ void	UploadPlain::uploadData()
 		}
 		else
 		{
-			g_num_temp_files++;
-			filepath_outfile = handler.getLocationConfig().uploadDir + "/" + "textfile" + toString(g_num_temp_files) + ".txt";
+			while (1)
+			{
+				filepath_outfile = handler.getLocationConfig().uploadDir + "/" + genRandomFileName(10) + ".txt";
+				if (access(filepath_outfile.c_str(), F_OK) != 0)
+					break;
+			}
 		}
 	}
 
-	if (handler.getHeaderInfo().getTEStatus())
+	if (handler.getChunkDecoder() != NULL)
 	{
-		input.open(handler.getUnchunkedDataFile(), std::ios::ate);
+		input.open(handler.getChunkDecoder()->getUnchunkedDataFile(), std::ios::ate);
 		if (!input.is_open())
 		{
 			handler.setStatus(500); // or 403 or other code?
@@ -96,7 +100,7 @@ void	UploadPlain::uploadData()
 		}
 		body_read = 1;
 		input.close();
-		remove(handler.getUnchunkedDataFile().c_str()); // check if file was removed
+		remove(handler.getChunkDecoder()->getUnchunkedDataFile().c_str()); // check if file was removed
 		outfile.close();
 	}
 	else

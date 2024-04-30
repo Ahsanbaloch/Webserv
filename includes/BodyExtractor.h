@@ -4,6 +4,7 @@
 # include <fstream>
 # include "defines.h"
 # include "CustomException.h"
+# include "utils.h"
 # include "utils.tpp"
 
 class RequestHandler;

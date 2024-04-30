@@ -14,7 +14,7 @@ class GETResponse: public AResponse
 private:
 	//vars
 	std::ifstream	input_file;
-	std::streampos	file_position;
+	
 
 	//flags
 	bool			auto_index;
@@ -37,9 +37,12 @@ public:
 	explicit GETResponse(RequestHandler&);
 	~GETResponse();
 
+	// getter
+	// std::ifstream&	getInputFile();
+
 	// main method
 	void			createResponse();
-	std::string		getBodyFromFile();
+	
 	
 };
 

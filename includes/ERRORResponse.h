@@ -14,6 +14,7 @@ private:
 	std::string	getDefaultErrorMessage(std::string);
 	std::string	createBody(std::string);
 	void		appendAllowedMethods();
+	void		removeTempFiles();
 
 	// constructors
 	ERRORResponse();

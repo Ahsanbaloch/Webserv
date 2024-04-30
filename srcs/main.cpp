@@ -10,21 +10,10 @@
 #include "config/config_pars.hpp"
 #include "defines.h"
 
-int g_num_temp_files = 0;
-int g_num_temp_unchunked_files = 0;
-int g_num_temp_raw_body = 0;
-int g_num_form = 0;
-
-
-// next:
-// 
 
 int	main(int argc, char **argv)
 {
-	// for testing multiple ports --> info incl. ip comes from config file
-	// std::vector<int> ports_test;
-	// ports_test.push_back(4141);
-	// ports_test.push_back(8181);
+	srand(time(0));
 
 	try
 	{
@@ -39,23 +28,27 @@ int	main(int argc, char **argv)
 		// 	for (std::vector<t_server_config>::iterator it2 = it->second.begin(); it2 != it->second.end(); it2++)
 		// 	{
 		// 		std::cout << "port and server name: " << it2->port << " " << it2->serverName << std::endl;
+		// 		std::cout << "timeout : " << it2->timeout << std::endl;
 		// 		for (std::vector<t_location_config>::iterator it3 = it2->locations.begin(); it3 != it2->locations.end(); it3++)
 		// 		{
 		// 			std::cout << "error page : "  << it3->errorPage.html_page << std::endl;
-		// 			std::cout << "error status : "  << it3->errorPage.error_page_status << std::endl;
-		// 			std::cout << "upload: " << it3->uploadDir << std::endl;
-		//  			std::cout << "root : " << it3->root << std::endl;
-		// 			std::cout << "url : " << it3->redirect << std::endl;
-		// 			std::cout << "Path : " << it3->path << std::endl;
-		// 			std::cout << "Index : " << it3->index << std::endl;
+		// 			// std::cout << "error status : "  << it3->errorPage.error_page_status << std::endl;
+		// 			// std::cout << "upload: " << it3->uploadDir << std::endl;
+		//  			// std::cout << "root : " << it3->root << std::endl;
+		// 			// std::cout << "url : " << it3->redirect << std::endl;
+		// 			// std::cout << "Path : " << it3->path << std::endl;
+		// 			// std::cout << "Index : " << it3->index << std::endl;
 		// // 			//std::cout << "cgi_ext size: " << it3->cgi_ext.size() << std::endl;
 		// // 			//std::cout << "upload: " << it3->uploadDir << std::endl;
 		// // 			std::cout << "GET : " << it3->GET << " POST : " << it3->POST << std::endl;
-		// // 			// for (std::vector<std::string>::iterator it4 = it3->cgi_ext.begin(); it4 != it3->cgi_ext.end(); ++it4)
-		// // 			// {
-		// // 			// 	std::cout << "cgi-ext : " << *it4 << std::endl;
+		// 			std::cout << it3->cgi_ext.size() << std::endl;
 
-		// // 			// }
+		// 			for (std::vector<std::string>::iterator it4 = it3->cgi_ext.begin(); it4 != it3->cgi_ext.end(); ++it4)
+		// 			{
+		// 				std::cout << "cgi-ext : " << *it4 << std::endl;
+
+		// 			}
+		// 		std::cout << "..." << std::endl;
 		// 		}
 		// 	}
 		// }

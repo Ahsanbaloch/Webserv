@@ -14,8 +14,11 @@ private:
 	int		kqueue_fd;
 	int		listening_sock_ident;
 	int		connection_sock_ident;
+	
 
 public:
+	int		cgi_response_ident;
+
 	// constructors & destructors
 	KQueue();
 	KQueue(const KQueue&);

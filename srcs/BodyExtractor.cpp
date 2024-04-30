@@ -54,18 +54,15 @@ bool	BodyExtractor::getExtractionStatus() const
 
 void	BodyExtractor::extractBody()
 {
-	if (handler.getUnchunkingStatus())
+	if (handler.getChunkDecoder() != NULL)
 	{
-		temp_body_filepath = handler.getUnchunkedDataFile();
+		temp_body_filepath = handler.getChunkDecoder()->getUnchunkedDataFile();
 		extraction_status = 1;
 	}
 	else
 	{
 		if (temp_body_filepath.empty())
-		{
-			g_num_temp_raw_body++;
-			temp_body_filepath = "www/temp_body/temp" + toString(g_num_temp_raw_body) + ".bin";
-		}
+			temp_body_filepath = createTmpFilePath();
 
 		handler.buf_pos++;
 		int to_write = std::min(handler.getBytesRead() - handler.buf_pos, handler.getHeaderInfo().getBodyLength());

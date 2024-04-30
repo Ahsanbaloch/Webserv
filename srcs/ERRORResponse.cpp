@@ -100,10 +100,15 @@ void	ERRORResponse::appendAllowedMethods()
 }
 
 
+
+
 ///////// MAIN METHOD //////////
 
 void	ERRORResponse::createResponse()
 {
+	if (handler.getStatus() < 400)
+		handler.setStatus(500);
+
 	status_line = createStatusLine();
 	body = createBody(toString(handler.getStatus()));
 	header_fields.append("Content-Type: text/html\r\n");

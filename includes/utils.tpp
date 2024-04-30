@@ -18,4 +18,15 @@ template<typename T> std::string toHex(const T& value)
 	return (oss.str());
 }
 
+template<typename T> int toInt(const T& value)
+{
+	std::stringstream oss;
+	oss << value;
+	int result;
+	oss >> result;
+	return (result);
+}
+
+
+
 #endif

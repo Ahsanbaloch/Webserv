@@ -47,10 +47,7 @@ std::string	REDIRECTResponse::createHeaderFields()
 
 void	REDIRECTResponse::createResponse()
 {
-	std::string referer = handler.getHeaderInfo().getHeaderFields()["referer"];
-
-	if (referer == "http://localhost:" + toString(handler.getSelectedServer().port) + handler.getLocationConfig().path
-		|| referer == handler.getLocationConfig().redirect
+	if (handler.getHeaderInfo().getHeaderFields()["referer"] == handler.getLocationConfig().redirect
 		|| handler.getIntRedirRefPath() == handler.getLocationConfig().redirect)
 	{
 		handler.setStatus(508);
