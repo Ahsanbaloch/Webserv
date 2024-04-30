@@ -168,6 +168,10 @@ void CGIHandler::_execCgi()
 		close(cgi_out[1]);
 		int status;
 		time_t start = std::time(NULL);
+		// something does not seem to be correct with the difftime approach --> broken pipe
+		// if "slowed down" by these print statements, then it seems to work
+		// std::cout << "std::difftime(std::time(NULL), start): " << std::difftime(std::time(NULL), start) << std::endl;
+		// std::cout << "handler.getSelectedServer().timeout: " << handler.getSelectedServer().timeout << std::endl;
 		while (std::difftime(std::time(NULL), start) < handler.getSelectedServer().timeout)
 		{
 			waitpid(cgi_pid, &status, WNOHANG);
@@ -188,4 +192,3 @@ void CGIHandler::_execCgi()
 		}
 	}
 }
-

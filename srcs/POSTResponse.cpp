@@ -35,7 +35,8 @@ void	POSTResponse::respondFileUpload()
 {
 	status_line = createStatusLine();
 
-	openBodyFile("www/index.html"); // replace by success html page location / or cgi if handled in the same
+	// display success page with link to the newly created resource
+	openBodyFile("www/index.html");
 	body = createBodyChunk();
 	header_fields.append("Location: http://localhost:");
 	header_fields.append(toString(handler.getSelectedServer().port));

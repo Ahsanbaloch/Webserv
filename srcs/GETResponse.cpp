@@ -34,21 +34,53 @@ GETResponse& GETResponse::operator=(const GETResponse& src)
 
 /////////// HELPER METHODS ///////////
 
-// store in file?
+
+std::string GETResponse::readFile(const std::string& filename)
+{
+	std::ifstream file(filename.c_str());
+	if (!file)
+		throw CustomException("Could not open file: " + filename);
+	std::stringstream buffer;
+	buffer << file.rdbuf();
+	return (buffer.str());
+}
+
+std::string GETResponse::createHTMLPage(const std::string& directory_name, const std::vector<std::string>& items)
+{
+	std::string html_template = readFile("www/template.html");
+	std::ostringstream directory_items;
+	for (std::vector<std::string>::const_iterator it = items.begin(); it != items.end(); ++it)
+	{
+		std::string link = "/" + *it;
+		directory_items << "<li><a href=\"" << link << "\">" << *it << "</a></li>";
+	}
+
+	size_t pos = html_template.find("{directory_name}");
+	if (pos != std::string::npos)
+		html_template.replace(pos, 16, directory_name);
+	pos = html_template.find("{directory_items}");
+	if (pos != std::string::npos)
+		html_template.replace(pos, 17, directory_items.str());
+
+	return (html_template);
+}
+
 std::string GETResponse::getBodyFromDir()
 {
 	std::string body;
+	std::vector<std::string> items;
 	DIR *directory;
 	struct dirent *entry;
 
-	directory = opendir((handler.getLocationConfig().root + handler.getLocationConfig().path).c_str());
+	std::string directory_name = handler.getLocationConfig().path;
+	directory = opendir((handler.getLocationConfig().root + directory_name).c_str());
 	if (directory != NULL)
 	{
 		entry = readdir(directory);
 		while (entry)
 		{
-			body.append(entry->d_name);
-			body.append("\n");
+			if (strcmp(entry->d_name, ".gitkeep") != 0)
+				items.push_back(entry->d_name);
 			entry = readdir(directory);
 		}
 		closedir(directory);
@@ -58,6 +90,7 @@ std::string GETResponse::getBodyFromDir()
 		handler.setStatus(404);
 		throw CustomException("Not found");
 	}
+	body = createHTMLPage(directory_name, items);
 	return (body);
 }
 
@@ -127,7 +160,7 @@ void	GETResponse::determineOutput()
 std::string	GETResponse::identifyMIME()
 {	
 	if (auto_index) // probably also rather going to be html
-		return ("text/plain");
+		return ("text/html");
 	else if (file_type == ".html")
 		return ("text/html");
 	else if (file_type == ".jpeg")
