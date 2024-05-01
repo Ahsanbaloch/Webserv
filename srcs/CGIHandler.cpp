@@ -128,7 +128,7 @@ void	CGIHandler::createArguments()
 		if (handler.getTempBodyFilepath().empty())
 		{
 			handler.setStatus(500);
-			throw CustomException("Internal Server Error");
+			throw CustomException("Internal Server Error: request body not found by CGI");
 		}
 		argv = new char*[3];
 		argv[0] = strdup(file_path.c_str());

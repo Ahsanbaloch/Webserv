@@ -9,7 +9,7 @@ UploadPlain::UploadPlain()
 	if (handler.getLocationConfig().uploadDir.empty())
 	{
 		handler.setStatus(404);
-		throw CustomException("Not found");
+		throw CustomException("Not found: upload directory");
 	}
 	body_bytes_consumed = 0;
 }
@@ -20,7 +20,7 @@ UploadPlain::UploadPlain(RequestHandler& src)
 	if (handler.getLocationConfig().uploadDir.empty())
 	{
 		handler.setStatus(404);
-		throw CustomException("Not found");
+		throw CustomException("Not found: upload directory");
 	}
 	body_bytes_consumed = 0;
 }

@@ -305,10 +305,10 @@ void	RequestHandler::addCGIToQueue()
 	cgi_handler = new CGIHandler(*this);
 	struct kevent cgi_event;
 	if (fcntl(cgi_handler->cgi_out[0], F_SETFL, O_NONBLOCK) == -1)
-		throw CustomException("Failed when calling fcntl() and setting fds to non-blocking\n");
+		throw CustomException("Failed when calling fcntl() and setting fds to non-blocking");
 	EV_SET(&cgi_event, cgi_handler->cgi_out[0], EVFILT_READ, EV_ADD, 0, 0, &connection_fd);
 	if (kevent(kernel_q_fd, &cgi_event, 1, NULL, 0, NULL) == -1)
-		throw CustomException("Failed when registering events for CGI output\n");
+		throw CustomException("Failed when registering events for CGI output");
 }
 
 void	RequestHandler::makeErrorResponse()
@@ -328,8 +328,8 @@ void	RequestHandler::checkForCGI()
 	{
 		if (find(location_extensions.begin(), location_extensions.end(), request_header.getFileExtension()) == location_extensions.end())
 		{
-			status = 403; // which status should be set here? 
-			throw CustomException("Forbidden");
+			status = 403;
+			throw CustomException("Forbidden: specified cgi file extension is not allowed");
 		}
 		else
 			cgi_detected = 1;

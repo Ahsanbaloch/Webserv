@@ -153,7 +153,7 @@ std::string AResponse::readHTMLTemplateFile(const std::string& filename)
 	if (!file)
 	{
 		handler.setStatus(500);
-		throw CustomException("Internal Server Error");
+		throw CustomException("Internal Server Error: failed to open file");
 	}
 	std::stringstream buffer;
 	buffer << file.rdbuf();

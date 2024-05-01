@@ -71,7 +71,7 @@ void	KQueue::attachListeningSockets(ListeningSocketsBlock& SocketsBlock)
 	{
 		perror("Failure: ");
 		delete[] listening_event;
-		throw CustomException("Failed when registering events for listening sockets\n");
+		throw CustomException("Failed when registering events for listening sockets");
 	}
 	delete[] listening_event;
 }
@@ -90,7 +90,7 @@ void	KQueue::attachConnectionSockets(std::vector<int> pending_fds)
 	if (kevent(kqueue_fd, connection_event, size * 2, NULL, 0, NULL) < 0)
 	{
 		delete[] connection_event;
-		throw CustomException("Failed when registering events for connection sockets\n");
+		throw CustomException("Failed when registering events for connection sockets");
 	}
 	delete[] connection_event;
 }

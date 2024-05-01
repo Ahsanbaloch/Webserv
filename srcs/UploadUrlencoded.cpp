@@ -122,7 +122,7 @@ void	UploadUrlencoded::parseBody(char ch)
 			if (ch == CR || ch == LF)
 			{
 				handler.setStatus(400);
-				throw CustomException("Bad request: encountered when parsing urlencoded data");
+				throw CustomException("Bad request: detected when parsing urlencoded data");
 			}
 			else if (ch == '=')
 			{

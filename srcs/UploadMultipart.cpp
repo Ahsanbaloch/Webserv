@@ -9,7 +9,7 @@ UploadMultipart::UploadMultipart()
 	if (handler.getLocationConfig().uploadDir.empty())
 	{
 		handler.setStatus(404);
-		throw CustomException("Not found");
+		throw CustomException("Not found: upload directory");
 	}
 	identifyBoundary();
 	meta_data_size = 0;
@@ -27,7 +27,7 @@ UploadMultipart::UploadMultipart(RequestHandler& src)
 	if (handler.getLocationConfig().uploadDir.empty())
 	{
 		handler.setStatus(404);
-		throw CustomException("Not found");
+		throw CustomException("Not found: upload directory");
 	}
 	identifyBoundary();
 	meta_data_size = 0;
@@ -366,7 +366,7 @@ void	UploadMultipart::parseBody(char ch)
 			else
 			{
 				handler.setStatus(400);
-				throw CustomException("Bad request: encountered when parsing multipart/form-data body");
+				throw CustomException("Bad request: detected when parsing multipart/form-data body");
 			}
 
 		case mp_boundary_id:

@@ -145,7 +145,7 @@ void	CGIResponse::readHeaderFields()
 					break;
 				}
 				handler.setStatus(500);
-				throw CustomException("Internal Server Error: found when reading CGI header");
+				throw CustomException("Internal Server Error: detected when parsing CGI header");
 		}
 	}
 }

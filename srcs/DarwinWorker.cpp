@@ -83,12 +83,12 @@ void	DarwinWorker::acceptConnections(int connect_ev)
 				if (it != listening_sockets.end())
 					addToConnectedClients(it->second);
 				else
-					throw CustomException("Failed when connecting clients\n"); // where is this going?
+					throw CustomException("Failed when connecting clients"); // where is this going?
 				pending_fds.clear();
 				break;
 			}
 			else
-				throw CustomException("Failed when trying to establish connection\n"); // where is this going?
+				throw CustomException("Failed when trying to establish connection"); // where is this going?
 		}
 		std::cout << "Connection " << connection_fd << " has been established" << std::endl;
 		pending_fds.push_back(connection_fd);
