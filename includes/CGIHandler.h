@@ -2,9 +2,12 @@
 # define CGIHANDLER_H
 
 # include <signal.h>
+# include <string.h>
+# include <ctime>
 # include <string>
 # include <fstream>
 # include <sys/fcntl.h>
+# include <sys/wait.h>
 # include <fcntl.h>
 # include <errno.h>
 # include "AResponse.h"

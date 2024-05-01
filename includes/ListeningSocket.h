@@ -22,12 +22,12 @@ private:
 	
 	// constructors
 	ListeningSocket();
-	ListeningSocket& operator=(const ListeningSocket&);
 
 public:
 	// constructor & destructors
 	ListeningSocket(int, std::vector<t_server_config>);
 	ListeningSocket(const ListeningSocket&);
+	ListeningSocket& operator=(const ListeningSocket&);
 	~ListeningSocket();
 
 	// getters

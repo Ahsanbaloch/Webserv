@@ -112,7 +112,7 @@ void	CGIHandler::setEnv()
 	for (size_t i = 0; i < temp_env.size(); i++)
 	{
 		env[i] = new char[temp_env[i].size() + 1];
-		std::strcpy(env[i], temp_env[i].c_str());
+		strcpy(env[i], temp_env[i].c_str());
 	}
 	env[temp_env.size()] = NULL;
 	for (size_t i = 0; i < temp_env.size(); i++)
@@ -180,13 +180,13 @@ void CGIHandler::execCGI()
 	{
 		close(cgi_out[1]);
 		int status;
-		time_t start = std::time(NULL);
+		time_t start = time(NULL);
 		// something does not seem to be correct with the difftime approach --> broken pipe
 		// if "slowed down" by these print statements, then it seems to work
 		// add a usleep?
 		// std::cout << "std::difftime(std::time(NULL), start): " << std::difftime(std::time(NULL), start) << std::endl;
 		// std::cout << "handler.getSelectedServer().timeout: " << handler.getSelectedServer().timeout << std::endl;
-		while (std::difftime(std::time(NULL), start) < handler.getSelectedServer().timeout)
+		while (difftime(time(NULL), start) < handler.getSelectedServer().timeout)
 		{
 			waitpid(cgi_pid, &status, WNOHANG);
 			if (WIFEXITED(status))

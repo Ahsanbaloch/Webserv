@@ -303,12 +303,14 @@ void	RequestHandler::processBody()
 void	RequestHandler::addCGIToQueue()
 {
 	cgi_handler = new CGIHandler(*this);
-	struct kevent cgi_event;
-	if (fcntl(cgi_handler->cgi_out[0], F_SETFL, O_NONBLOCK) == -1)
-		throw CustomException("Failed when calling fcntl() and setting fds to non-blocking");
-	EV_SET(&cgi_event, cgi_handler->cgi_out[0], EVFILT_READ, EV_ADD, 0, 0, &connection_fd);
-	if (kevent(kernel_q_fd, &cgi_event, 1, NULL, 0, NULL) == -1)
-		throw CustomException("Failed when registering events for CGI output");
+	#ifdef __APPLE__
+		struct kevent cgi_event;
+		if (fcntl(cgi_handler->cgi_out[0], F_SETFL, O_NONBLOCK) == -1)
+			throw CustomException("Failed when calling fcntl() and setting fds to non-blocking");
+		EV_SET(&cgi_event, cgi_handler->cgi_out[0], EVFILT_READ, EV_ADD, 0, 0, &connection_fd);
+		if (kevent(kernel_q_fd, &cgi_event, 1, NULL, 0, NULL) == -1)
+			throw CustomException("Failed when registering events for CGI output");
+	#endif
 }
 
 void	RequestHandler::makeErrorResponse()

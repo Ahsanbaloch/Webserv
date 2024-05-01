@@ -375,7 +375,7 @@ void	RequestHeader::parseHeaderFields()
 				}
 				else
 					headers_state = he_name;
-			
+					// fall through
 			case he_name:
 				if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch == '-' || ch == '_')
 				{
@@ -412,8 +412,7 @@ void	RequestHeader::parseHeaderFields()
 				}
 				else
 					headers_state = he_value;
-
-
+					// fall through
 			case he_value:
 				if (ch == SP)
 					headers_state = he_ws_after_value;
@@ -459,7 +458,7 @@ void	RequestHeader::parseHeaderFields()
 					handler.setStatus(400);
 					throw CustomException("Bad request: detected when parsing header fields");
 				}
-			
+				// fall through
 			case he_done:
 				if (header_name == "content-length")
 				{
@@ -618,7 +617,7 @@ void	RequestHeader::parseRequestLine()
 				if (ch == LF)
 					break;
 				rl_state = rl_method;
-
+				// fall through
 			case rl_method:
 				checkMethod();
 				rl_state = rl_first_divider;

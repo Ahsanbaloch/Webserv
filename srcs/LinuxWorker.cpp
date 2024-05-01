@@ -6,7 +6,7 @@ LinuxWorker::LinuxWorker(const EPoll& Queue)
 {
 	memset(&client_addr, 0, sizeof(client_addr));
 	addr_size = 0; // shouldn't this be rather be sizeof(client_addr)?
-	for (std::map<int, ListeningSocket>::iterator it = Q.SocketsBlock.listening_sockets.begin(); it != Q.SocketsBlock.listening_sockets.end(); it++)
+	for (std::map<int, ListeningSocket>::iterator it = Q.SocketsBlock.getListeningSockets().begin(); it != Q.SocketsBlock.getListeningSockets().end(); it++)
 		listening_socks_fd.push_back(it->first);
 }
 
@@ -19,7 +19,7 @@ void	LinuxWorker::addToConnectedClients(ListeningSocket& socket)
 	int size = pending_fds.size();
 	for (int i = 0; i < size; i++)
 	{
-		RequestHandler* Handler = new RequestHandler(pending_fds[i], socket.server_config); // need to free that memory somewhere --> when disconnecting the client
+		RequestHandler* Handler = new RequestHandler(pending_fds[i], socket.getServerConfig(), Q.epoll_fd); // need to free that memory somewhere --> when disconnecting the client
 		ConnectedClients.insert(std::pair<int, RequestHandler*>(pending_fds[i], Handler));
 	}
 }
@@ -58,8 +58,8 @@ void	LinuxWorker::runEventLoop()
 						if (errno == EAGAIN || errno == EWOULDBLOCK)
 						{
 							Q.attachConnectionSockets(pending_fds);
-							std::map<int, ListeningSocket>::iterator it = Q.SocketsBlock.listening_sockets.find(event_lst[i].data.fd);
-							if (it != Q.SocketsBlock.listening_sockets.end())
+							std::map<int, ListeningSocket>::iterator it = Q.SocketsBlock.getListeningSockets().find(event_lst[i].data.fd);
+							if (it != Q.SocketsBlock.getListeningSockets().end())
 								addToConnectedClients(it->second);
 							else
 								throw CustomException("Failed when connecting clients\n");
@@ -73,8 +73,8 @@ void	LinuxWorker::runEventLoop()
 				}
 			}
 			// event came from connection, so that we want to handle the request
-			else
-				ConnectedClients[event_lst[i].ident]->handleRequest(event_lst[i].ident); // rm ident in handleRequest and use fd stored in object
+			//else
+			//	ConnectedClients[event_lst[i].ident]->handleRequest(event_lst[i].ident); // rm ident in handleRequest and use fd stored in object
 			// need to add code similar to DarwinWorker
 		}
 	}

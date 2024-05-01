@@ -89,7 +89,7 @@ void	CGIResponse::readHeaderFields()
 				}
 				else
 					cgi_resp_he_state = he_name;
-
+					// fall through
 			case he_name: 
 				if (ch == ':')
 				{
@@ -107,7 +107,7 @@ void	CGIResponse::readHeaderFields()
 					break;
 				else
 					cgi_resp_he_state = he_value;
-				
+					// fall through
 			case he_value:
 				if (ch == CR)
 					break;
@@ -118,7 +118,7 @@ void	CGIResponse::readHeaderFields()
 					header_value.append(1, ch);
 					break;
 				}
-
+				// fall through
 			case he_done:
 				if (header_name == "Status")
 				{
@@ -154,7 +154,7 @@ void	CGIResponse::storeBody()
 {
 	handler.cgi_buf_pos++;
 	int to_write = handler.getCGIBytesRead() - handler.cgi_buf_pos;
-	outfile.open(temp_body_filepath, std::ios::app | std::ios::binary);
+	outfile.open(temp_body_filepath.c_str(), std::ios::app | std::ios::binary);
 	outfile.write(reinterpret_cast<const char*>(&handler.cgi_buf[handler.cgi_buf_pos]), to_write);
 	handler.cgi_buf_pos += to_write;
 	body_size += to_write;

@@ -160,7 +160,7 @@ void	UploadUrlencoded::parseBody(char ch)
 				temp_value.append(1, ch);
 				break;
 			}
-
+			// fall through
 		case end_pair:
 			storeInDatabase();
 	}
@@ -209,7 +209,7 @@ void	UploadUrlencoded::uploadData()
 {
 	if (handler.getChunkDecoder() != NULL)
 	{
-		input.open(handler.getChunkDecoder()->getUnchunkedDataFile(), std::ios::ate);
+		input.open(handler.getChunkDecoder()->getUnchunkedDataFile().c_str(), std::ios::ate);
 		if (!input.is_open())
 		{
 			handler.setStatus(500);

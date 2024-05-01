@@ -19,7 +19,7 @@ void	EPoll::attachListeningSockets()
 {
 	// define what events we are interested in (in case of the listening socket we are only interested in the EVFILT_READ
 	// since it is only used for accepting incoming connections)
-	for (std::map<int, ListeningSocket>::iterator it = SocketsBlock.listening_sockets.begin(); it != SocketsBlock.listening_sockets.end(); it++)
+	for (std::map<int, ListeningSocket>::iterator it = SocketsBlock.getListeningSockets().begin(); it != SocketsBlock.getListeningSockets().end(); it++)
 	{
 		struct epoll_event listening_event;
 		listening_event.data.fd = it->first; // needed?

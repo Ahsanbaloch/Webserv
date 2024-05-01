@@ -324,7 +324,7 @@ void	UploadMultipart::storeFileData()
 		mp_state = mp_boundary_end;
 	}
 
-	outfile.open(filepath_outfile, std::ios::app | std::ios::binary);
+	outfile.open(filepath_outfile.c_str(), std::ios::app | std::ios::binary);
 	if (!outfile.is_open())
 	{
 		handler.setStatus(500);
@@ -337,7 +337,7 @@ void	UploadMultipart::storeFileData()
 
 void	UploadMultipart::storeUnchunkedFileData()
 {
-	outfile.open(filepath_outfile, std::ios::app | std::ios::binary);
+	outfile.open(filepath_outfile.c_str(), std::ios::app | std::ios::binary);
 	if (!outfile.is_open())
 	{
 		handler.setStatus(500);
@@ -368,7 +368,7 @@ void	UploadMultipart::parseBody(char ch)
 				handler.setStatus(400);
 				throw CustomException("Bad request: detected when parsing multipart/form-data body");
 			}
-
+			// fall through
 		case mp_boundary_id:
 			checkBoundaryID();
 			break;
@@ -412,7 +412,7 @@ void	UploadMultipart::parseBody(char ch)
 				handler.setStatus(400);
 				throw CustomException("Bad request: could not identify content type in multipart/form-data");
 			}
-
+			// fall through
 		case mp_content:
 			if (handler.getHeaderInfo().getTEStatus())
 				storeUnchunkedFileData();
@@ -434,7 +434,7 @@ void	UploadMultipart::uploadData()
 {
 	if (handler.getChunkDecoder() != NULL)
 	{
-		input.open(handler.getChunkDecoder()->getUnchunkedDataFile(), std::ios::binary);
+		input.open(handler.getChunkDecoder()->getUnchunkedDataFile().c_str(), std::ios::binary);
 		if (!input.is_open())
 		{
 			handler.setStatus(500);

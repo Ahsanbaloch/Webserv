@@ -75,13 +75,13 @@ void	UploadPlain::checkFilepath()
 
 void	UploadPlain::openFiles()
 {
-	input.open(handler.getChunkDecoder()->getUnchunkedDataFile(), std::ios::ate);
+	input.open(handler.getChunkDecoder()->getUnchunkedDataFile().c_str(), std::ios::ate);
 	if (!input.is_open())
 	{
 		handler.setStatus(500);
 		throw CustomException("Internal Server Error: could not open file");
 	}
-	outfile.open(filepath_outfile, std::ios::app);
+	outfile.open(filepath_outfile.c_str(), std::ios::app);
 	if (!outfile.is_open())
 	{
 		handler.setStatus(500);
@@ -118,7 +118,7 @@ void	UploadPlain::uploadData()
 	{
 		handler.buf_pos++;
 		int to_write = std::min(handler.getBytesRead() - handler.buf_pos, handler.getHeaderInfo().getBodyLength());
-		outfile.open(filepath_outfile, std::ios::app);
+		outfile.open(filepath_outfile.c_str(), std::ios::app);
 		if (!outfile.is_open())
 		{
 			handler.setStatus(500);

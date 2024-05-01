@@ -18,12 +18,13 @@ private:
 	std::map<int, ListeningSocket>	listening_sockets;
 
 	// constructors
-	ListeningSocketsBlock();
-	ListeningSocketsBlock(const ListeningSocketsBlock&);
-	ListeningSocketsBlock& operator=(const ListeningSocketsBlock&);
+	
 
 public:
 	// constructors & destructors
+	ListeningSocketsBlock();
+	ListeningSocketsBlock(const ListeningSocketsBlock&);
+	ListeningSocketsBlock& operator=(const ListeningSocketsBlock&);
 	explicit ListeningSocketsBlock(std::map<std::string, std::vector<t_server_config> >&);
 	~ListeningSocketsBlock();
 
