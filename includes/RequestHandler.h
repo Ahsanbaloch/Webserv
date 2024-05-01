@@ -3,6 +3,8 @@
 
 #ifdef __APPLE__
 	# include <sys/event.h>
+#else
+	# include <sys/epoll.h> 
 #endif
 # include <sys/socket.h>
 # include <unistd.h>

@@ -8,8 +8,8 @@ KQueue::KQueue()
 	kqueue_fd = kqueue();
 	if (kqueue_fd == -1)
 		throw std::exception();
-	listening_sock_ident = 0;
-	connection_sock_ident = 1;
+	listening_sock_ident = 1;
+	connection_sock_ident = 2;
 }
 
 KQueue::~KQueue()

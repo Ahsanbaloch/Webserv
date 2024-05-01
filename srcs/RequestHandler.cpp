@@ -310,6 +310,14 @@ void	RequestHandler::addCGIToQueue()
 		EV_SET(&cgi_event, cgi_handler->cgi_out[0], EVFILT_READ, EV_ADD, 0, 0, &connection_fd);
 		if (kevent(kernel_q_fd, &cgi_event, 1, NULL, 0, NULL) == -1)
 			throw CustomException("Failed when registering events for CGI output");
+	#else
+		struct epoll_event listening_event;
+		listening_event.data.u64 = connection_fd;
+		listening_event.events = EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLOUT;
+		if (fcntl(cgi_handler->cgi_out[0], F_SETFL, O_NONBLOCK) == -1)
+			throw CustomException("Failed when calling fcntl() and setting fds to non-blocking");
+		if (epoll_ctl(kernel_q_fd, EPOLL_CTL_ADD, cgi_handler->cgi_out[0], &listening_event) == -1)
+			throw CustomException("Failed when registering events for CGI output");
 	#endif
 }
 

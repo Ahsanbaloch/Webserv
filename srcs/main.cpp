@@ -30,11 +30,11 @@ int	main(int argc, char **argv)
 			// attach sockets to kqueue
 			Queue.attachListeningSockets(SocketsBlock);
 			// create Worker object
-			DarwinWorker Worker(Queue, SocketsBlock); // also add the SocketsBlock which contains the configData (alt: map<listening_socketfd, config obj>)
+			DarwinWorker Worker(Queue, SocketsBlock);
 		#else
-			EPoll Queue(SocketsBlock);
-			Queue.attachListeningSockets();
-			LinuxWorker Worker(Queue);
+			EPoll Queue;
+			Queue.attachListeningSockets(SocketsBlock);
+			LinuxWorker Worker(Queue, SocketsBlock);
 		#endif
 
 		// run event loop

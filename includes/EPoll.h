@@ -2,7 +2,7 @@
 #ifndef EPOLL_H
 # define EPOLL_H
 
-#include <sys/epoll.h> // may have to change something in the makefile?
+#include <sys/epoll.h>
 #include <unistd.h>
 #include <vector>
 #include "CustomException.h"
@@ -11,20 +11,28 @@
 class EPoll
 {
 private:
-	/* data */
-public:
-	ListeningSocketsBlock SocketsBlock;
+	// vars
 	int	epoll_fd;
-	// int	listening_sock_ident;
-	// int	connection_sock_ident;
+	int	listening_sock_ident;
+	int	connection_sock_ident;
 
-	explicit EPoll(const ListeningSocketsBlock&);
+public:
+	//constructors & destructors
+	EPoll(const EPoll&);
+	EPoll& operator=(const EPoll&);
 	EPoll();
 	~EPoll();
 
-	void	attachListeningSockets();
+	// getters
+	int			getEPOLLFD();
+	uint32_t	getListeningSockIdent() const;
+	uint32_t	getConnectionSockIdent() const;
+
+	// methods
+	void	attachListeningSockets(ListeningSocketsBlock&);
 	void	attachConnectionSockets(std::vector<int>);
 	void	closeQueue();
+	
 };
 
 
