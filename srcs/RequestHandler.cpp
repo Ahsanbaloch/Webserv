@@ -617,7 +617,7 @@ void	RequestHandler::readCGIResponse()
 			if (cgiResponse != NULL)
 			{
 				if (cgiResponse->processBuffer())
-					makeInternalRedirectPostCGI(cgiResponse->cgi_header_fields["Location"]);
+					makeInternalRedirectPostCGI(cgiResponse->getCGIHeaderFields()["Location"]);
 			}
 		}
 	}
