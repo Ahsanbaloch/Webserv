@@ -25,13 +25,18 @@ public:
 
 	// getters
 	int			getEPOLLFD();
-	uint32_t	getListeningSockIdent() const;
-	uint32_t	getConnectionSockIdent() const;
+	int			getListeningSockIdent() const;
+	int			getConnectionSockIdent() const;
 
 	// methods
 	void	attachListeningSockets(ListeningSocketsBlock&);
 	void	attachConnectionSockets(std::vector<int>);
 	void	closeQueue();
+
+	struct e_data {
+		int	fd;
+		int socket_ident;
+	};
 	
 };
 

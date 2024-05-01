@@ -46,13 +46,13 @@ int	EPoll::getEPOLLFD()
 	return (epoll_fd);
 }
 
-uint32_t	EPoll::getListeningSockIdent() const
+int	EPoll::getListeningSockIdent() const
 {
 	return (listening_sock_ident);
 }
 
 
-uint32_t	EPoll::getConnectionSockIdent() const
+int	EPoll::getConnectionSockIdent() const
 {
 	return (connection_sock_ident);
 }
@@ -60,13 +60,17 @@ uint32_t	EPoll::getConnectionSockIdent() const
 
 ///////// METHODS ///////////
 
-void	EPoll::attachListeningSockets(ListeningSocketsBlock& SocketsBlock)
+void	EPoll::attachListeningSockets(ListeningSocketsBlock&
+ SocketsBlock)
 {
-	for (std::map<int, ListeningSocket>::iterator it = SocketsBlock.getListeningSockets().begin(); it != SocketsBlock.getListeningSockets().end(); it++)
+	std::map<int, ListeningSocket> tmp_sockets = SocketsBlock.getListeningSockets();
+	for (std::map<int, ListeningSocket>::iterator it = tmp_sockets.begin(); it != tmp_sockets.end(); it++)
 	{
 		struct epoll_event listening_event;
-		listening_event.data.fd = it->first;
-		listening_event.data.u32 = listening_sock_ident; 
+		e_data* user_data = new e_data;
+		user_data->fd = it->first;
+		user_data->socket_ident = listening_sock_ident;
+		listening_event.data.ptr = user_data;
 		listening_event.events = EPOLLIN;
 		if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, it->first, &listening_event) == -1)
 			throw CustomException("Failed when registering events for listening sockets\n");
@@ -79,10 +83,13 @@ void	EPoll::attachConnectionSockets(std::vector<int> pending_fds)
 	struct epoll_event connection_event;
 	for (int i = 0; i < size; i++)
 	{
-		ListeningSocket::setNonblocking(pending_fds[i]); // check if this can be done without fcntl for epoll
-		connection_event.data.fd = pending_fds[i];
-		connection_event.data.u32 = connection_sock_ident;
-		connection_event.events = EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLOUT; // set EPOLLOUT later?
+		std::cout << "connection socket" << std::endl;
+		ListeningSocket::setNonblocking(pending_fds[i]);
+		e_data* user_data = new e_data;
+		user_data->fd = pending_fds[i];
+		user_data->socket_ident = connection_sock_ident;
+		connection_event.data.ptr = user_data;
+		connection_event.events = EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLOUT;
 		if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, pending_fds[i], &connection_event) == -1)
 			throw CustomException("Failed when registering events for conncetion sockets\n");
 	}
