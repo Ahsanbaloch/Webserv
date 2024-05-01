@@ -333,7 +333,8 @@ void	RequestHandler::checkForCGI()
 		}
 		else
 		{
-			if (access(request_header.getPath().c_str(), F_OK) == 0)
+			std::string cgi_path = getLocationConfig().root + request_header.getPath();
+			if (access(cgi_path.c_str(), F_OK) == 0)
 				cgi_detected = 1;
 			else
 			{
