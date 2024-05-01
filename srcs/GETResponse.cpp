@@ -99,7 +99,7 @@ std::string GETResponse::createBody()
 	return (body);
 }
 
-std::string	GETResponse::createHeaderFields(std::string body) // probably don't need parameter anymore
+std::string	GETResponse::createHeaderFields()
 {
 	std::string	header;
 	std::string mime_type = identifyMIME();
@@ -111,7 +111,7 @@ std::string	GETResponse::createHeaderFields(std::string body) // probably don't 
 		header.append(toString(body.size()) + "\r\n");
 	}
 	else
-		header.append("Content-Length: " + std::to_string(body_size) + "\r\n");
+		header.append("Content-Length: " + toString(body_size) + "\r\n");
 	// header.append("Cache-Control: no-cache");
 	// header.append("Set-Cookie: preference=darkmode; Domain=example.com");
 	// header.append("Server: nginx/1.21.0");
@@ -208,5 +208,5 @@ void	GETResponse::createResponse()
 	else
 		body = createBody();
 	
-	header_fields = createHeaderFields(body);
+	header_fields = createHeaderFields();
 }

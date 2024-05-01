@@ -106,7 +106,7 @@ std::streampos	AResponse::getFilePosOffset() const
 void	AResponse::openBodyFile(std::string filepath)
 {
 	full_file_path = filepath;
-	body_file.open(full_file_path, std::ios::binary);
+	body_file.open(full_file_path.c_str(), std::ios::binary);
 	if (!body_file.is_open()) 
 	{
 		handler.setStatus(404);
@@ -153,7 +153,7 @@ std::string AResponse::readHTMLTemplateFile(const std::string& filename)
 	if (!file)
 	{
 		handler.setStatus(500);
-		throw CustomException("Internal Server Error");
+		throw CustomException("Internal Server Error: failed to open file");
 	}
 	std::stringstream buffer;
 	buffer << file.rdbuf();

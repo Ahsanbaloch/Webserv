@@ -1,8 +1,13 @@
 #ifndef REQUESTHANDLER_H
 # define REQUESTHANDLER_H
 
+#ifdef __APPLE__
+	# include <sys/event.h>
+#else
+	# include <sys/epoll.h> 
+	# include "EPoll.h"
+#endif
 # include <sys/socket.h>
-# include <sys/event.h>
 # include <unistd.h>
 # include <string>
 # include <map>

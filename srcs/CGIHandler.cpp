@@ -1,12 +1,11 @@
 #include "CGIHandler.h"
 #include "RequestHandler.h"
 
-CGIHandler::CGIHandler()
-	: handler(*new RequestHandler())
-{}
 
-CGIHandler::CGIHandler(RequestHandler& src)
-	: handler(src), env(NULL)
+///////// CONSTRUCTORS & DESTRUCTORS ///////////
+
+CGIHandler::CGIHandler()
+	: handler(*new RequestHandler()), cgi_pid(0), env(NULL), argv(NULL)
 {
 	if (pipe(cgi_out) < 0)
 	{
@@ -15,10 +14,14 @@ CGIHandler::CGIHandler(RequestHandler& src)
 	}
 }
 
-CGIHandler::CGIHandler(const CGIHandler &other)
-	: handler(other.handler)
+CGIHandler::CGIHandler(RequestHandler& src)
+	: handler(src), cgi_pid(0), env(NULL), argv(NULL)
 {
-	 *this = other;
+	if (pipe(cgi_out) < 0)
+	{
+		handler.setStatus(500);
+		throw CustomException("Internal Server Error: Failed to create pipe");
+	}
 }
 
 CGIHandler::~CGIHandler()
@@ -37,23 +40,33 @@ CGIHandler::~CGIHandler()
 	}
 }
 
+CGIHandler::CGIHandler(const CGIHandler &other)
+	: handler(other.handler)
+{
+	handler = other.handler;
+	cgi_pid = other.cgi_pid;
+	env = other.env;
+	argv = other.argv;
+	cgi_out[0] = other.cgi_out[0];
+	cgi_out[1] = other.cgi_out[1];
+}
+
 CGIHandler &CGIHandler::operator=(const CGIHandler &other) 
 {
 	if (this != &other)
 	{
+		handler = other.handler;
+		cgi_pid = other.cgi_pid;
 		env = other.env;
 		argv = other.argv;
-		handler = other.handler;
+		cgi_out[0] = other.cgi_out[0];
+		cgi_out[1] = other.cgi_out[1];
 	}
 	return (*this);
 }
 
 
-void CGIHandler::execute()
-{
-	setEnv();
-	_execCgi();
-}
+///////// HELPER METHODS ///////////
 
 std::string	CGIHandler::identifyPathInfo()
 {
@@ -99,7 +112,7 @@ void	CGIHandler::setEnv()
 	for (size_t i = 0; i < temp_env.size(); i++)
 	{
 		env[i] = new char[temp_env[i].size() + 1];
-		std::strcpy(env[i], temp_env[i].c_str());
+		strcpy(env[i], temp_env[i].c_str());
 	}
 	env[temp_env.size()] = NULL;
 	for (size_t i = 0; i < temp_env.size(); i++)
@@ -115,7 +128,7 @@ void	CGIHandler::createArguments()
 		if (handler.getTempBodyFilepath().empty())
 		{
 			handler.setStatus(500);
-			throw CustomException("Internal Server Error");
+			throw CustomException("Internal Server Error: request body not found by CGI");
 		}
 		argv = new char*[3];
 		argv[0] = strdup(file_path.c_str());
@@ -130,7 +143,7 @@ void	CGIHandler::createArguments()
 	}
 }
 
-void CGIHandler::_execCgi() 
+void CGIHandler::execCGI() 
 {
 	createArguments();
 	cgi_pid = fork();
@@ -167,13 +180,13 @@ void CGIHandler::_execCgi()
 	{
 		close(cgi_out[1]);
 		int status;
-		time_t start = std::time(NULL);
+		time_t start = time(NULL);
 		// something does not seem to be correct with the difftime approach --> broken pipe
 		// if "slowed down" by these print statements, then it seems to work
 		// add a usleep?
 		// std::cout << "std::difftime(std::time(NULL), start): " << std::difftime(std::time(NULL), start) << std::endl;
 		// std::cout << "handler.getSelectedServer().timeout: " << handler.getSelectedServer().timeout << std::endl;
-		while (std::difftime(std::time(NULL), start) < handler.getSelectedServer().timeout)
+		while (difftime(time(NULL), start) < handler.getSelectedServer().timeout)
 		{
 			waitpid(cgi_pid, &status, WNOHANG);
 			if (WIFEXITED(status))
@@ -192,4 +205,14 @@ void CGIHandler::_execCgi()
 			throw CustomException("Internal Server Error");
 		}
 	}
+}
+
+
+///////// MAIN METHODS ///////////
+
+void CGIHandler::execute()
+{
+	
+	setEnv();
+	execCGI();
 }

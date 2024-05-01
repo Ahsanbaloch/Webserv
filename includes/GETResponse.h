@@ -23,7 +23,7 @@ private:
 	// helper methods
 	std::string		getBodyFromDir();
 	std::string		createBody();
-	std::string		createHeaderFields(std::string);
+	std::string		createHeaderFields();
 	std::string		identifyMIME();
 	std::string		createHTMLPage(const std::string&, const std::vector<std::string>&);
 	void			determineOutput();

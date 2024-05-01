@@ -58,7 +58,7 @@ void	ListeningSocket::setSockOptions()
 	// how is it related to timeout functionality (RFC 9112 (HTTP 1.1) section 9.5) and do we implement it?
 	int enable = 1;
 	if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable)) == -1)
-		throw CustomException("Failed when calling setsocketopt()\n");
+		throw CustomException("Failed when calling setsocketopt()");
 }
 
 void	ListeningSocket::initSockConfig()
@@ -72,7 +72,7 @@ void	ListeningSocket::bindSock()
 {
 	if (bind(socket_fd, (struct sockaddr*)&sock_config, sizeof(sock_config)) < 0)
 	{
-		throw CustomException("Failed when calling bind()\n");
+		throw CustomException("Failed when calling bind()");
 	}
 }
 
@@ -84,11 +84,11 @@ int	ListeningSocket::getSocketFd() const
 void	ListeningSocket::setNonblocking(int fd)
 {
 	if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1)
-		throw CustomException("Failed when calling fcntl() and setting fds to non-blocking\n");
+		throw CustomException("Failed when calling fcntl() and setting fds to non-blocking");
 }
 
 void	ListeningSocket::makeListen()
 {
 	if (listen(socket_fd, SOMAXCONN) < 0)
-		throw CustomException("Failed when making sockets listening\n");
+		throw CustomException("Failed when making sockets listening");
 }

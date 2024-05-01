@@ -7,7 +7,6 @@
 RequestHeader::RequestHeader()
 	: handler(*new RequestHandler())
 {
-	// is there a better way to initialize the variables?
 	body_beginning = 0;
 	body_length = 0;
 	header_complete = 0;
@@ -244,9 +243,9 @@ void	RequestHeader::checkFields()
 	if (header_fields.find("host") == header_fields.end())
 	{
 		handler.setStatus(400);
-		throw CustomException("Bad request 1");
+		throw CustomException("Bad request: no host field found");
 	}
-	if (!transfer_encoding_exists && !content_length_exists && method == "POST") // if both exist at the same time is check when parsing
+	if (!transfer_encoding_exists && !content_length_exists && method == "POST")
 	{
 		handler.setStatus(411);
 		throw CustomException("Length Required");
@@ -260,7 +259,7 @@ void	RequestHeader::checkFields()
 
 void	RequestHeader::decode(std::string& sequence)
 {
-	for (std::string::iterator it = sequence.begin(); it != sequence.end(); it++)  // allowed values #01 - #FF (although ASCII only goes till #7F/7E)
+	for (std::string::iterator it = sequence.begin(); it != sequence.end(); it++)
 	{
 		if (*it == '%')
 		{
@@ -275,7 +274,7 @@ void	RequestHeader::decode(std::string& sequence)
 			else
 			{
 				handler.setStatus(400);
-				throw CustomException("decoding error");
+				throw CustomException("Bad request: encoding error");
 			}
 			if ((*it >= '0' && *it <= '9') || (*it >= 'a' && *it <= 'z') || (*it >= 'A' && *it <= 'Z'))
 			{
@@ -286,7 +285,7 @@ void	RequestHeader::decode(std::string& sequence)
 			else
 			{
 				handler.setStatus(400);
-				throw CustomException("decoding error");
+				throw CustomException("Bad request: encoding error");
 			}
 		}
 		if (*it == '+')
@@ -304,7 +303,6 @@ void	RequestHeader::removeDots()
 
 	for (std::vector<std::string>::iterator it = parts.begin(); it != parts.end(); it++)
 	{
-		std::cout << "part: " << *it << std::endl;
 		if (*it == "/.")
 			continue;
 		else if (*it == "/.." && updated_path.size() > 0)
@@ -324,9 +322,6 @@ void	RequestHeader::removeDots()
 
 void	RequestHeader::checkBodyLength(std::string value)
 {
-	// elaborate check --> see RFC for what is an accepted format for providing the length of the body
-
-	std::cout << "Value: " << value << std::endl;
 	for(std::string::iterator it = value.begin(); it != value.end(); it++)
 	{
 		if (*it == '.')
@@ -340,17 +335,17 @@ void	RequestHeader::checkBodyLength(std::string value)
 				else
 				{
 					handler.setStatus(400);
-					throw CustomException("Bad request 2"); // other error code?
+					throw CustomException("Bad request: detected when parsing content-length");
 				}
 			}
 		}
 		else if (!isdigit(*it))
 		{
 			handler.setStatus(400);
-			throw CustomException("Bad request 3"); // other error code?
+			throw CustomException("Bad request: detected when parsing content-length");
 		}
 	}
-	body_length = std::atoi(value.c_str());
+	body_length = toInt(value);
 }
 
 void	RequestHeader::parseHeaderFields()
@@ -374,20 +369,20 @@ void	RequestHeader::parseHeaderFields()
 				else if (ch == LF)
 				{
 					headers_parsing_done = 1;
-					body_beginning = handler.buf_pos; // needed?
-					header_complete = 1; // needed?
+					body_beginning = handler.buf_pos;
+					header_complete = 1;
 					break;
 				}
 				else
 					headers_state = he_name;
-			
-			case he_name: // currently not allowing whitespace preceding the field name // allowed chars: //  A-Z, a-z, 0–9, hyphen ( - ), or underscore ( _ ).
+					// fall through
+			case he_name:
 				if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch == '-' || ch == '_')
 				{
 					if (ch >= 'A' && ch <= 'Z')
-						header_name.append(1, std::tolower(ch)); // because not case sensitive, we make all characters lowercase to make string comparsions easier later on
+						header_name.append(1, std::tolower(ch));
 					else
-						header_name.append(1, static_cast<char>(ch));
+						header_name.append(1, ch);
 				}
 				else if (ch == ':')
 					headers_state = he_ws_before_value;
@@ -398,7 +393,7 @@ void	RequestHeader::parseHeaderFields()
 				else
 				{
 					handler.setStatus(400);
-					throw CustomException("Bad request 4");
+					throw CustomException("Bad request: detected when parsing header field name");
 				}
 				break;
 
@@ -417,8 +412,7 @@ void	RequestHeader::parseHeaderFields()
 				}
 				else
 					headers_state = he_value;
-
-
+					// fall through
 			case he_value:
 				if (ch == SP)
 					headers_state = he_ws_after_value;
@@ -426,18 +420,12 @@ void	RequestHeader::parseHeaderFields()
 					headers_state = he_cr;
 				else if (ch == LF)
 					headers_state = he_done;
-				// else if (ch == '%')
-				// {
-				// 	field_encoded = 1;
-				// 	fields_encoded.push_back(header_name);
-				// 	header_value.append(1, ch);
-				// }
-				else if (ch > 32 && ch < 127) // accepted: a-z, A-Z, and 0-9 _ :;.,\/"'?!(){}[]@<>=-+*#$&`|~^%
+				else if (ch > 32 && ch < 127)
 					header_value.append(1, ch);
 				else
 				{
 					handler.setStatus(400);
-					throw CustomException("Bad request 5");
+					throw CustomException("Bad request: detected when parsing header field value");
 				}
 				break;
 			
@@ -458,7 +446,7 @@ void	RequestHeader::parseHeaderFields()
 				{
 					headers_state = he_value;
 					header_value.append(1, SP);
-					header_value.append(1, static_cast<char>(ch));
+					header_value.append(1, ch);
 					break;
 				}
 
@@ -468,12 +456,10 @@ void	RequestHeader::parseHeaderFields()
 				else 
 				{
 					handler.setStatus(400);
-					throw CustomException("Bad request 6");
+					throw CustomException("Bad request: detected when parsing header fields");
 				}
-			
+				// fall through
 			case he_done:
-				// std::cout << "header line fully parsed\n";
-				// check if there is a body in the message
 				if (header_name == "content-length")
 				{
 					// if (content_length_exists || transfer_encoding_exists) // for security: when content_length is specified, TE shouldn't be
@@ -498,7 +484,7 @@ void	RequestHeader::parseHeaderFields()
 					if (header_value != "chunked")
 					{
 						handler.setStatus(501);
-						throw CustomException("Not implemented 1");
+						throw CustomException("Not implemented: only 'chunked' allowed as transfer-encoding");
 					}
 					transfer_encoding_exists = 1;
 					body_expected = 1;
@@ -508,17 +494,17 @@ void	RequestHeader::parseHeaderFields()
 					if (host_exists)
 					{
 						handler.setStatus(400);
-						throw CustomException("Bad request 7");
+						throw CustomException("Bad request: more than one entry for host detected");
 					}
 					if (header_value.empty())
 					{
 						handler.setStatus(400);
-						throw CustomException("Bad request 8");
+						throw CustomException("Bad request: value for host is empty");
 					}
 					host_exists = 1;
 				}
 				if (header_name == "expect")
-					expect_exists = 1; // in this case a response is expected before the (rest of) body is sent
+					expect_exists = 1;
 				header_fields.insert(std::pair<std::string, std::string>(header_name, header_value));
 				header_name.clear();
 				header_value.clear();
@@ -531,79 +517,66 @@ void	RequestHeader::parseHeaderFields()
 					headers_parsing_done = 1;
 					body_beginning = handler.buf_pos;
 					header_complete = 1;
-					// std::cout << "headers fully parsed\n";
 					break;
 				}
 				handler.setStatus(400);
-				throw CustomException("Bad request 9");
+				throw CustomException("Bad request: detected when parsing header fields");
 		}
 	}
 
-	if (!headers_parsing_done) // is this the correct location to check?
+	if (!headers_parsing_done)
 	{
-		handler.setStatus(431); // correct error code when header is too large for buffer OR 431 Request Header Fields Too Large
-		throw CustomException("Request Header Fields Too Large");  // correct error code when header is too large for buffer
+		handler.setStatus(431);
+		throw CustomException("Request Header Fields Too Large");
 	}
-
-	// A sender MUST NOT send whitespace between the start-line and the first header field.
-	// A recipient that receives whitespace between the start-line and the first header field MUST either reject the message as invalid 
-	// or consume each whitespace-preceded line without further processing of it (i.e., ignore the entire line, along with any subsequent lines preceded by whitespace, until a properly formed header field is received or the header section is terminated).
-	
-	// Each field line consists of a case-insensitive field name followed by a colon (":"), optional leading whitespace, the field line value, and optional trailing whitespace.
-	// No whitespace is allowed between the field name and colon --> 400 bad request
-
-	// A field line value might be preceded and/or followed by optional whitespace (OWS);
-	// The field line value does not include that leading or trailing whitespace
-	// line folding in the the "message/http" media type???
-
-	// end is signified by CRLFCRLF
 }
 
-// void	Header::checkMethod(unsigned char* buf, int* buf_pos)
 void	RequestHeader::checkMethod()
 {
 	switch (handler.buf[handler.buf_pos])
 	{
 		case 'G':
-			// check if next characters are E and T
 			if (handler.buf[++(handler.buf_pos)] == 'E' && handler.buf[++(handler.buf_pos)] == 'T')
 				method = "GET";
 			else
 			{
+				if (handler.buf[handler.buf_pos] == '\0')
+					break;
 				handler.setStatus(501);
-				throw CustomException("Not implemented 2");
+				throw CustomException("Not implemented: method requested is not implemented");
 			}
 			break;
 		
 		case 'P':
-			// check if next characters are O S and T
 			if (handler.buf[++(handler.buf_pos)] == 'O' && handler.buf[++(handler.buf_pos)] == 'S' && handler.buf[++(handler.buf_pos)] == 'T')
 				method = "POST";
 			else
 			{
+				if (handler.buf[handler.buf_pos] == '\0')
+					break;
 				handler.setStatus(501);
-				throw CustomException("Not implemented 3");
+				throw CustomException("Not implemented: method requested is not implemented");
 			}
 			break;
 
 		case 'D':
-			// check of next characters are E L E T E
 			if (handler.buf[++(handler.buf_pos)] == 'E' && handler.buf[++(handler.buf_pos)] == 'L' && handler.buf[++(handler.buf_pos)] == 'E' && handler.buf[++(handler.buf_pos)] == 'T' && handler.buf[++(handler.buf_pos)] == 'E')
 				method = "DELETE";
 			else
 			{
+				if (handler.buf[handler.buf_pos] == '\0')
+					break;
 				handler.setStatus(501);
-				throw CustomException("Not implemented 4");
+				throw CustomException("Not implemented: method requested is not implemented");
 			}
 			break;
 		default:
 			handler.setStatus(501);
-			throw CustomException("Not implemented 5");
+			throw CustomException("Not implemented: method requested is not implemented");
 			break;
 		}
 }
 
-// void	Header::checkHttpVersion(unsigned char* buf, int* buf_pos)
 void	RequestHeader::checkHttpVersion()
 {
 	if (handler.buf[handler.buf_pos] == 'H' && handler.buf[++(handler.buf_pos)] == 'T' && handler.buf[++(handler.buf_pos)] == 'T' && handler.buf[++(handler.buf_pos)] == 'P' && handler.buf[++(handler.buf_pos)] == '/' && handler.buf[++(handler.buf_pos)] == '1'
@@ -614,12 +587,14 @@ void	RequestHeader::checkHttpVersion()
 	}
 	else
 	{
+		if (handler.buf[handler.buf_pos] == '\0')
+			return ;
 		handler.setStatus(505);
 		throw CustomException("HTTP Version Not Supported");
 	}
 }
 
-void	RequestHeader::handleMultipleSlashes() // could probably also be a created as a special state
+void	RequestHeader::handleMultipleSlashes()
 {
 	while(handler.buf[handler.buf_pos] == '/')
 		handler.buf_pos++;
@@ -630,37 +605,26 @@ void	RequestHeader::parseRequestLine()
 {
 	unsigned char	ch;
 
-	// implement max request line rule? (414 and 501 errors)
-	// do we need to check for scheme and authority?
-
-	// reserved chars in URI: ! * ' ( ) ; : @ & = + $ , / ? % # [ ]
-	// special meanings: + SP / ? % #   & (query)  = (query)  @ (authority)  : (authority)
-	// unreseved:  - _ . ~
-	// alphanumeric
-
 	while (!rl_parsing_done && (handler.buf_pos)++ < handler.getBytesRead())
 	{
 		ch = handler.buf[handler.buf_pos];
 	
 		switch (rl_state) 
 		{
-			// in the interest of robustness, ignore at least one empty line
-			// double check if a single LF occurance is accepted // is there a space afterwards?
 			case rl_start:
 				if (handler.buf_pos == 0 && ch == CR)
 					break;
 				if (ch == LF)
 					break;
 				rl_state = rl_method;
-
-			case rl_method: // can this also be termined by CRLF?
-				// checkMethod(buf, buf_pos);
+				// fall through
+			case rl_method:
 				checkMethod();
 				rl_state = rl_first_divider;
 				break;
 
-			case rl_first_divider: // may add to method check
-				if (ch == SP) // do we want to allow multiple spaces?
+			case rl_first_divider:
+				if (ch == SP)
 					break;
 				else if (ch == '/')
 				{
@@ -669,53 +633,46 @@ void	RequestHeader::parseRequestLine()
 					break;
 				}
 				handler.setStatus(400);
-				throw CustomException("Bad request 10");
+				throw CustomException("Bad request: detected when parsing request line");
 				
 			case rl_path:
-				// do we have to handle authority request lines?
-				// query line goes to cgi --> Query string env variable
-
 				switch (ch)
 				{
 					case SP:
 						rl_state = rl_http;
 						break;
-					case CR: // what if this occurs and no http version is specified?
+					case CR:
 						rl_state = rl_cr;
 						break;
-					case LF: // what if this occurs and no http version is specified?
+					case LF:
 						rl_state = rl_done;
 						break;
-					case '.': // nginx does not allow two dots at the beginning if nothing comes after; a single dot leads to index (also on some websites with two dots); three dots to file not found
+					case '.':
 						if (handler.buf[handler.buf_pos - 1] == '/')
 							dot_in_path = 1;
 						break;
 					case '%':
-						path_encoded = 1; // when interpreting request needs to be decoded
-						// rl_state = rl_percent_encoded; // need to be followed by numercial code that needs to be interpreted --> otherwise 400 bad request (not the case for query)
+						path_encoded = 1;
 						break;
-					case '/': // checking with nginx, there can be several slashes after each other
+					case '/':
 						handleMultipleSlashes();
 						break;
 					case '?':
 						rl_state = rl_query;
 						break;
-					case '+': // means space; needs to be decoded when interpreting request
+					case '+':
 						path_encoded = 1;
 						break;
 					default:
 						if (ch < 32 || ch == 127)
 						{
 							handler.setStatus(400);
-							throw CustomException("Bad request 11");
+							throw CustomException("Bad request: detected when parsing request line");
 						}
 						break;
-
-					// case '#': // in what case is this character even encountered in a http message? probably only in the query part and when interpreting // fragments are not sent in the http request messages. The reason is that the fragment identifier is only used by the browser
-
 				}
 				if (rl_state == rl_path)
-					path.append(1, static_cast<char>(ch));
+					path.append(1, ch);
 				break;
 
 			case rl_query:
@@ -740,12 +697,12 @@ void	RequestHeader::parseRequestLine()
 						if (ch < 32 || ch == 127)
 						{
 							handler.setStatus(400);
-							throw CustomException("Bad request 12");
+							throw CustomException("Bad request: detected when parsing request line query");
 						}
 						break;
 				}
 				if (rl_state == rl_query)
-					query.append(1, static_cast<char>(ch));
+					query.append(1, ch);
 				break;
 
 			case rl_http: 
@@ -772,22 +729,14 @@ void	RequestHeader::parseRequestLine()
 				else 
 				{
 					handler.setStatus(400);
-					throw CustomException("Bad request 13");
+					throw CustomException("Bad request: detected when parsing request line");
 				}
 			
 			case rl_done:
-				// std::cout << "request line fully parsed\n";
 				rl_parsing_done = 1;
-				handler.buf_pos--; // Why does this needs to be done?
+				handler.buf_pos--;
 				break;
 		}
-		// check for URI (path) --> request target (origin-form)
-			// doesn't allow any whitespace
-			// if invalid request-line
-				// respond with 400 (Bad Request) and close connection
-
-		// enforce single-space grammar rule? --> check how nginx implements it
-			// check HTTP version
 	}
 
 	if (!rl_parsing_done)
@@ -795,5 +744,4 @@ void	RequestHeader::parseRequestLine()
 		handler.setStatus(414);
 		throw CustomException("Request-URI Too Long");
 	}
-
 }

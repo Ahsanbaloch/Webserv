@@ -28,7 +28,6 @@ UploadUrlencoded::~UploadUrlencoded()
 UploadUrlencoded::UploadUrlencoded(const UploadUrlencoded& src)
 	: AUploadModule(src)
 {
-	// copy input filestream --> how?
 	encoded_key = src.encoded_key;
 	encoded_value = src.encoded_value;
 	body_bytes_consumed = src.body_bytes_consumed;
@@ -74,8 +73,8 @@ void	UploadUrlencoded::storeInJSON()
 	}
 	else
 	{
-		handler.setStatus(500); // or 403 or other code?
-		throw CustomException("Internal Server Error");
+		handler.setStatus(500);
+		throw CustomException("Internal Server Error: failed to open file for storing JSON data");
 	}
 }
 
@@ -122,8 +121,8 @@ void	UploadUrlencoded::parseBody(char ch)
 		case key:
 			if (ch == CR || ch == LF)
 			{
-				handler.setStatus(400); // what is the correct error code?
-				throw CustomException("Bad request"); // other exception?
+				handler.setStatus(400);
+				throw CustomException("Bad request: detected when parsing urlencoded data");
 			}
 			else if (ch == '=')
 			{
@@ -145,8 +144,8 @@ void	UploadUrlencoded::parseBody(char ch)
 		case value:
 			if (ch == CR || ch == LF)
 			{
-				handler.setStatus(400); // what is the correct error code?
-				throw CustomException("Bad request"); // other exception?
+				handler.setStatus(400);
+				throw CustomException("Bad request: encountered when parsing urlencoded data");
 			}
 			else if (ch == '&')
 				body_state = end_pair;
@@ -161,7 +160,7 @@ void	UploadUrlencoded::parseBody(char ch)
 				temp_value.append(1, ch);
 				break;
 			}
-
+			// fall through
 		case end_pair:
 			storeInDatabase();
 	}
@@ -169,7 +168,7 @@ void	UploadUrlencoded::parseBody(char ch)
 
 void	UploadUrlencoded::decode(std::string& sequence)
 {
-	for (std::string::iterator it = sequence.begin(); it != sequence.end(); it++)  // allowed values #01 - #FF (although ASCII only goes till #7F/7E)
+	for (std::string::iterator it = sequence.begin(); it != sequence.end(); it++)
 	{
 		if (*it == '%')
 		{
@@ -184,7 +183,7 @@ void	UploadUrlencoded::decode(std::string& sequence)
 			else
 			{
 				handler.setStatus(400);
-				throw CustomException("decoding error");
+				throw CustomException("Bad request: data not properly encoded");
 			}
 			if ((*it >= '0' && *it <= '9') || (*it >= 'a' && *it <= 'z') || (*it >= 'A' && *it <= 'Z'))
 			{
@@ -195,7 +194,7 @@ void	UploadUrlencoded::decode(std::string& sequence)
 			else
 			{
 				handler.setStatus(400);
-				throw CustomException("decoding error");
+				throw CustomException("Bad request: data not properly encoded");
 			}
 		}
 		if (*it == '+')
@@ -210,11 +209,11 @@ void	UploadUrlencoded::uploadData()
 {
 	if (handler.getChunkDecoder() != NULL)
 	{
-		input.open(handler.getChunkDecoder()->getUnchunkedDataFile(), std::ios::ate);
+		input.open(handler.getChunkDecoder()->getUnchunkedDataFile().c_str(), std::ios::ate);
 		if (!input.is_open())
 		{
-			handler.setStatus(500); // or 403 or other code?
-			throw CustomException("Internal Server Error");
+			handler.setStatus(500);
+			throw CustomException("Internal Server Error: could not open decoded chunked data file");
 		}
 		std::streamsize file_size = input.tellg();
 		input.seekg(0, std::ios::beg);
@@ -226,7 +225,7 @@ void	UploadUrlencoded::uploadData()
 		}
 		storeInDatabase();
 		body_read = 1;
-		remove(handler.getChunkDecoder()->getUnchunkedDataFile().c_str()); // check if file was removed
+		remove(handler.getChunkDecoder()->getUnchunkedDataFile().c_str());
 		input.close();
 	}
 	else

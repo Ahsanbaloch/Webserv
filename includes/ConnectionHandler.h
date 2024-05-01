@@ -4,7 +4,6 @@
 # include <vector>
 # include "config/config_pars.hpp"
 # include "RequestHandler.h"
-# include "KQueue.h"
 
 class ConnectionHandler
 {

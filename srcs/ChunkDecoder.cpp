@@ -82,7 +82,7 @@ void	ChunkDecoder::storeChunkedData()
 	if (temp_filename_unchunked.empty())
 		temp_filename_unchunked = createTmpFilePath();
 
-	temp_unchunked.open(temp_filename_unchunked, std::ios::app | std::ios::binary);
+	temp_unchunked.open(temp_filename_unchunked.c_str(), std::ios::app | std::ios::binary);
 	int to_write = std::min(handler.getBytesRead() - handler.buf_pos, chunk_length);
 	temp_unchunked.write(reinterpret_cast<const char*>(&handler.buf[handler.buf_pos]), to_write);
 	handler.buf_pos += to_write;

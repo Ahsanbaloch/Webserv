@@ -6,7 +6,6 @@
 RequestHandler::RequestHandler()
 	: request_header(*this)
 {
-	// throw exception?
 	kernel_q_fd = -1;
 	connection_fd = -1;
 	status = 200;
@@ -303,12 +302,25 @@ void	RequestHandler::processBody()
 void	RequestHandler::addCGIToQueue()
 {
 	cgi_handler = new CGIHandler(*this);
-	struct kevent cgi_event;
-	if (fcntl(cgi_handler->cgi_out[0], F_SETFL, O_NONBLOCK) == -1)
-		throw CustomException("Failed when calling fcntl() and setting fds to non-blocking\n");
-	EV_SET(&cgi_event, cgi_handler->cgi_out[0], EVFILT_READ, EV_ADD, 0, 0, &connection_fd);
-	if (kevent(kernel_q_fd, &cgi_event, 1, NULL, 0, NULL) == -1)
-		throw CustomException("Failed when registering events for CGI output\n");
+	#ifdef __APPLE__
+		struct kevent cgi_event;
+		if (fcntl(cgi_handler->cgi_out[0], F_SETFL, O_NONBLOCK) == -1)
+			throw CustomException("Failed when calling fcntl() and setting fds to non-blocking");
+		EV_SET(&cgi_event, cgi_handler->cgi_out[0], EVFILT_READ, EV_ADD, 0, 0, &connection_fd);
+		if (kevent(kernel_q_fd, &cgi_event, 1, NULL, 0, NULL) == -1)
+			throw CustomException("Failed when registering events for CGI output");
+	#else
+		struct epoll_event listening_event;
+		EPoll::e_data* user_data = new EPoll::e_data;
+		user_data->fd = connection_fd;
+		user_data->socket_ident = 3;
+		listening_event.data.ptr = user_data;
+		listening_event.events = EPOLLIN | EPOLLHUP | EPOLLRDHUP;
+		if (fcntl(cgi_handler->cgi_out[0], F_SETFL, O_NONBLOCK) == -1)
+			throw CustomException("Failed when calling fcntl() and setting fds to non-blocking");
+		if (epoll_ctl(kernel_q_fd, EPOLL_CTL_ADD, cgi_handler->cgi_out[0], &listening_event) == -1)
+			throw CustomException("Failed when registering events for CGI output");
+	#endif
 }
 
 void	RequestHandler::makeErrorResponse()
@@ -328,11 +340,20 @@ void	RequestHandler::checkForCGI()
 	{
 		if (find(location_extensions.begin(), location_extensions.end(), request_header.getFileExtension()) == location_extensions.end())
 		{
-			status = 403; // which status should be set here? 
-			throw CustomException("Forbidden");
+			status = 403;
+			throw CustomException("Forbidden: specified cgi file extension is not allowed");
 		}
 		else
-			cgi_detected = 1;
+		{
+			std::string cgi_path = getLocationConfig().root + request_header.getPath();
+			if (access(cgi_path.c_str(), F_OK) == 0)
+				cgi_detected = 1;
+			else
+			{
+				setStatus(404);
+				throw CustomException("Not found: cgi file");
+			}
+		}
 	}
 }
 
@@ -529,7 +550,7 @@ void	RequestHandler::processRequest()
 		if (request_header.getHeaderProcessingStatus())
 		{
 			if (!header_check_done)
-				checkHeader();			
+				checkHeader();
 			if (request_header.getBodyExpectanceStatus() && getLocationConfig().redirect.empty())
 				processBody();
 			if (!request_header.getBodyExpectanceStatus() || (uploader != NULL && uploader->getUploadStatus())
@@ -617,7 +638,7 @@ void	RequestHandler::readCGIResponse()
 			if (cgiResponse != NULL)
 			{
 				if (cgiResponse->processBuffer())
-					makeInternalRedirectPostCGI(cgiResponse->cgi_header_fields["Location"]);
+					makeInternalRedirectPostCGI(cgiResponse->getCGIHeaderFields()["Location"]);
 			}
 		}
 	}

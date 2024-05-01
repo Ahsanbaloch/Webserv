@@ -59,7 +59,7 @@ void	ListeningSocketsBlock::createSockets(std::map<std::string, std::vector<t_se
 			int socket_fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
 		#endif
 		if (socket_fd == -1)
-			throw CustomException("Failed when calling socket()\n");
+			throw CustomException("Failed when calling socket()");
 
 		ListeningSocket serverSocket(socket_fd, it->second);
 		serverSocket.setSockOptions();
