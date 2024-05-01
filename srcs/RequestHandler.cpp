@@ -332,7 +332,15 @@ void	RequestHandler::checkForCGI()
 			throw CustomException("Forbidden: specified cgi file extension is not allowed");
 		}
 		else
-			cgi_detected = 1;
+		{
+			if (access(request_header.getPath().c_str(), F_OK) == 0)
+				cgi_detected = 1;
+			else
+			{
+				setStatus(404);
+				throw CustomException("Not found: cgi file");
+			}
+		}
 	}
 }
 
@@ -529,7 +537,7 @@ void	RequestHandler::processRequest()
 		if (request_header.getHeaderProcessingStatus())
 		{
 			if (!header_check_done)
-				checkHeader();			
+				checkHeader();
 			if (request_header.getBodyExpectanceStatus() && getLocationConfig().redirect.empty())
 				processBody();
 			if (!request_header.getBodyExpectanceStatus() || (uploader != NULL && uploader->getUploadStatus())

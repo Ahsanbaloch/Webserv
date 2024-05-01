@@ -212,6 +212,7 @@ void CGIHandler::execCGI()
 
 void CGIHandler::execute()
 {
+	
 	setEnv();
 	execCGI();
 }
