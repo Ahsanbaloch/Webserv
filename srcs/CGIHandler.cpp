@@ -66,6 +66,14 @@ CGIHandler &CGIHandler::operator=(const CGIHandler &other)
 }
 
 
+///////// GETTERS ///////////
+
+pid_t	CGIHandler::getCGIPid() const
+{
+	return (cgi_pid);
+}
+
+
 ///////// HELPER METHODS ///////////
 
 std::string	CGIHandler::identifyPathInfo()
@@ -93,7 +101,7 @@ void	CGIHandler::setEnv()
 	temp_env.push_back("CONTENT_TYPE=" + handler.getHeaderInfo().getHeaderFields()["content-type"]);
 	temp_env.push_back("DOCUMENT_ROOT=" + doc_root);
 	temp_env.push_back("GATEWAY_INTERFACE=CGI/1.1");
-	temp_env.push_back("PATH_INFO=" + path_info);
+	temp_env.push_back("PATH_INFO=" + path_info); // change this
 	temp_env.push_back("PATH_TRANSLATED=" + doc_root + path_info);
 	temp_env.push_back("QUERY_STRING=" + handler.getHeaderInfo().getQuery());
 	// temp_env.push_back("REMOTE_ADDR=");
@@ -181,11 +189,6 @@ void CGIHandler::execCGI()
 		close(cgi_out[1]);
 		int status;
 		time_t start = time(NULL);
-		// something does not seem to be correct with the difftime approach --> broken pipe
-		// if "slowed down" by these print statements, then it seems to work
-		// add a usleep?
-		// std::cout << "std::difftime(std::time(NULL), start): " << std::difftime(std::time(NULL), start) << std::endl;
-		// std::cout << "handler.getSelectedServer().timeout: " << handler.getSelectedServer().timeout << std::endl;
 		while (difftime(time(NULL), start) < handler.getSelectedServer().timeout)
 		{
 			waitpid(cgi_pid, &status, WNOHANG);
@@ -201,6 +204,7 @@ void CGIHandler::execCGI()
 		}
 		if (WEXITSTATUS(status) || handler.getStatus() == 500)
 		{
+			perror("issue");
 			handler.setStatus(500);
 			throw CustomException("Internal Server Error");
 		}

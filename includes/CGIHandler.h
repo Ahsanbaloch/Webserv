@@ -42,6 +42,9 @@ public:
 	~CGIHandler();
 	explicit CGIHandler(RequestHandler&);
 
+	// getters
+	pid_t		getCGIPid() const;
+
 	// pipe
 	int	cgi_out[2];
 

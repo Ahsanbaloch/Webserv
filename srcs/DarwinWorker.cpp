@@ -19,6 +19,12 @@ DarwinWorker::DarwinWorker(const KQueue& Queue, ListeningSocketsBlock& Block)
 
 DarwinWorker::~DarwinWorker()
 {
+	for (std::map<int, ConnectionHandler*>::iterator it = connected_clients.begin(); it != connected_clients.end(); it++)
+	{
+		close(it->first);
+		delete it->second;
+	}
+	connected_clients.erase(connected_clients.begin(), connected_clients.end());
 }
 
 DarwinWorker::DarwinWorker(const DarwinWorker& src)
@@ -141,13 +147,16 @@ void	DarwinWorker::handleCGIResponse(int connect_ev)
 {
 	try
 	{
-		connected_clients[*reinterpret_cast<int*>(event_lst[connect_ev].udata)]->getRequestHandler()->initCGIResponse();
-		connected_clients[*reinterpret_cast<int*>(event_lst[connect_ev].udata)]->getRequestHandler()->readCGIResponse();
-		connected_clients[*reinterpret_cast<int*>(event_lst[connect_ev].udata)]->setResponseStatus(connected_clients[*reinterpret_cast<int*>(event_lst[connect_ev].udata)]->getRequestHandler()->getResponseStatus());
+		if (connected_clients[*static_cast<int*>(event_lst[connect_ev].udata)] != NULL)
+		{
+			connected_clients[*static_cast<int*>(event_lst[connect_ev].udata)]->getRequestHandler()->initCGIResponse();
+			connected_clients[*static_cast<int*>(event_lst[connect_ev].udata)]->getRequestHandler()->readCGIResponse();
+			connected_clients[*static_cast<int*>(event_lst[connect_ev].udata)]->setResponseStatus(connected_clients[*static_cast<int*>(event_lst[connect_ev].udata)]->getRequestHandler()->getResponseStatus());
+		}
 	}
 	catch(const std::exception& e)
 	{
-		closeConnection(connect_ev);
+		closeConnection(*static_cast<int*>(event_lst[connect_ev].udata));
 		std::cerr << e.what() << '\n';
 	}
 }
@@ -164,29 +173,29 @@ void	DarwinWorker::runEventLoop()
 			throw CustomException("Failed when checking for new events");
 		for (int connect_ev = 0; new_events > connect_ev; connect_ev++)
 		{
-			if (*reinterpret_cast<int*>(event_lst[connect_ev].udata) == Q.getConnectionSocketIdent() && event_lst[connect_ev].flags & EV_EOF)
+			if (event_lst[connect_ev].flags & EV_EOF && *static_cast<int*>(event_lst[connect_ev].udata) == Q.getConnectionSocketIdent())
 			{
 				if (connected_clients[event_lst[connect_ev].ident] != NULL)
 					closeConnection(connect_ev);
 			}
-			else if (*reinterpret_cast<int*>(event_lst[connect_ev].udata) == Q.getListeningSocketIdent())
+			else if (*static_cast<int*>(event_lst[connect_ev].udata) == Q.getListeningSocketIdent())
 			{
 				// how to handle exceptions in here?
 				acceptConnections(connect_ev);
 			}
-			else if (*reinterpret_cast<int*>(event_lst[connect_ev].udata) == Q.getConnectionSocketIdent()
+			else if (*static_cast<int*>(event_lst[connect_ev].udata) == Q.getConnectionSocketIdent()
 					&& connected_clients[event_lst[connect_ev].ident] != NULL)
 			{
 				if (event_lst[connect_ev].filter == EVFILT_READ)
 					handleReadEvent(connect_ev);
-				else if (connected_clients[event_lst[connect_ev].ident]->getRequestHandler() != NULL
-					&& connected_clients[event_lst[connect_ev].ident]->getResponseStatus() && event_lst[connect_ev].filter == EVFILT_WRITE)
+				else if (event_lst[connect_ev].filter == EVFILT_WRITE && connected_clients[event_lst[connect_ev].ident]->getResponseStatus()
+						&& connected_clients[event_lst[connect_ev].ident]->getRequestHandler() != NULL)
 				{
 					handleWriteEvent(connect_ev);
 				}
 			}
-			else if (*reinterpret_cast<int*>(event_lst[connect_ev].udata) != Q.getListeningSocketIdent()
-					&& *reinterpret_cast<int*>(event_lst[connect_ev].udata) != Q.getConnectionSocketIdent())
+			else if (*static_cast<int*>(event_lst[connect_ev].udata) != Q.getListeningSocketIdent()
+					&& *static_cast<int*>(event_lst[connect_ev].udata) != Q.getConnectionSocketIdent())
 			{
 				handleCGIResponse(connect_ev);
 			}

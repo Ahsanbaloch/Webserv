@@ -42,7 +42,8 @@ std::string GETResponse::createHTMLPage(const std::string& directory_name, const
 	for (std::vector<std::string>::const_iterator it = items.begin(); it != items.end(); ++it)
 	{
 		std::string link = "/" + *it;
-		directory_items << "<li><a href=\"" << link << "\">" << *it << "</a></li>";
+		directory_items << "<li><a href=\"" << directory_name << link << "\">" << *it << "</a> "
+                << "<button onclick=\"sendDeleteRequest('" << directory_name << link << "')\">Delete</button></li>";
 	}
 
 	size_t pos = html_template.find("{directory_name}");

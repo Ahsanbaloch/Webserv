@@ -15,6 +15,7 @@ ListeningSocketsBlock::ListeningSocketsBlock(std::map<std::string, std::vector<t
 
 ListeningSocketsBlock::~ListeningSocketsBlock()
 {
+	closeSockets();
 }
 
 ListeningSocketsBlock::ListeningSocketsBlock(const ListeningSocketsBlock& src)

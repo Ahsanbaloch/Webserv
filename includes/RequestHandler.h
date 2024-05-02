@@ -51,6 +51,7 @@ private:
 	// vars
 	std::vector<t_server_config>	server_config;
 	std::string						int_redir_referer_path;
+	int* 							cgi_identifier;
 	int								kernel_q_fd;
 	int								connection_fd;
 	int								status;

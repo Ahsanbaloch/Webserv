@@ -23,6 +23,7 @@ RequestHandler::RequestHandler()
 	buf_pos = -1;
 	cgi_buf_pos = -1;
 
+	cgi_identifier = NULL;
 	chunk_decoder = NULL;
 	cgi_handler = NULL;
 	uploader = NULL;
@@ -52,6 +53,7 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 	buf_pos = -1;
 	cgi_buf_pos = -1;
 
+	cgi_identifier = NULL;
 	chunk_decoder = NULL;
 	cgi_handler = NULL;
 	uploader = NULL;
@@ -62,6 +64,8 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 RequestHandler::~RequestHandler()
 {
 	std::cout << "request handler destroyed" << std::endl;
+	if (cgi_identifier != NULL)
+		delete cgi_identifier;
 	if (response != NULL)
 		delete response;
 	if (uploader != NULL)
@@ -71,7 +75,11 @@ RequestHandler::~RequestHandler()
 	if (chunk_decoder != NULL)
 		delete chunk_decoder;
 	if (cgi_handler != NULL)
+	{
+		kill(cgi_handler->getCGIPid(), SIGKILL);
+		close(cgi_handler->cgi_out[0]);
 		delete cgi_handler;
+	}
 }
 
 RequestHandler::RequestHandler(const RequestHandler& src)
@@ -96,6 +104,7 @@ RequestHandler::RequestHandler(const RequestHandler& src)
 	buf_pos = src.buf_pos;
 	cgi_buf_pos = src.cgi_buf_pos;
 
+	cgi_identifier = src.cgi_identifier;
 	chunk_decoder = src.chunk_decoder;
 	cgi_handler = src.cgi_handler;
 	uploader = src.uploader;
@@ -126,6 +135,7 @@ RequestHandler& RequestHandler::operator=(const RequestHandler& src)
 		buf_pos = src.buf_pos;
 		cgi_buf_pos = src.cgi_buf_pos;
 
+		cgi_identifier = src.cgi_identifier;
 		chunk_decoder = src.chunk_decoder;
 		cgi_handler = src.cgi_handler;
 		uploader = src.uploader;
@@ -304,9 +314,11 @@ void	RequestHandler::addCGIToQueue()
 	cgi_handler = new CGIHandler(*this);
 	#ifdef __APPLE__
 		struct kevent cgi_event;
+		int* ident = new int;
+		*ident = connection_fd;
 		if (fcntl(cgi_handler->cgi_out[0], F_SETFL, O_NONBLOCK) == -1)
 			throw CustomException("Failed when calling fcntl() and setting fds to non-blocking");
-		EV_SET(&cgi_event, cgi_handler->cgi_out[0], EVFILT_READ, EV_ADD, 0, 0, &connection_fd);
+		EV_SET(&cgi_event, cgi_handler->cgi_out[0], EVFILT_READ, EV_ADD, 0, 0, ident);
 		if (kevent(kernel_q_fd, &cgi_event, 1, NULL, 0, NULL) == -1)
 			throw CustomException("Failed when registering events for CGI output");
 	#else
@@ -605,6 +617,7 @@ void	RequestHandler::sendResponse()
 		{
 			all_chunks_sent = 1;
 			response->getBodyFile().close();
+
 		}
 	}
 }
@@ -622,7 +635,16 @@ void	RequestHandler::readCGIResponse()
 			close(cgi_handler->cgi_out[0]);
 			response->createResponse();
 			if (getHeaderInfo().getMethod() == "POST")
+			{
 				remove(getTempBodyFilepath().c_str());
+				CGIResponse* cgiResponse = dynamic_cast<CGIResponse*>(response);
+				if (cgiResponse != NULL)
+				{
+					std::map<std::string, std::string> temp = cgiResponse->getCGIHeaderFields();
+					if (temp.find("Content-Type") != temp.end())
+						remove(cgiResponse->getTempBodyFilePath().c_str());
+				}
+			}
 			else if (getHeaderInfo().getMethod() == "GET")
 			{
 				CGIResponse* cgiResponse = dynamic_cast<CGIResponse*>(response);

@@ -34,7 +34,7 @@ def create_file_from_multipart(data_file):
   if file_data.filename:
     # Get filename and create a safe path to avoid directory traversal attacks
     filename = os.path.basename(file_data.filename)
-    filepath = os.path.join('./www/upload/', filename)  # Replace with your upload path
+    filepath = os.path.join('./www/upload/', filename)  # Replace with your upload path # rm dot?
     
     # Open the new file in write binary mode
     with open(filepath, 'wb') as upload_file:

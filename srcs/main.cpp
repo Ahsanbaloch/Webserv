@@ -8,7 +8,6 @@
 #endif
 #include "ListeningSocketsBlock.h"
 #include "config/config_pars.hpp"
-#include "defines.h"
 
 
 int	main(int argc, char **argv)
@@ -24,12 +23,10 @@ int	main(int argc, char **argv)
 		// Create listening sockets, bind, set non-blocking, listen
 		ListeningSocketsBlock SocketsBlock(serverConfigsMap);
 
-		// create KQueue object
+		// Set up server
 		#ifdef __APPLE__
 			KQueue Queue;
-			// attach sockets to kqueue
 			Queue.attachListeningSockets(SocketsBlock);
-			// create Worker object
 			DarwinWorker Worker(Queue, SocketsBlock);
 		#else
 			EPoll Queue;
@@ -37,20 +34,17 @@ int	main(int argc, char **argv)
 			LinuxWorker Worker(Queue, SocketsBlock);
 		#endif
 
-		// run event loop
+		// run server
 		Worker.runEventLoop();
 
-		// close all listening sockets (this removes them from kqueue)
+		// close all listening sockets
 		SocketsBlock.closeSockets();
-
-		// close connection sockets? (if any are left?)
 
 		// close queue
 		Queue.closeQueue();
 	}
 	catch(const std::exception& e)
 	{
-		// close fds?
 		std::cerr << e.what() << '\n';
 	}
 }
