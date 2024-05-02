@@ -21,7 +21,7 @@ private:
 	RequestHandler&	handler;
 
 	// vars
-	
+	pid_t		cgi_pid;
 	char**		env;
 	char**		argv;
 
@@ -44,7 +44,6 @@ public:
 
 	// pipe
 	int	cgi_out[2];
-	pid_t		cgi_pid;
 
 	// main methods
 	void execute();

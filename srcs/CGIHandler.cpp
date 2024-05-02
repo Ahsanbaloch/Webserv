@@ -5,7 +5,7 @@
 ///////// CONSTRUCTORS & DESTRUCTORS ///////////
 
 CGIHandler::CGIHandler()
-	: handler(*new RequestHandler()), env(NULL), argv(NULL), cgi_pid(0)
+	: handler(*new RequestHandler()), cgi_pid(0), env(NULL), argv(NULL)
 {
 	if (pipe(cgi_out) < 0)
 	{
@@ -15,7 +15,7 @@ CGIHandler::CGIHandler()
 }
 
 CGIHandler::CGIHandler(RequestHandler& src)
-	: handler(src), env(NULL), argv(NULL), cgi_pid(0)
+	: handler(src), cgi_pid(0), env(NULL), argv(NULL)
 {
 	if (pipe(cgi_out) < 0)
 	{

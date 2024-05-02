@@ -62,8 +62,7 @@ void	DarwinWorker::addToConnectedClients(ListeningSocket& socket)
 
 void	DarwinWorker::closeConnection(int connect_ev)
 {
-	if (connected_clients[event_lst[connect_ev].ident] != NULL && connected_clients[event_lst[connect_ev].ident]->getRequestHandler() != NULL)
-		connected_clients[event_lst[connect_ev].ident]->removeRequestHandler();
+	connected_clients[event_lst[connect_ev].ident]->removeRequestHandler();
 	delete connected_clients[event_lst[connect_ev].ident];
 	connected_clients.erase(event_lst[connect_ev].ident);
 	close(event_lst[connect_ev].ident);
@@ -142,15 +141,16 @@ void	DarwinWorker::handleCGIResponse(int connect_ev)
 {
 	try
 	{
-		if (connected_clients[*reinterpret_cast<int*>(event_lst[connect_ev].udata)] == NULL)
-			throw CustomException("Failed when handling CGI response");
-		connected_clients[*reinterpret_cast<int*>(event_lst[connect_ev].udata)]->getRequestHandler()->initCGIResponse();
-		connected_clients[*reinterpret_cast<int*>(event_lst[connect_ev].udata)]->getRequestHandler()->readCGIResponse();
-		connected_clients[*reinterpret_cast<int*>(event_lst[connect_ev].udata)]->setResponseStatus(connected_clients[*reinterpret_cast<int*>(event_lst[connect_ev].udata)]->getRequestHandler()->getResponseStatus());
+		if (connected_clients[*reinterpret_cast<int*>(event_lst[connect_ev].udata)] != NULL)
+		{
+			connected_clients[*reinterpret_cast<int*>(event_lst[connect_ev].udata)]->getRequestHandler()->initCGIResponse();
+			connected_clients[*reinterpret_cast<int*>(event_lst[connect_ev].udata)]->getRequestHandler()->readCGIResponse();
+			connected_clients[*reinterpret_cast<int*>(event_lst[connect_ev].udata)]->setResponseStatus(connected_clients[*reinterpret_cast<int*>(event_lst[connect_ev].udata)]->getRequestHandler()->getResponseStatus());
+		}
 	}
 	catch(const std::exception& e)
 	{
-		closeConnection(connect_ev);
+		closeConnection(*reinterpret_cast<int*>(event_lst[connect_ev].udata));
 		std::cerr << e.what() << '\n';
 	}
 }
@@ -167,30 +167,29 @@ void	DarwinWorker::runEventLoop()
 			throw CustomException("Failed when checking for new events");
 		for (int connect_ev = 0; new_events > connect_ev; connect_ev++)
 		{
-			if (event_lst[connect_ev].flags & EV_EOF && connected_clients.find(event_lst[connect_ev].ident) != connected_clients.end() && *reinterpret_cast<int*>(event_lst[connect_ev].udata) == Q.getConnectionSocketIdent())
+			if (event_lst[connect_ev].flags & EV_EOF && *reinterpret_cast<int*>(event_lst[connect_ev].udata) == Q.getConnectionSocketIdent())
 			{
 				if (connected_clients[event_lst[connect_ev].ident] != NULL)
 					closeConnection(connect_ev);
 			}
-			else if (listening_sockets.find(event_lst[connect_ev].ident) != listening_sockets.end() && *reinterpret_cast<int*>(event_lst[connect_ev].udata) == Q.getListeningSocketIdent())
+			else if (*reinterpret_cast<int*>(event_lst[connect_ev].udata) == Q.getListeningSocketIdent())
 			{
 				// how to handle exceptions in here?
 				acceptConnections(connect_ev);
 			}
-			else if (connected_clients.find(event_lst[connect_ev].ident) != connected_clients.end() && *reinterpret_cast<int*>(event_lst[connect_ev].udata) == Q.getConnectionSocketIdent()
+			else if (*reinterpret_cast<int*>(event_lst[connect_ev].udata) == Q.getConnectionSocketIdent()
 					&& connected_clients[event_lst[connect_ev].ident] != NULL)
 			{
 				if (event_lst[connect_ev].filter == EVFILT_READ)
 					handleReadEvent(connect_ev);
-				else if (connected_clients[event_lst[connect_ev].ident]->getRequestHandler() != NULL
-					&& connected_clients[event_lst[connect_ev].ident]->getResponseStatus() && event_lst[connect_ev].filter == EVFILT_WRITE)
+				else if (event_lst[connect_ev].filter == EVFILT_WRITE && connected_clients[event_lst[connect_ev].ident]->getResponseStatus()
+						&& connected_clients[event_lst[connect_ev].ident]->getRequestHandler() != NULL)
 				{
 					handleWriteEvent(connect_ev);
 				}
 			}
-			// else if (*reinterpret_cast<int*>(event_lst[connect_ev].udata) != Q.getListeningSocketIdent()
-			// 		&& *reinterpret_cast<int*>(event_lst[connect_ev].udata) != Q.getConnectionSocketIdent())
-			else
+			else if (*reinterpret_cast<int*>(event_lst[connect_ev].udata) != Q.getListeningSocketIdent()
+					&& *reinterpret_cast<int*>(event_lst[connect_ev].udata) != Q.getConnectionSocketIdent())
 			{
 				handleCGIResponse(connect_ev);
 			}
