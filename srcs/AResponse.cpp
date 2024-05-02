@@ -29,8 +29,6 @@ AResponse::AResponse(const AResponse& src)
 	file_position = src.file_position;
 	file_pos_offset = src.file_pos_offset;
 	chunked_body = src.chunked_body;
-	
-
 }
 
 AResponse& AResponse::operator=(const AResponse& src)

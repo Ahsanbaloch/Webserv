@@ -180,7 +180,7 @@ void	DarwinWorker::runEventLoop()
 			}
 			else if (*static_cast<int*>(event_lst[connect_ev].udata) == Q.getListeningSocketIdent())
 			{
-				// how to handle exceptions in here?
+				// how to handle exceptions in here? 
 				acceptConnections(connect_ev);
 			}
 			else if (*static_cast<int*>(event_lst[connect_ev].udata) == Q.getConnectionSocketIdent()

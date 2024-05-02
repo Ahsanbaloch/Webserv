@@ -101,15 +101,12 @@ void	CGIHandler::setEnv()
 	temp_env.push_back("CONTENT_TYPE=" + handler.getHeaderInfo().getHeaderFields()["content-type"]);
 	temp_env.push_back("DOCUMENT_ROOT=" + doc_root);
 	temp_env.push_back("GATEWAY_INTERFACE=CGI/1.1");
-	temp_env.push_back("PATH_INFO=" + path_info); // change this
-	temp_env.push_back("PATH_TRANSLATED=" + doc_root + path_info);
+	temp_env.push_back("PATH_INFO=" + handler.getHeaderInfo().getPath()); // requested by subject
+	temp_env.push_back("PATH_TRANSLATED=" + doc_root + handler.getHeaderInfo().getPath()); // requested by subject
+	// temp_env.push_back("PATH_INFO=" + path_info);
+	// temp_env.push_back("PATH_TRANSLATED=" + doc_root + path_info);
 	temp_env.push_back("QUERY_STRING=" + handler.getHeaderInfo().getQuery());
-	// temp_env.push_back("REMOTE_ADDR=");
-	// temp_env.push_back("REMOTE_HOST=");
-	// temp_env.push_back("REMOTE_IDENT=");
-	// temp_env.push_back("REMOTE_USER=");
 	temp_env.push_back("REQUEST_METHOD=" + handler.getHeaderInfo().getMethod());
-	// temp.push_back("REQUEST_URI=");
 	temp_env.push_back("SCRIPT_NAME=" + cgi_location + handler.getHeaderInfo().getFilename());
 	temp_env.push_back("SERVER_NAME=" + handler.getSelectedServer().Ip);
 	temp_env.push_back("SERVER_PORT=" + toString(handler.getSelectedServer().port));
@@ -123,11 +120,8 @@ void	CGIHandler::setEnv()
 		strcpy(env[i], temp_env[i].c_str());
 	}
 	env[temp_env.size()] = NULL;
-	for (size_t i = 0; i < temp_env.size(); i++)
-		std::cout << "env[" << i << "]: " << env[i] << std::endl;
 }
 
-// make program the first argument and path the second?
 void	CGIHandler::createArguments()
 {
 	std::string file_path = "./www/cgi-bin/" + handler.getHeaderInfo().getFilename();
@@ -172,12 +166,6 @@ void CGIHandler::execCGI()
 			handler.setStatus(500);
 			exit(1);
 		}
-
-		// Change to the script directory ??
-		// if (chdir(scriptPath.c_str()) < 0) {
-		//     exit(1);
-		// }
-
 		if (execve(argv[0], argv, env) < 0)
 		{
 			handler.setStatus(500);
@@ -204,9 +192,8 @@ void CGIHandler::execCGI()
 		}
 		if (WEXITSTATUS(status) || handler.getStatus() == 500)
 		{
-			perror("issue");
 			handler.setStatus(500);
-			throw CustomException("Internal Server Error");
+			throw CustomException("Internal Server Error: detected when running CGI");
 		}
 	}
 }
@@ -216,7 +203,6 @@ void CGIHandler::execCGI()
 
 void CGIHandler::execute()
 {
-	
 	setEnv();
 	execCGI();
 }

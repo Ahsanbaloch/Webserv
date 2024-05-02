@@ -66,10 +66,12 @@ void	KQueue::attachListeningSockets(ListeningSocketsBlock& SocketsBlock)
 
 	std::map<int, ListeningSocket> listening_sockets = SocketsBlock.getListeningSockets();
 	for (std::map<int, ListeningSocket>::iterator it = listening_sockets.begin(); it != listening_sockets.end(); it++)
+	{
 		EV_SET(&listening_event[i++], it->first, EVFILT_READ, EV_ADD, 0, 0, &listening_sock_ident);
+		std::cout << "Localhost listening on port " << it->second.getServerConfig()[0].port << " ..." << std::endl;
+	}
 	if (kevent(kqueue_fd, listening_event, SocketsBlock.getNumListeningSockets(), NULL, 0, NULL) == -1)
 	{
-		perror("Failure: ");
 		delete[] listening_event;
 		throw CustomException("Failed when registering events for listening sockets");
 	}
