@@ -41,9 +41,10 @@ std::string GETResponse::createHTMLPage(const std::string& directory_name, const
 	std::ostringstream directory_items;
 	for (std::vector<std::string>::const_iterator it = items.begin(); it != items.end(); ++it)
 	{
-		std::string link = "/" + *it;
-		directory_items << "<li><a href=\"" << directory_name << link << "\">" << *it << "</a> "
-                << "<button onclick=\"sendDeleteRequest('" << directory_name << link << "')\">Delete</button></li>";
+	 std::string link = "/" + *it;
+    directory_items << "<li class=\"list-group-item\"><a href=\"" << directory_name << link << "\">" << *it << "</a> "
+        << "<button class=\"btn btn-danger float-right\" onclick=\"this.firstChild.classList.remove('d-none'); sendDeleteRequest('" << directory_name << link << "');\">"
+        << "<span class=\"spinner-border spinner-border-sm d-none\" role=\"status\"></span> Delete</button></li>";
 	}
 
 	size_t pos = html_template.find("{directory_name}");
