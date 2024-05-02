@@ -71,7 +71,11 @@ RequestHandler::~RequestHandler()
 	if (chunk_decoder != NULL)
 		delete chunk_decoder;
 	if (cgi_handler != NULL)
+	{
+		kill(cgi_handler->cgi_pid, SIGKILL);
+		close(cgi_handler->cgi_out[0]);
 		delete cgi_handler;
+	}
 }
 
 RequestHandler::RequestHandler(const RequestHandler& src)
