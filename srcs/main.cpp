@@ -24,12 +24,10 @@ int	main(int argc, char **argv)
 		// Create listening sockets, bind, set non-blocking, listen
 		ListeningSocketsBlock SocketsBlock(serverConfigsMap);
 
-		// create KQueue object
+		// Set up server
 		#ifdef __APPLE__
 			KQueue Queue;
-			// attach sockets to kqueue
 			Queue.attachListeningSockets(SocketsBlock);
-			// create Worker object
 			DarwinWorker Worker(Queue, SocketsBlock);
 		#else
 			EPoll Queue;
@@ -37,13 +35,13 @@ int	main(int argc, char **argv)
 			LinuxWorker Worker(Queue, SocketsBlock);
 		#endif
 
-		// run event loop
+		// run server
 		Worker.runEventLoop();
 
-		// close all listening sockets (this removes them from kqueue)
+		// close all listening sockets
 		SocketsBlock.closeSockets();
 
-		// close connection sockets? (if any are left?)
+		// close connection sockets? (if any are left?) --> do that in Darwin worker destructor?
 
 		// close queue
 		Queue.closeQueue();

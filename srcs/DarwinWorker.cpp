@@ -19,6 +19,12 @@ DarwinWorker::DarwinWorker(const KQueue& Queue, ListeningSocketsBlock& Block)
 
 DarwinWorker::~DarwinWorker()
 {
+	for (std::map<int, ConnectionHandler*>::iterator it = connected_clients.begin(); it != connected_clients.end(); it++)
+	{
+		close(it->first);
+		delete it->second;
+	}
+	connected_clients.erase(connected_clients.begin(), connected_clients.end());
 }
 
 DarwinWorker::DarwinWorker(const DarwinWorker& src)
