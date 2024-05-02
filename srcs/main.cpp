@@ -8,7 +8,6 @@
 #endif
 #include "ListeningSocketsBlock.h"
 #include "config/config_pars.hpp"
-#include "defines.h"
 
 
 int	main(int argc, char **argv)

@@ -617,6 +617,7 @@ void	RequestHandler::sendResponse()
 		{
 			all_chunks_sent = 1;
 			response->getBodyFile().close();
+
 		}
 	}
 }
@@ -634,7 +635,16 @@ void	RequestHandler::readCGIResponse()
 			close(cgi_handler->cgi_out[0]);
 			response->createResponse();
 			if (getHeaderInfo().getMethod() == "POST")
+			{
 				remove(getTempBodyFilepath().c_str());
+				CGIResponse* cgiResponse = dynamic_cast<CGIResponse*>(response);
+				if (cgiResponse != NULL)
+				{
+					std::map<std::string, std::string> temp = cgiResponse->getCGIHeaderFields();
+					if (temp.find("Content-Type") != temp.end())
+						remove(cgiResponse->getTempBodyFilePath().c_str());
+				}
+			}
 			else if (getHeaderInfo().getMethod() == "GET")
 			{
 				CGIResponse* cgiResponse = dynamic_cast<CGIResponse*>(response);
