@@ -8,7 +8,6 @@
 #endif
 #include "ListeningSocketsBlock.h"
 #include "config/config_pars.hpp"
-#include "defines.h"
 
 
 int	main(int argc, char **argv)
@@ -21,61 +20,25 @@ int	main(int argc, char **argv)
 		config_pars config(argc, argv);
 		std::map<std::string, std::vector<t_server_config> > serverConfigsMap = config.getServerConfigsMap();
 
-		
-		// for testing
-		// for (std::map<std::string, std::vector<t_server_config> >::iterator it = serverConfigsMap.begin(); it != serverConfigsMap.end(); it++)
-		// {
-		// 	for (std::vector<t_server_config>::iterator it2 = it->second.begin(); it2 != it->second.end(); it2++)
-		// 	{
-		// 		std::cout << "port and server name: " << it2->port << " " << it2->serverName << std::endl;
-		// 		std::cout << "timeout : " << it2->timeout << std::endl;
-		// 		for (std::vector<t_location_config>::iterator it3 = it2->locations.begin(); it3 != it2->locations.end(); it3++)
-		// 		{
-		// 			std::cout << "error page : "  << it3->errorPage.html_page << std::endl;
-		// 			// std::cout << "error status : "  << it3->errorPage.error_page_status << std::endl;
-		// 			// std::cout << "upload: " << it3->uploadDir << std::endl;
-		//  			// std::cout << "root : " << it3->root << std::endl;
-		// 			// std::cout << "url : " << it3->redirect << std::endl;
-		// 			// std::cout << "Path : " << it3->path << std::endl;
-		// 			// std::cout << "Index : " << it3->index << std::endl;
-		// // 			//std::cout << "cgi_ext size: " << it3->cgi_ext.size() << std::endl;
-		// // 			//std::cout << "upload: " << it3->uploadDir << std::endl;
-		// // 			std::cout << "GET : " << it3->GET << " POST : " << it3->POST << std::endl;
-		// 			std::cout << it3->cgi_ext.size() << std::endl;
+		// Create listening sockets, bind, set non-blocking, listen
+		ListeningSocketsBlock SocketsBlock(serverConfigsMap);
 
-		// 			for (std::vector<std::string>::iterator it4 = it3->cgi_ext.begin(); it4 != it3->cgi_ext.end(); ++it4)
-		// 			{
-		// 				std::cout << "cgi-ext : " << *it4 << std::endl;
-
-		// 			}
-		// 		std::cout << "..." << std::endl;
-		// 		}
-		// 	}
-		// }
-
-		// Create Server object (create listening sockets, bind, set non-blocking, listen)
-		ListeningSocketsBlock SocketsBlock(serverConfigsMap); // here goes the config vector; objects will be added to correct listeningSocket (alt: create and return map<socket_fd, ConfigData obj>)
-
-		// create KQueue object
+		// Set up server
 		#ifdef __APPLE__
 			KQueue Queue;
-			// attach sockets to kqueue
 			Queue.attachListeningSockets(SocketsBlock);
-			// create Worker object
-			DarwinWorker Worker(Queue, SocketsBlock); // also add the SocketsBlock which contains the configData (alt: map<listening_socketfd, config obj>)
+			DarwinWorker Worker(Queue, SocketsBlock);
 		#else
-			EPoll Queue(SocketsBlock);
-			Queue.attachListeningSockets();
-			LinuxWorker Worker(Queue);
+			EPoll Queue;
+			Queue.attachListeningSockets(SocketsBlock);
+			LinuxWorker Worker(Queue, SocketsBlock);
 		#endif
 
-		// run event loop
+		// run server
 		Worker.runEventLoop();
 
-		// close all listening sockets (this removes them from kqueue) --> do I need to do something similar with the connection sockets
+		// close all listening sockets
 		SocketsBlock.closeSockets();
-
-		// close connection sockets?
 
 		// close queue
 		Queue.closeQueue();
@@ -84,6 +47,4 @@ int	main(int argc, char **argv)
 	{
 		std::cerr << e.what() << '\n';
 	}
-	// close fds?
-	
 }

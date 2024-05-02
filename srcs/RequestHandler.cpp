@@ -4,82 +4,142 @@
 ///////// CONSTRUCTORS & DESTRUCTORS ///////////
 
 RequestHandler::RequestHandler()
-	: request_header(*this), Q(*new KQueue())
+	: request_header(*this)
 {
+	kernel_q_fd = -1;
+	connection_fd = -1;
+	status = 200;
+	selected_location = 0;
+	selected_server = 0;
+	bytes_read = 0;
+	request_length = 0;
+	num_response_chunks_sent = 0;
+
+	response_ready = 0;
+	all_chunks_sent = 0;
+	cgi_detected = 0;
+	header_check_done = 0;
+
+	buf_pos = -1;
+	cgi_buf_pos = -1;
+
+	cgi_identifier = NULL;
+	chunk_decoder = NULL;
+	cgi_handler = NULL;
+	uploader = NULL;
+	response = NULL;
+	body_extractor = NULL;
 }
 
-RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_config,  const KQueue& q)
-	: request_header(*this), Q(q)
+RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_config, int q_fd)
+	: request_header(*this)
 {
 	std::cout << "request handler constructed" << std::endl;
 	this->server_config = server_config;
+	kernel_q_fd = q_fd;
 	connection_fd = fd;
 	status = 200;
 	selected_location = 0;
 	selected_server = 0;
 	bytes_read = 0;
-	response_ready = 0;
 	request_length = 0;
-	internal_redirect = 0;
 	num_response_chunks_sent = 0;
+
+	response_ready = 0;
 	all_chunks_sent = 0;
 	cgi_detected = 0;
-	// total_bytes_sent = 0;
-
-	check_header = 0;
+	header_check_done = 0;
 
 	buf_pos = -1;
 	cgi_buf_pos = -1;
 
-	 // also add in copy constructor etc.
-
-	
-	response = NULL;
-	uploader = NULL;
-	body_extractor = NULL;
-	cgi_handler = NULL;
+	cgi_identifier = NULL;
 	chunk_decoder = NULL;
-	memset(&buf, 0, sizeof(buf));
+	cgi_handler = NULL;
+	uploader = NULL;
+	response = NULL;
+	body_extractor = NULL;
 }
 
 RequestHandler::~RequestHandler()
 {
 	std::cout << "request handler destroyed" << std::endl;
-	delete response;
-	if (uploader != NULL) // needed?
+	if (cgi_identifier != NULL)
+		delete cgi_identifier;
+	if (response != NULL)
+		delete response;
+	if (uploader != NULL)
 		delete uploader;
 	if (body_extractor != NULL)
 		delete body_extractor;
 	if (chunk_decoder != NULL)
 		delete chunk_decoder;
 	if (cgi_handler != NULL)
+	{
+		kill(cgi_handler->getCGIPid(), SIGKILL);
+		close(cgi_handler->cgi_out[0]);
 		delete cgi_handler;
+	}
 }
 
 RequestHandler::RequestHandler(const RequestHandler& src)
-	: request_header(src.request_header), Q(src.Q)
+	: request_header(src.request_header)
 {
-	// tbd
+	server_config = src.server_config;
+	int_redir_referer_path = src.int_redir_referer_path;
+	kernel_q_fd = src.kernel_q_fd;
+	connection_fd = src.connection_fd;
+	status = src.status;
+	selected_location = src.selected_location;
+	selected_server = src.selected_server;
+	bytes_read = src.bytes_read;
+	request_length = src.request_length;
+	num_response_chunks_sent = src.num_response_chunks_sent;
+
+	response_ready = src.response_ready;
+	all_chunks_sent = src.all_chunks_sent;
+	cgi_detected = src.cgi_detected;
+	header_check_done = src.header_check_done;
+
+	buf_pos = src.buf_pos;
+	cgi_buf_pos = src.cgi_buf_pos;
+
+	cgi_identifier = src.cgi_identifier;
+	chunk_decoder = src.chunk_decoder;
+	cgi_handler = src.cgi_handler;
+	uploader = src.uploader;
+	response = src.response;
+	body_extractor = src.body_extractor;
 }
 
 RequestHandler& RequestHandler::operator=(const RequestHandler& src)
 {
 	if (this != &src)
 	{
-		request_header = src.request_header;
 		server_config = src.server_config;
+		int_redir_referer_path = src.int_redir_referer_path;
+		kernel_q_fd = src.kernel_q_fd;
+		connection_fd = src.connection_fd;
 		status = src.status;
 		selected_location = src.selected_location;
 		selected_server = src.selected_server;
-		connection_fd = src.connection_fd;
 		bytes_read = src.bytes_read;
-		response_ready = src.response_ready;
 		request_length = src.request_length;
-		internal_redirect = src.internal_redirect;
 		num_response_chunks_sent = src.num_response_chunks_sent;
+
+		response_ready = src.response_ready;
+		all_chunks_sent = src.all_chunks_sent;
+		cgi_detected = src.cgi_detected;
+		header_check_done = src.header_check_done;
+
 		buf_pos = src.buf_pos;
-		response = src.response;
+		cgi_buf_pos = src.cgi_buf_pos;
+
+		cgi_identifier = src.cgi_identifier;
+		chunk_decoder = src.chunk_decoder;
+		cgi_handler = src.cgi_handler;
 		uploader = src.uploader;
+		response = src.response;
 		body_extractor = src.body_extractor;
 	}
 	return (*this);
@@ -88,89 +148,9 @@ RequestHandler& RequestHandler::operator=(const RequestHandler& src)
 
 ///////// GETTERS ///////////
 
-std::vector<t_server_config>	RequestHandler::getServerConfig() const
-{
-	return (server_config);
-}
-
-int	RequestHandler::getStatus() const
-{
-	return (status);
-}
-
-s_location_config	RequestHandler::getLocationConfig() const
-{
-	return (server_config[selected_server].locations[selected_location]);
-}
-
-int	RequestHandler::getSelectedLocation() const
-{
-	return (selected_location);
-}
-
-bool	RequestHandler::getResponseStatus() const
-{
-	return (response_ready);
-}
-
-int		RequestHandler::getBytesRead() const
-{
-	return (bytes_read);
-}
-
-int		RequestHandler::getRequestLength() const
-{
-	return (request_length);
-}
-
 const RequestHeader&	RequestHandler::getHeaderInfo()
 {
 	return (request_header);
-}
-
-CGIHandler*	RequestHandler::getCGI()
-{
-	return (cgi_handler);
-}
-
-t_server_config	RequestHandler::getSelectedServer() const
-{
-	return (server_config[selected_server]);
-}
-
-// bool	RequestHandler::getUnchunkingStatus() const
-// {
-// 	return (body_unchunked);
-// }
-
-std::string	RequestHandler::getTempBodyFilepath() const
-{
-	return (body_extractor->getTempBodyFilepath());
-}
-
-std::string	RequestHandler::getIntRedirRefPath() const
-{
-	return (int_redir_referer_path);
-}
-
-AUploadModule*	RequestHandler::getUploader() const
-{
-	return (uploader);
-}
-
-// AResponse*	RequestHandler::getResponse() const
-// {
-// 	return (response);
-// }
-
-int	RequestHandler::getNumResponseChunks() const
-{
-	return (num_response_chunks_sent);
-}
-
-bool	RequestHandler::getChunksSentCompleteStatus() const
-{
-	return (all_chunks_sent);
 }
 
 // provide a function to get the chunk decoder filepath instead?
@@ -179,6 +159,75 @@ ChunkDecoder*	RequestHandler::getChunkDecoder() const
 	return (chunk_decoder);
 }
 
+CGIHandler*	RequestHandler::getCGI()
+{
+	return (cgi_handler);
+}
+
+AUploadModule*	RequestHandler::getUploader() const
+{
+	return (uploader);
+}
+
+std::vector<t_server_config>	RequestHandler::getServerConfig() const
+{
+	return (server_config);
+}
+
+s_location_config	RequestHandler::getLocationConfig() const
+{
+	return (server_config[selected_server].locations[selected_location]);
+}
+
+t_server_config	RequestHandler::getSelectedServer() const
+{
+	return (server_config[selected_server]);
+}
+
+std::string	RequestHandler::getIntRedirRefPath() const
+{
+	return (int_redir_referer_path);
+}
+
+std::string	RequestHandler::getTempBodyFilepath() const
+{
+	return (body_extractor->getTempBodyFilepath());
+}
+
+int	RequestHandler::getStatus() const
+{
+	return (status);
+}
+
+int		RequestHandler::getBytesRead() const
+{
+	return (bytes_read);
+}
+
+int	RequestHandler::getCGIBytesRead() const
+{
+	return (cgi_bytes_read);
+}
+
+int		RequestHandler::getRequestLength() const
+{
+	return (request_length);
+}
+
+int	RequestHandler::getNumResponseChunks() const
+{
+	return (num_response_chunks_sent);
+}
+
+bool	RequestHandler::getResponseStatus() const
+{
+	return (response_ready);
+}
+
+bool	RequestHandler::getChunksSentCompleteStatus() const
+{
+	return (all_chunks_sent);
+}
 
 
 ///////// SETTERS ///////////
@@ -189,142 +238,51 @@ void	RequestHandler::setStatus(int status)
 }
 
 
-///////// METHODS ///////////
+////////// HELPER METHODS ////////
 
-void	RequestHandler::sendResponse()
+void	RequestHandler::receiveRequest()
 {
-	std::string resp;
-
-	if (response->getChunkedBodyStatus() && status < 400)
-	{
-		if (num_response_chunks_sent > 0)
-		{
-			std::string body_chunk;
-			body_chunk = response->createBodyChunk();
-			resp = body_chunk;
-		}
-		else
-			resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
-		num_response_chunks_sent++;
-	}
-	else
-		resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
-	
-	int bytes_sent = send(connection_fd, resp.c_str(), resp.length(), 0);
-	if (bytes_sent == -1)
-	{
-		// handle properly (also check for bytes_sent == 0)
-		std::cout << "error when sending data" << std::endl;
-		// break;
-	}
-	if (response->getChunkedBodyStatus())
-	{
-		if (num_response_chunks_sent == 1)
-			bytes_sent -= response->getResponseStatusLine().length() + response->getRespondsHeaderFields().length();
-		if (bytes_sent > 0)
-			response->incrementFilePosition(bytes_sent);
-		if (response->getFilePosition() - response->getFilePosOffset() == response->getBodySize())
-		{
-			all_chunks_sent = 1;
-			response->getBodyFile().close();
-		}
-	}
-}
-
-void	RequestHandler::processRequest()
-{
-	// always memset(buffer, 0, sizeof(buffer)) after buffer has been handled?
 	buf_pos = -1;
 	bytes_read = recv(connection_fd, buf, BUFFER_SIZE, 0);
 	if (bytes_read == -1)
-		throw CustomException("Failed when processing read request\n");
+		throw CustomException("Failed to receive request. Connection will be closed");
 	if (bytes_read == 0)
-		return ; // also throw exception. Need to check the exception exactly // also close connection?
-	// close fd in case bytes_read == 0 ???
-	
-	buf[bytes_read] = '\0';
+		throw CustomException("Stream socket peer has performed an orderly shutdown. Connection will be closed");
 	request_length += bytes_read;
+	buf[bytes_read] = '\0';
+	// printf("read %i bytes\n", bytes_read);
+	// printf("buffer content: \n%s\n", buf);
+}
 
-	printf("read %i bytes\n", bytes_read);
-	printf("buffer content: \n%s\n", buf);
-
-	try
+void	RequestHandler::processHeader()
+{
+	if (!request_header.getRequestLineStatus())
+		request_header.parseRequestLine();
+	if (request_header.getRequestLineStatus())
 	{
-		// check if headers have already been read
-		if (!request_header.getHeaderStatus())
-		{
-			if (!request_header.getRequestLineStatus())
-				request_header.parseRequestLine();
-			if (request_header.getRequestLineStatus())
-			{
-				request_header.identifyFileName();
-				determineLocationBlock();
-				checkAllowedMethods(); // check if method is allowed in selected location
-				if (request_header.getMethod() == "GET")
-					checkInternalRedirect();
-				request_header.parseHeaderFields();
-			}
-		}
-
-		if (request_header.getHeaderStatus())
-		{
-			if (!check_header)
-			{
-				request_header.checkHeader();
-				checkForCGI();
-				check_header = 1;
-			}
-			if (request_header.getHeaderExpectedStatus()) // this is relevant for POST only, should this be done in another place? (e.g. POST request class)
-			{
-				// check value of expect field?
-				// check content-length field before accepting?
-				// create response signalling the client that the body can be send
-				// make reponse
-				// in this case we don't want to destroy the requesthandler object
-			}
-			// if body is expected, read the body (unless the selected location demands a redirect or it is not a POST request) 
-			if (request_header.getBodyStatus() && request_header.getMethod() == "POST" && getLocationConfig().redirect.empty())
-				processBody();
-
-			// check how getBodyStatus() gets set (does it already check for request method?)
-			if (!request_header.getBodyStatus() || (uploader != NULL && uploader->getUploadStatus())
-				|| !getLocationConfig().redirect.empty() || (body_extractor != NULL && body_extractor->getExtractionStatus()))
-			{
-				if (cgi_detected)
-				{
-					// do this later; just before executing the CGI
-					cgi_handler = new CGIHandler(*this);
-					struct kevent cgi_event;
-					std::cout << "origin connectionf fd: " << connection_fd << std::endl;
-					if (fcntl(cgi_handler->cgi_out[0], F_SETFL, O_NONBLOCK) == -1)
-						throw CustomException("Failed when calling fcntl() and setting fds to non-blocking\n");
-					EV_SET(&cgi_event, cgi_handler->cgi_out[0], EVFILT_READ, EV_ADD, 0, 0, &connection_fd);
-					if (kevent(Q.getKQueueFD(), &cgi_event, 1, NULL, 0, NULL) == -1)
-					{
-						perror("Failure: ");
-						throw CustomException("Failed when registering events for CGI output\n");
-					}
-					cgi_handler->execute();
-					return ;
-				}
-				response = prepareResponse();
-				response->createResponse();
-				response_ready = 1;
-			}
-		}
-	}
-	catch(const std::exception& e)
-	{
-		removeTempFiles();
-		if (response != NULL)
-			delete response;
-		response = new ERRORResponse(*this);
-		response->createResponse();
-		response_ready = 1;
-		std::cerr << e.what() << '\n';
+		request_header.identifyFileName();
+		determineLocationBlock();
+		checkAllowedMethods();
+		if (request_header.getMethod() == "GET")
+			checkInternalRedirect();
+		request_header.parseHeaderFields();
 	}
 }
 
+void	RequestHandler::checkHeader()
+{
+	request_header.checkHeader();
+	checkForCGI();
+	if (request_header.getHeaderExpectedStatus()) // this is relevant for POST only, should this be done in another place? (e.g. POST request class)
+	{
+		// check value of expect field?
+		// check content-length field before accepting?
+		// create response signalling the client that the body can be send
+		// make reponse
+		// in this case we don't want to destroy the requesthandler object
+	}
+	header_check_done = 1;
+}
 
 void	RequestHandler::processBody()
 {
@@ -351,72 +309,63 @@ void	RequestHandler::processBody()
 	}
 }
 
-void	RequestHandler::checkForCGI()
+void	RequestHandler::addCGIToQueue()
 {
-	if (getLocationConfig().path == "/cgi-bin")
-	{
-		if (find(getLocationConfig().cgi_ext.begin(), getLocationConfig().cgi_ext.end(), request_header.getFileExtension()) == getLocationConfig().cgi_ext.end())
-		{
-			status = 403; // which status should be set here? 
-			throw CustomException("Forbidden");
-		}
-		else
-		{
-			cgi_detected = 1;
-		}
-	}
-
-	// also check execution rights here?
+	cgi_handler = new CGIHandler(*this);
+	#ifdef __APPLE__
+		struct kevent cgi_event;
+		int* ident = new int;
+		*ident = connection_fd;
+		if (fcntl(cgi_handler->cgi_out[0], F_SETFL, O_NONBLOCK) == -1)
+			throw CustomException("Failed when calling fcntl() and setting fds to non-blocking");
+		EV_SET(&cgi_event, cgi_handler->cgi_out[0], EVFILT_READ, EV_ADD, 0, 0, ident);
+		if (kevent(kernel_q_fd, &cgi_event, 1, NULL, 0, NULL) == -1)
+			throw CustomException("Failed when registering events for CGI output");
+	#else
+		struct epoll_event listening_event;
+		EPoll::e_data* user_data = new EPoll::e_data;
+		user_data->fd = connection_fd;
+		user_data->socket_ident = 3;
+		listening_event.data.ptr = user_data;
+		listening_event.events = EPOLLIN | EPOLLHUP | EPOLLRDHUP;
+		if (fcntl(cgi_handler->cgi_out[0], F_SETFL, O_NONBLOCK) == -1)
+			throw CustomException("Failed when calling fcntl() and setting fds to non-blocking");
+		if (epoll_ctl(kernel_q_fd, EPOLL_CTL_ADD, cgi_handler->cgi_out[0], &listening_event) == -1)
+			throw CustomException("Failed when registering events for CGI output");
+	#endif
 }
 
-
-void	RequestHandler::readCGIResponse()
+void	RequestHandler::makeErrorResponse()
 {
-	try
+	removeTempFiles();
+	if (response != NULL)
+		delete response;
+	response = new ERRORResponse(*this);
+	response->createResponse();
+	response_ready = 1;
+}
+
+void	RequestHandler::checkForCGI()
+{
+	std::vector<std::string> location_extensions = getLocationConfig().cgi_ext;
+	if (getLocationConfig().path == "/cgi-bin")
 	{
-		cgi_buf_pos = -1;
-		cgi_bytes_read = read(cgi_handler->cgi_out[0], cgi_buf, BUFFER_SIZE);
-		if (cgi_bytes_read == -1)
-			perror("recv");
-		else if (cgi_bytes_read == 0)
+		if (find(location_extensions.begin(), location_extensions.end(), request_header.getFileExtension()) == location_extensions.end())
 		{
-			close(cgi_handler->cgi_out[0]);
-			response->createResponse();
-			if (getHeaderInfo().getMethod() == "POST")
-				remove(getTempBodyFilepath().c_str());
-			response_ready = 1;
+			status = 403;
+			throw CustomException("Forbidden: specified cgi file extension is not allowed");
 		}
 		else
 		{
-			cgi_buf[bytes_read] = '\0';
-
-			CGIResponse* cgiResponse = dynamic_cast<CGIResponse*>(response);
-			if (cgiResponse != NULL)
+			std::string cgi_path = getLocationConfig().root + request_header.getPath();
+			if (access(cgi_path.c_str(), F_OK) == 0)
+				cgi_detected = 1;
+			else
 			{
-				if (cgiResponse->processBuffer())
-				{
-					close(cgi_handler->cgi_out[0]);
-					request_header.makeInternalRedirect(cgiResponse->cgi_header_fields["Location"]);
-					findLocationBlock();
-					delete response;
-					response = new GETResponse(*this);
-					response->createResponse();
-					if (getHeaderInfo().getMethod() == "POST")
-						remove(getTempBodyFilepath().c_str());
-					response_ready = 1;
-				}
+				setStatus(404);
+				throw CustomException("Not found: cgi file");
 			}
 		}
-	}
-	catch(const std::exception& e)
-	{
-		removeTempFiles();
-		if (response != NULL)
-			delete response;
-		response = new ERRORResponse(*this);
-		response->createResponse();
-		response_ready = 1;
-		std::cerr << e.what() << '\n';
 	}
 }
 
@@ -443,39 +392,24 @@ void RequestHandler::checkInternalRedirect()
 {
 	if (request_header.getFileExtension().empty())
 	{
-		std::cout << "initial path: " << request_header.getPath() << std::endl;
 		std::string new_file_path = getLocationConfig().index;
 		if (access(new_file_path.c_str(), F_OK) == 0)
 		{
-			internal_redirect = 1;
 			int_redir_referer_path = "http://localhost:" + toString(getSelectedServer().port) + getLocationConfig().path;
-			std::string	orig_root = getLocationConfig().root;
+			new_file_path = new_file_path.substr(getLocationConfig().root.length());
+			request_header.makeInternalRedirect(new_file_path);
 			findLocationBlock();
 			checkAllowedMethods();
-			if (!getLocationConfig().redirect.empty())
-				return ;
-			new_file_path = new_file_path.substr(orig_root.length());
-			request_header.makeInternalRedirect(new_file_path);
-			std::cout << "new path: " << request_header.getPath() << std::endl;
 		}
 	}
 }
 
 void RequestHandler::determineLocationBlock()
 {
-	// find server block if there are multiple that match (this applies to all request types)
 	if (server_config.size() > 1)
-		findServerBlock();
-	
-	// find location block within server block if multiple exist (this applies to all request types; for GET requests there might be an internal redirect happening later on)
+		findServerBlock();	
 	if (server_config[selected_server].locations.size() > 1)
 		findLocationBlock();
-}
-
-void	RequestHandler::setCGIResponse()
-{
-	if (response == NULL)
-		response = new CGIResponse(*this);
 }
 
 AResponse* RequestHandler::prepareResponse()
@@ -495,13 +429,10 @@ AResponse* RequestHandler::prepareResponse()
 	}
 }
 
-
 AUploadModule*	RequestHandler::checkContentType()
 {
 	std::string value = getHeaderInfo().getHeaderFields()["content-type"];
 	std::string type;
-	
-	// identify content type
 	std::size_t delim_pos = value.find(';');
 	if (delim_pos != std::string::npos)
 		type = value.substr(0, delim_pos);
@@ -526,7 +457,6 @@ AUploadModule*	RequestHandler::checkContentType()
 	}
 }
 
-
 void	RequestHandler::findLocationBlock()
 {
 	std::vector<std::string> uri_path_items = splitPath(request_header.getPath(), '/');
@@ -542,19 +472,6 @@ void	RequestHandler::findLocationBlock()
 			max = matches;
 		}
 	}
-	std::cout << "Thats the location block: " << getLocationConfig().path << std::endl;
-}
-
-std::vector<std::string>	RequestHandler::splitPath(std::string input, char delim)
-{
-	std::istringstream			iss(input);
-	std::string					item;
-	std::vector<std::string>	result;
-	
-	while (std::getline(iss, item, delim))
-		result.push_back("/" + item); // does adding "/" work in all cases?
-
-	return (result);
 }
 
 int	RequestHandler::calcMatches(std::vector<std::string>& uri_path_items, std::vector<std::string>& location_path_items)
@@ -571,8 +488,6 @@ int	RequestHandler::calcMatches(std::vector<std::string>& uri_path_items, std::v
 	}
 	return (matches);
 }
-
-
 
 void	RequestHandler::findServerBlock()
 {
@@ -600,4 +515,165 @@ void	RequestHandler::removeTempFiles()
 		if (!cgiResponse->getTempBodyFilePath().empty())
 			remove(cgiResponse->getTempBodyFilePath().c_str());
 	}
+}
+
+std::string	RequestHandler::fetchResponseChunk()
+{
+	std::string resp;
+
+	if (response->getChunkedBodyStatus() && status < 400)
+	{
+		if (num_response_chunks_sent > 0)
+			resp = response->createBodyChunk();
+		else
+			resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
+		num_response_chunks_sent++;
+	}
+	else
+		resp = response->getResponseStatusLine() + response->getRespondsHeaderFields() + response->getResponseBody();
+	
+	return (resp);
+}
+
+void	RequestHandler::makeInternalRedirectPostCGI(std::string location)
+{
+	close(cgi_handler->cgi_out[0]);
+	request_header.makeInternalRedirect(location);
+	findLocationBlock();
+	checkInternalRedirect();
+	delete response;
+	response = new GETResponse(*this);
+	response->createResponse();
+	if (getHeaderInfo().getMethod() == "POST")
+		remove(getTempBodyFilepath().c_str());
+	response_ready = 1;
+}
+
+
+///////// MAIN METHODS ///////////
+
+void	RequestHandler::processRequest()
+{
+	receiveRequest();
+	try
+	{
+		if (!request_header.getHeaderProcessingStatus())
+			processHeader();
+		if (request_header.getHeaderProcessingStatus())
+		{
+			if (!header_check_done)
+				checkHeader();
+			if (request_header.getBodyExpectanceStatus() && getLocationConfig().redirect.empty())
+				processBody();
+			if (!request_header.getBodyExpectanceStatus() || (uploader != NULL && uploader->getUploadStatus())
+				|| !getLocationConfig().redirect.empty() || (body_extractor != NULL && body_extractor->getExtractionStatus()))
+			{
+				if (cgi_detected)
+				{
+					addCGIToQueue();
+					cgi_handler->execute();
+					return ;
+				}
+				response = prepareResponse();
+				response->createResponse();
+				response_ready = 1;
+			}
+		}
+	}
+	catch(const std::exception& e)
+	{
+		if (cgi_handler != NULL)
+			close(cgi_handler->cgi_out[0]);
+		makeErrorResponse();
+		std::cerr << e.what() << '\n';
+	}
+}
+
+void	RequestHandler::sendResponse()
+{
+	std::string resp;
+	try
+	{
+		resp = fetchResponseChunk();
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+		makeErrorResponse();
+	}
+	
+	int bytes_sent = send(connection_fd, resp.c_str(), resp.length(), 0);
+	if (bytes_sent == -1)
+		throw CustomException("Error when sending data. Connection will be closed");
+	if (bytes_sent == 0)
+		throw CustomException("Client not able to receive response. Connection will be closed");
+	if (response->getChunkedBodyStatus())
+	{
+		if (num_response_chunks_sent == 1)
+			bytes_sent -= response->getResponseStatusLine().length() + response->getRespondsHeaderFields().length();
+		if (bytes_sent > 0)
+			response->incrementFilePosition(bytes_sent);
+		if (response->getFilePosition() - response->getFilePosOffset() == response->getBodySize())
+		{
+			all_chunks_sent = 1;
+			response->getBodyFile().close();
+
+		}
+	}
+}
+
+void	RequestHandler::readCGIResponse()
+{
+	try
+	{
+		cgi_buf_pos = -1;
+		cgi_bytes_read = read(cgi_handler->cgi_out[0], cgi_buf, BUFFER_SIZE);
+		if (cgi_bytes_read == -1)
+			throw CustomException("CGI read failed");
+		else if (cgi_bytes_read == 0)
+		{
+			close(cgi_handler->cgi_out[0]);
+			response->createResponse();
+			if (getHeaderInfo().getMethod() == "POST")
+			{
+				remove(getTempBodyFilepath().c_str());
+				CGIResponse* cgiResponse = dynamic_cast<CGIResponse*>(response);
+				if (cgiResponse != NULL)
+				{
+					std::map<std::string, std::string> temp = cgiResponse->getCGIHeaderFields();
+					if (temp.find("Content-Type") != temp.end())
+						remove(cgiResponse->getTempBodyFilePath().c_str());
+				}
+			}
+			else if (getHeaderInfo().getMethod() == "GET")
+			{
+				CGIResponse* cgiResponse = dynamic_cast<CGIResponse*>(response);
+				if (cgiResponse != NULL)
+					remove(cgiResponse->getTempBodyFilePath().c_str());
+			}
+			response_ready = 1;
+		}
+		else
+		{
+			cgi_buf[cgi_bytes_read] = '\0';
+			CGIResponse* cgiResponse = dynamic_cast<CGIResponse*>(response);
+			if (cgiResponse != NULL)
+			{
+				if (cgiResponse->processBuffer())
+					makeInternalRedirectPostCGI(cgiResponse->getCGIHeaderFields()["Location"]);
+			}
+		}
+	}
+	catch(const std::exception& e)
+	{
+		close(cgi_handler->cgi_out[0]);
+		makeErrorResponse();
+		std::cerr << e.what() << '\n';
+	}
+}
+
+void	RequestHandler::initCGIResponse()
+{
+	if (response == NULL)
+		response = new CGIResponse(*this);
 }

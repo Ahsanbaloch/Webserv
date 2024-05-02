@@ -2,6 +2,9 @@
 #include "BodyExtractor.h"
 #include "RequestHandler.h"
 
+
+///////// CONSTRUCTORS & DESTRUCTORS ///////////
+
 BodyExtractor::BodyExtractor()
 	: handler(*new RequestHandler()), body_bytes_consumed(0), extraction_status(0)
 {
@@ -66,12 +69,12 @@ void	BodyExtractor::extractBody()
 
 		handler.buf_pos++;
 		int to_write = std::min(handler.getBytesRead() - handler.buf_pos, handler.getHeaderInfo().getBodyLength());
-		outfile.open(temp_body_filepath, std::ios::app | std::ios::binary);
+		outfile.open(temp_body_filepath.c_str(), std::ios::app | std::ios::binary);
 		outfile.write(reinterpret_cast<const char*>(&handler.buf[handler.buf_pos]), to_write);
 		handler.buf_pos += to_write;
 		body_bytes_consumed += to_write;
 		if (body_bytes_consumed >= handler.getHeaderInfo().getBodyLength())
 			extraction_status = 1;
-		outfile.close();;
+		outfile.close();
 	}
 }

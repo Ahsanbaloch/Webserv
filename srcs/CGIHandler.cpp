@@ -1,12 +1,11 @@
 #include "CGIHandler.h"
 #include "RequestHandler.h"
 
-CGIHandler::CGIHandler()
-	: handler(*new RequestHandler())
-{}
 
-CGIHandler::CGIHandler(RequestHandler& src)
-	: handler(src), env(NULL)
+///////// CONSTRUCTORS & DESTRUCTORS ///////////
+
+CGIHandler::CGIHandler()
+	: handler(*new RequestHandler()), cgi_pid(0), env(NULL), argv(NULL)
 {
 	if (pipe(cgi_out) < 0)
 	{
@@ -15,10 +14,14 @@ CGIHandler::CGIHandler(RequestHandler& src)
 	}
 }
 
-CGIHandler::CGIHandler(const CGIHandler &other)
-	: handler(other.handler)
+CGIHandler::CGIHandler(RequestHandler& src)
+	: handler(src), cgi_pid(0), env(NULL), argv(NULL)
 {
-	 *this = other;
+	if (pipe(cgi_out) < 0)
+	{
+		handler.setStatus(500);
+		throw CustomException("Internal Server Error: Failed to create pipe");
+	}
 }
 
 CGIHandler::~CGIHandler()
@@ -37,23 +40,41 @@ CGIHandler::~CGIHandler()
 	}
 }
 
+CGIHandler::CGIHandler(const CGIHandler &other)
+	: handler(other.handler)
+{
+	handler = other.handler;
+	cgi_pid = other.cgi_pid;
+	env = other.env;
+	argv = other.argv;
+	cgi_out[0] = other.cgi_out[0];
+	cgi_out[1] = other.cgi_out[1];
+}
+
 CGIHandler &CGIHandler::operator=(const CGIHandler &other) 
 {
 	if (this != &other)
 	{
+		handler = other.handler;
+		cgi_pid = other.cgi_pid;
 		env = other.env;
 		argv = other.argv;
-		handler = other.handler;
+		cgi_out[0] = other.cgi_out[0];
+		cgi_out[1] = other.cgi_out[1];
 	}
 	return (*this);
 }
 
 
-void CGIHandler::execute()
+///////// GETTERS ///////////
+
+pid_t	CGIHandler::getCGIPid() const
 {
-	setEnv();
-	_execCgi();
+	return (cgi_pid);
 }
+
+
+///////// HELPER METHODS ///////////
 
 std::string	CGIHandler::identifyPathInfo()
 {
@@ -80,7 +101,7 @@ void	CGIHandler::setEnv()
 	temp_env.push_back("CONTENT_TYPE=" + handler.getHeaderInfo().getHeaderFields()["content-type"]);
 	temp_env.push_back("DOCUMENT_ROOT=" + doc_root);
 	temp_env.push_back("GATEWAY_INTERFACE=CGI/1.1");
-	temp_env.push_back("PATH_INFO=" + path_info);
+	temp_env.push_back("PATH_INFO=" + path_info); // change this
 	temp_env.push_back("PATH_TRANSLATED=" + doc_root + path_info);
 	temp_env.push_back("QUERY_STRING=" + handler.getHeaderInfo().getQuery());
 	// temp_env.push_back("REMOTE_ADDR=");
@@ -99,7 +120,7 @@ void	CGIHandler::setEnv()
 	for (size_t i = 0; i < temp_env.size(); i++)
 	{
 		env[i] = new char[temp_env[i].size() + 1];
-		std::strcpy(env[i], temp_env[i].c_str());
+		strcpy(env[i], temp_env[i].c_str());
 	}
 	env[temp_env.size()] = NULL;
 	for (size_t i = 0; i < temp_env.size(); i++)
@@ -115,7 +136,7 @@ void	CGIHandler::createArguments()
 		if (handler.getTempBodyFilepath().empty())
 		{
 			handler.setStatus(500);
-			throw CustomException("Internal Server Error");
+			throw CustomException("Internal Server Error: request body not found by CGI");
 		}
 		argv = new char*[3];
 		argv[0] = strdup(file_path.c_str());
@@ -130,7 +151,7 @@ void	CGIHandler::createArguments()
 	}
 }
 
-void CGIHandler::_execCgi() 
+void CGIHandler::execCGI() 
 {
 	createArguments();
 	cgi_pid = fork();
@@ -144,12 +165,12 @@ void CGIHandler::_execCgi()
 		if (dup2(cgi_out[1], STDOUT_FILENO) < 0)
 		{
 			handler.setStatus(500);
-			throw CustomException("Internal Server Error: Failed to dup");
+			exit(1);
 		}
 		if (close(cgi_out[0]) < 0 || close(cgi_out[1] < 0))
 		{
 			handler.setStatus(500);
-			throw CustomException("Internal Server Error: Failed to close pipe ends");
+			exit(1);
 		}
 
 		// Change to the script directory ??
@@ -160,16 +181,15 @@ void CGIHandler::_execCgi()
 		if (execve(argv[0], argv, env) < 0)
 		{
 			handler.setStatus(500);
-			throw CustomException("Internal Server Error: Execve failed");
+			exit(1);
 		}
 	}
 	else
 	{
 		close(cgi_out[1]);
 		int status;
-		time_t start;
-		std::time(&start);
-		while (std::difftime(std::time(NULL), start) < 30)
+		time_t start = time(NULL);
+		while (difftime(time(NULL), start) < handler.getSelectedServer().timeout)
 		{
 			waitpid(cgi_pid, &status, WNOHANG);
 			if (WIFEXITED(status))
@@ -182,11 +202,21 @@ void CGIHandler::_execCgi()
 			handler.setStatus(504);
 			throw CustomException("Gateway Timeout");
 		}
-		if (WEXITSTATUS(status)) {
-			close(cgi_out[0]);
+		if (WEXITSTATUS(status) || handler.getStatus() == 500)
+		{
+			perror("issue");
 			handler.setStatus(500);
 			throw CustomException("Internal Server Error");
 		}
 	}
 }
 
+
+///////// MAIN METHODS ///////////
+
+void CGIHandler::execute()
+{
+	
+	setEnv();
+	execCGI();
+}

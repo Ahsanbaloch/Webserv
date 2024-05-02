@@ -45,7 +45,7 @@ std::map<std::string, std::vector<t_server_config> > &config_pars::getServerConf
 
 void	config_pars::readconfig(std::string &argv, std::string &fileConetnt)
 {
-	std::ifstream file(argv);
+	std::ifstream file(argv.c_str());
 	if (file.is_open())
 	{
 		std::string line;

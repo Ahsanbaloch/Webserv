@@ -4,16 +4,15 @@
 # include <vector>
 # include "config/config_pars.hpp"
 # include "RequestHandler.h"
-# include "KQueue.h"
 
 class ConnectionHandler
 {
 private:
 	//vars
 	RequestHandler* 				handler;
-	const KQueue&					Q;
 	std::vector<t_server_config>	server_config;
 	int								connection_fd;
+	int								kernel_q_fd;
 
 	//flags
 	bool							response_ready;
@@ -25,12 +24,12 @@ private:
 
 public:
 	// constructors & destructor
-	ConnectionHandler(int, std::vector<t_server_config>, const KQueue&);
+	ConnectionHandler(int, std::vector<t_server_config>, int);
 	~ConnectionHandler();
 
 	// getters
 	RequestHandler*					getRequestHandler();
-	int								getResponseStatus();
+	int								getResponseStatus() const;
 
 	// setters
 	void							initRequestHandler();

@@ -5,6 +5,8 @@
 
 ListeningSocket::ListeningSocket()
 {
+	socket_fd = -1;
+	memset(&sock_config, 0, sizeof(sock_config));
 }
 
 ListeningSocket::ListeningSocket(int fd, std::vector<t_server_config> config_info)
@@ -33,7 +35,7 @@ ListeningSocket& ListeningSocket::operator=(const ListeningSocket& src)
 		server_config = src.server_config;
 		memcpy(&sock_config, &src.sock_config, sizeof(sock_config));
 	}
-	return *this;
+	return (*this);
 }
 
 
@@ -56,7 +58,7 @@ void	ListeningSocket::setSockOptions()
 	// how is it related to timeout functionality (RFC 9112 (HTTP 1.1) section 9.5) and do we implement it?
 	int enable = 1;
 	if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable)) == -1)
-		throw CustomException("Failed when calling setsocketopt()\n");
+		throw CustomException("Failed when calling setsocketopt()");
 }
 
 void	ListeningSocket::initSockConfig()
@@ -70,7 +72,7 @@ void	ListeningSocket::bindSock()
 {
 	if (bind(socket_fd, (struct sockaddr*)&sock_config, sizeof(sock_config)) < 0)
 	{
-		throw CustomException("Failed when calling bind()\n");
+		throw CustomException("Failed when calling bind()");
 	}
 }
 
@@ -81,14 +83,12 @@ int	ListeningSocket::getSocketFd() const
 
 void	ListeningSocket::setNonblocking(int fd)
 {
-	// the correct way to make the fd non-blocking would be to first get the current flags with F_GETFL and then add the non-blocking one. However, F_GETFL is not allowed
 	if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1)
-		throw CustomException("Failed when calling fcntl() and setting fds to non-blocking\n");
+		throw CustomException("Failed when calling fcntl() and setting fds to non-blocking");
 }
 
 void	ListeningSocket::makeListen()
 {
-	// setNonblocking(socket_fd);
 	if (listen(socket_fd, SOMAXCONN) < 0)
-		throw CustomException("Failed when making sockets listening\n");
+		throw CustomException("Failed when making sockets listening");
 }

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload Form</title>
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <style>
+    
+
+
+  .col-md-6.signup-form {
+    border: 1px solid rgb(21, 79, 214);
+    padding: 20px;
+    opacity: 0.9;
+    margin-top: 50px; /* Reduced from 150px to 100px */
+    padding: 20px;
+    border-radius: 5%;
+}
+
+.signup-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.signup-form input,
+.signup-form label {
+  width: 100%;
+}
+ 	img {
+	width: 80%;
+	height: 80%;
+	border-radius: 5%;
+	}
+
+  @keyframes spin {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+#spinner {
+  animation: spin 2s linear infinite;
+}
+  </style>
+</head>
+<body>
+
+  <nav class="navbar navbar-expand-lg navbar-light bg-primary">
+    <div class="container-fluid">
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mx-auto mb-2 mb-lg-0">      
+			<li class="nav-item">
+				<a class="nav-link" href="/home.html">Home</a>
+			  </li>
+			  <li class="nav-item">
+				<a class="nav-link" href="/form.html">Form</a>
+			  </li>
+			  <li class="nav-item">
+				<a class="nav-link" href="/upload_file.html">Upload File</a>
+			  </li>
+			  <li class="nav-item">
+				<a class="nav-link" href="/upload_file_cgi.html">CGI Upload File</a>
+			  </li>
+			  <li class="nav-item">
+				<a class="nav-link" href="/avatar_form.html">CGI Avatar (py)</a>
+			  </li>
+			  <li class="nav-item">
+				<a class="nav-link active" aria-current="page" href="/cgi_form_py.html">CGI Form (py)</a>
+			  </li>
+			  <li class="nav-item">
+				<a class="nav-link" href="/cgi_form_php.html">CGI Form (php)</a>
+			  </li>
+			  <li class="nav-item">
+				<a class="nav-link" href="/cgi-bin/my_files.py">My Files</a>
+			  </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+  
+  <div class="container">
+    <div class="row justify-content-center data-row">
+      <div class="col-md-6 signup-form ">
+        <h2 class="text-center">CGI GET Test Form</h2>
+        <div class="form-and-image">
+          <div class="offset-md-2 col-md-8 center">
+			
+            <form action="/cgi-bin/cgi_form_py.py" method="GET" enctype="multipart/form-data">
+              <div class="form-group">
+                <label for="name">Name:</label>
+                <br>
+                <input type="text" id="name" name="name" required>
+                </div>
+                <div class="form-group">
+                <label for="email">Email:</label>
+                <br>
+                <input type="email" id="email" name="email" required>
+                </div> 
+                <button type="submit" class="btn btn-primary btn-block">Submit</button>
+            </form>
+          </div>
+          <img src="/minion/minion-form1.png" class="img-fluid" alt="Responsive image">
+        </div>
+      </div>
+    </div>
+  </div>
+<!-- Existing HTML code... -->
+
+<!-- Full-screen overlay -->
+<div id="overlay" style="display: none; position: fixed; width: 100%; height: 100%; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.5); z-index: 2; cursor: pointer;">
+  <div class="spinner-border text-primary spinner-border-sm" role="status" id="spinner" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 3rem; height: 3rem;">
+    <span class="sr-only">Loading...</span>
+  </div>
+</div>
+
+</body>
+</html>
+  <!-- Bootstrap JS and jQuery -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+
+<script>
+ $(document).ready(function() {
+  $('#signupForm').on('submit', function(e) {
+    // Show the overlay
+    $('#overlay').show();
+
+    // Perform the POST request
+    // This is just an example, replace with your actual POST request
+    $.post('/your-post-url', $(this).serialize())
+      .done(function(data) {
+        // Hide the overlay after at least 2 seconds
+        setTimeout(function() {
+          $('#overlay').hide();
+        }, 2000);
+
+        // Handle the response data
+        // ...
+      })
+      .fail(function() {
+        // Hide the overlay after at least 2 seconds
+        setTimeout(function() {
+          $('#overlay').hide();
+        }, 2000);
+
+        // Handle the error
+        // ...
+      });
+
+    // Prevent the form from submitting normally
+    e.preventDefault();
+  });
+  $('.custom-file-input').on("change", function() {
+    var fileName = $(this).val().split("\\").pop();
+    $(this).siblings('.custom-file-label').addClass("selected").html(fileName);
+  });
+});
+  </script>
+</html> 

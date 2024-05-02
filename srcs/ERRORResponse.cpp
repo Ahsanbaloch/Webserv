@@ -45,37 +45,26 @@ std::string	ERRORResponse::getDefaultErrorMessage(std::string status_code)
 
 std::string	ERRORResponse::createBody(std::string status_code)
 {
-	std::string body;
-	std::string html_var = "ERROR_CODE";
-	std::string err_file = "./www/default_error.html";
+	std::string temp_body;
+	std::string html_var = "ERROR"; 
+	std::string err_file = "./www/error.html";
 
 	if (handler.getStatus() == handler.getLocationConfig().errorPage.error_page_status)
 		err_file = handler.getLocationConfig().errorPage.html_page;
 
-	std::ifstream file(err_file);
-	if (!file.is_open()) 
-	{
-		body = getDefaultErrorMessage(status_code);
-		return (body);
-	}
-	std::stringstream buffer;
-	buffer << file.rdbuf();
-
-	body = buffer.str();
-	file.close(); 
-
+	temp_body = readHTMLTemplateFile(err_file);
 	if (handler.getStatus() != handler.getLocationConfig().errorPage.error_page_status)
 	{
-		size_t pos = body.find(html_var);
+		size_t pos = temp_body.find(html_var);
 		if (pos != std::string::npos)
-			body.replace(pos, html_var.size(), status_code);
+			temp_body.replace(pos, html_var.size(), status_code);
 		else
 		{
-			body = getDefaultErrorMessage(status_code);
-			return (body);
+			temp_body = getDefaultErrorMessage(status_code);
+			return (temp_body);
 		}
 	}
-	return (body);
+	return (temp_body);
 }
 
 void	ERRORResponse::appendAllowedMethods()
@@ -98,8 +87,6 @@ void	ERRORResponse::appendAllowedMethods()
 	}
 	header_fields.append("\r\n");
 }
-
-
 
 
 ///////// MAIN METHOD //////////

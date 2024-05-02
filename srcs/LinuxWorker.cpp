@@ -1,81 +1,202 @@
 
 #include "LinuxWorker.h"
 
-LinuxWorker::LinuxWorker(const EPoll& Queue)
-	: Q(Queue)
+
+///////// CONSTRUCTORS & DESTRUCTORS ///////////
+
+LinuxWorker::LinuxWorker()
 {
 	memset(&client_addr, 0, sizeof(client_addr));
-	addr_size = 0; // shouldn't this be rather be sizeof(client_addr)?
-	for (std::map<int, ListeningSocket>::iterator it = Q.SocketsBlock.listening_sockets.begin(); it != Q.SocketsBlock.listening_sockets.end(); it++)
-		listening_socks_fd.push_back(it->first);
+	addr_size = sizeof(client_addr);
+}
+
+LinuxWorker::LinuxWorker(const EPoll& Queue, ListeningSocketsBlock& SocketsBlock)
+	: Q(Queue)
+{
+	listening_sockets = SocketsBlock.getListeningSockets();
+	memset(&client_addr, 0, sizeof(client_addr));
+	addr_size = sizeof(client_addr);
 }
 
 LinuxWorker::~LinuxWorker()
 {
 }
 
+LinuxWorker::LinuxWorker(const LinuxWorker& src)
+{
+	Q = src.Q;
+	listening_sockets = src.listening_sockets;
+	connected_clients = src.connected_clients;
+	pending_fds = src.pending_fds;
+	client_addr = src.client_addr;
+	addr_size = src.addr_size;
+	memset(event_lst, 0, sizeof(event_lst));
+}
+
+LinuxWorker&	LinuxWorker::operator=(const LinuxWorker& src)
+{
+	if (this != &src)
+	{
+		Q = src.Q;
+		listening_sockets = src.listening_sockets;
+		connected_clients = src.connected_clients;
+		pending_fds = src.pending_fds;
+		client_addr = src.client_addr;
+		addr_size = src.addr_size;
+		memset(event_lst, 0, sizeof(event_lst));
+	}
+	return (*this);
+}
+
+
+///////// HELPER METHODS ///////////
+
 void	LinuxWorker::addToConnectedClients(ListeningSocket& socket)
 {
 	int size = pending_fds.size();
 	for (int i = 0; i < size; i++)
 	{
-		RequestHandler* Handler = new RequestHandler(pending_fds[i], socket.server_config); // need to free that memory somewhere --> when disconnecting the client
-		ConnectedClients.insert(std::pair<int, RequestHandler*>(pending_fds[i], Handler));
+		ConnectionHandler* Handler = new ConnectionHandler(pending_fds[i], socket.getServerConfig(), Q.getEPOLLFD());
+		connected_clients.insert(std::pair<int, ConnectionHandler*>(pending_fds[i], Handler));
 	}
 }
 
-//function to run event loop
+void	LinuxWorker::closeConnection(int connect_ev)
+{
+	connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->removeRequestHandler();
+	delete connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd];
+	connected_clients.erase(static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd);
+	close(static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd);
+	std::cout << "Connection " << static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd << " has been closed" << std::endl;
+}
+
+void	LinuxWorker::acceptConnections(int connect_ev)
+{
+	while (1)
+	{
+		int connection_fd = accept(static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd, (struct sockaddr *)&client_addr, &addr_size);
+		if (connection_fd == -1)
+		{
+			if (errno == EAGAIN || errno == EWOULDBLOCK)
+			{
+				Q.attachConnectionSockets(pending_fds);
+				std::map<int, ListeningSocket>::iterator it = listening_sockets.find(static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd);
+				if (it != listening_sockets.end())
+					addToConnectedClients(it->second);
+				else
+					throw CustomException("Failed when connecting clients"); // where is this going?
+				pending_fds.clear();
+				break;
+			}
+			else
+			{
+				perror("fail");
+				throw CustomException("Failed when trying to establish connection"); // where is this going?
+			}
+		}
+		std::cout << "Connection " << connection_fd << " has been established" << std::endl;
+		pending_fds.push_back(connection_fd);
+	}
+}
+
+void	LinuxWorker::handleReadEvent(int connect_ev)
+{
+	try
+	{
+		if (connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->getRequestHandler() == NULL)
+			connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->initRequestHandler();
+		connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->getRequestHandler()->processRequest();
+		connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->setResponseStatus(connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->getRequestHandler()->getResponseStatus());
+	}
+	catch(const std::exception& e)
+	{
+		closeConnection(connect_ev);
+		std::cerr << e.what() << '\n';
+	}
+}
+
+void	LinuxWorker::handleWriteEvent(int connect_ev)
+{
+	try
+	{
+		connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->getRequestHandler()->sendResponse();
+		if (connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->getRequestHandler()->getNumResponseChunks() == 0 || connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->getRequestHandler()->getChunksSentCompleteStatus() == 1)
+		{
+			if (connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->getRequestHandler()->getHeaderInfo().getHeaderFields()["connection"] == "close"
+			|| connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->getRequestHandler()->getStatus() >= 400)
+			{
+				closeConnection(connect_ev);
+			}
+			else
+			{
+				connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->setResponseStatus(0);
+				connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->removeRequestHandler();
+			}
+		}
+	}
+	catch(const std::exception& e)
+	{
+		closeConnection(connect_ev);
+		std::cerr << e.what() << '\n';
+	}
+}
+
+void	LinuxWorker::handleCGIResponse(int connect_ev)
+{
+	try
+	{
+		connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->getRequestHandler()->initCGIResponse();
+		connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->getRequestHandler()->readCGIResponse();
+		connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->setResponseStatus(connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->getRequestHandler()->getResponseStatus());
+	}
+	catch(const std::exception& e)
+	{
+		closeConnection(connect_ev);
+		std::cerr << e.what() << '\n';
+	}
+}
+
+///////// MAIN METHOD ///////////
+
 void	LinuxWorker::runEventLoop()
 {
 	while (1)
 	{
-		// check for new events that are registered in our kqueue (could come from a listening or connection socket)
-		int new_events = epoll_wait(Q.epoll_fd, event_lst, MAX_EVENTS, -1);
+		int new_events = epoll_wait(Q.getEPOLLFD(), event_lst, MAX_EVENTS, -1);
 		if (new_events == -1)
-			throw CustomException("Failed when checking for new events\n");
+			throw CustomException("Failed when checking for new events");
 		
-		// go through all the events we have been notified of
-		for (int i = 0; new_events > i; i++)
+		for (int connect_ev = 0; new_events > connect_ev; connect_ev++)
 		{
-			// double check what this is exactly checking
-			if ((event_lst[i].events & EPOLLERR)
-			    || (event_lst[i].events & EPOLLHUP)
-				|| (event_lst[i].events & EPOLLRDHUP)
-				|| (!(event_lst[i].events & EPOLLIN)))
+			// double check what this is exactly checking / epoll error?
+			if ((event_lst[connect_ev].events & EPOLLERR)
+			    || (event_lst[connect_ev].events & EPOLLHUP)
+				|| (event_lst[connect_ev].events & EPOLLRDHUP)
+				|| (!(event_lst[connect_ev].events & EPOLLIN)))
 			{
-				std::cout << "client disconnected\n"; // or epoll error?
-				close(event_lst[i].data.fd);
+				if (connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd] != NULL)
+					closeConnection(connect_ev);
 			}
-			// event came from listening socket --> we have to create a connection // maybe there is a different way for checking?
-			else if (std::find(listening_socks_fd.begin(), listening_socks_fd.end(), event_lst[i].data.fd) != listening_socks_fd.end())
+			else if (static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->socket_ident == Q.getListeningSockIdent())
 			{
-				while (1) // to improve efficiency (reducing calls to kevent), we accept all connection requests related to the event in a loop
+				acceptConnections(connect_ev);
+			}
+			else if (static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->socket_ident == Q.getConnectionSockIdent() && connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd] != NULL)
+			{
+				
+				if (event_lst[connect_ev].events & EPOLLIN)
 				{
-					std::cout << "new connection incoming\n";
-					int connection_fd = accept(event_lst[i].data.fd, (struct sockaddr *)&client_addr, &addr_size); // accept performs the 3-way TCP handshake
-					if (connection_fd == -1) // if we have handled all connection requests related to the specific event notification
-					{
-						if (errno == EAGAIN || errno == EWOULDBLOCK)
-						{
-							Q.attachConnectionSockets(pending_fds);
-							std::map<int, ListeningSocket>::iterator it = Q.SocketsBlock.listening_sockets.find(event_lst[i].data.fd);
-							if (it != Q.SocketsBlock.listening_sockets.end())
-								addToConnectedClients(it->second);
-							else
-								throw CustomException("Failed when connecting clients\n");
-							pending_fds.clear();
-							break;
-						}
-						else
-							throw CustomException("Failed when trying to establish connection\n");
-					}
-					pending_fds.push_back(connection_fd);
+					handleReadEvent(connect_ev);
+				}
+				if (connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->getRequestHandler() != NULL && connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->getResponseStatus() && event_lst[connect_ev].events & EPOLLOUT)
+				{
+					handleWriteEvent(connect_ev);
 				}
 			}
-			// event came from connection, so that we want to handle the request
-			else
-				ConnectedClients[event_lst[i].ident]->handleRequest(event_lst[i].ident); // rm ident in handleRequest and use fd stored in object
-			// need to add code similar to DarwinWorker
+			else if(static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->socket_ident != Q.getListeningSockIdent() && static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->socket_ident != Q.getConnectionSockIdent())
+			{
+				handleCGIResponse(connect_ev);
+			}
 		}
 	}
 }

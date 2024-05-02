@@ -33,28 +33,45 @@ GETResponse& GETResponse::operator=(const GETResponse& src)
 }
 
 
-
-//////////// GETTTER ///////////
-
-
-
 /////////// HELPER METHODS ///////////
 
-// store in file?
+std::string GETResponse::createHTMLPage(const std::string& directory_name, const std::vector<std::string>& items)
+{
+	std::string html_template = readHTMLTemplateFile("www/dir_list_template.html");
+	std::ostringstream directory_items;
+	for (std::vector<std::string>::const_iterator it = items.begin(); it != items.end(); ++it)
+	{
+		std::string link = "/" + *it;
+		directory_items << "<li><a href=\"" << directory_name << link << "\">" << *it << "</a> "
+                << "<button onclick=\"sendDeleteRequest('" << directory_name << link << "')\">Delete</button></li>";
+	}
+
+	size_t pos = html_template.find("{directory_name}");
+	if (pos != std::string::npos)
+		html_template.replace(pos, 16, directory_name);
+	pos = html_template.find("{directory_items}");
+	if (pos != std::string::npos)
+		html_template.replace(pos, 17, directory_items.str());
+
+	return (html_template);
+}
+
 std::string GETResponse::getBodyFromDir()
 {
 	std::string body;
+	std::vector<std::string> items;
 	DIR *directory;
 	struct dirent *entry;
 
-	directory = opendir((handler.getLocationConfig().root + handler.getLocationConfig().path).c_str());
+	std::string directory_name = handler.getLocationConfig().path;
+	directory = opendir((handler.getLocationConfig().root + directory_name).c_str());
 	if (directory != NULL)
 	{
 		entry = readdir(directory);
 		while (entry)
 		{
-			body.append(entry->d_name);
-			body.append("\n");
+			if (strcmp(entry->d_name, ".gitkeep") != 0)
+				items.push_back(entry->d_name);
 			entry = readdir(directory);
 		}
 		closedir(directory);
@@ -64,6 +81,7 @@ std::string GETResponse::getBodyFromDir()
 		handler.setStatus(404);
 		throw CustomException("Not found");
 	}
+	body = createHTMLPage(directory_name, items);
 	return (body);
 }
 
@@ -82,20 +100,19 @@ std::string GETResponse::createBody()
 	return (body);
 }
 
-std::string	GETResponse::createHeaderFields(std::string body) // probably don't need parameter anymore
+std::string	GETResponse::createHeaderFields()
 {
 	std::string	header;
 	std::string mime_type = identifyMIME();
 
-
 	header.append("Content-Type: " + mime_type + "\r\n");
-	if (auto_index || (handler.getHeaderInfo().getFileExtension() == ".py"))
+	if (auto_index)
 	{
-		header.append("Content-Length: "); // alternatively TE: chunked?
+		header.append("Content-Length: ");
 		header.append(toString(body.size()) + "\r\n");
 	}
 	else
-		header.append("Content-Length: " + std::to_string(body_size) + "\r\n");
+		header.append("Content-Length: " + toString(body_size) + "\r\n");
 	// header.append("Cache-Control: no-cache");
 	// header.append("Set-Cookie: preference=darkmode; Domain=example.com");
 	// header.append("Server: nginx/1.21.0");
@@ -111,14 +128,10 @@ std::string	GETResponse::createHeaderFields(std::string body) // probably don't 
 
 void	GETResponse::determineOutput()
 {
-	// if the request is not for a file (otherwise the location has already been found)
 	if (handler.getHeaderInfo().getFileExtension().empty())
 	{
 		if (handler.getLocationConfig().autoIndex)
-		{
-			printf("auto index found\n");
 			auto_index = 1;
-		}
 		else
 		{
 			handler.setStatus(404);
@@ -128,21 +141,21 @@ void	GETResponse::determineOutput()
 	else
 	{
 		file_type = handler.getHeaderInfo().getFileExtension();
-		std::cout << "file_type: " << file_type << std::endl;
 		full_file_path = handler.getLocationConfig().root + handler.getHeaderInfo().getPath();
-		std::cout << "full_file_path: " << full_file_path << std::endl;
 	}
 }
 
 std::string	GETResponse::identifyMIME()
 {	
-	if (auto_index) // probably also rather going to be html
-		return ("text/plain");
+	if (auto_index)
+		return ("text/html");
 	else if (file_type == ".html")
 		return ("text/html");
 	else if (file_type == ".jpeg" || file_type == ".jpg")
 		return ("image/jpeg");
-	else if (file_type == ".png" || file_type == ".ico")
+	else if (file_type == ".ico")
+		return ("image/x-icon");
+	else if (file_type == ".png")
 		return ("image/png");
 	else if (file_type == ".bin")
 		return ("application/octet-stream");
@@ -192,9 +205,9 @@ void	GETResponse::createResponse()
 
 	status_line = createStatusLine();
 	if ((handler.getStatus() >= 100 && handler.getStatus() <= 103) || handler.getStatus() == 204 || handler.getStatus() == 304)
-		body = ""; // or just initialize it like that // here no body should be created
+		body = "";
 	else
 		body = createBody();
 	
-	header_fields = createHeaderFields(body);
+	header_fields = createHeaderFields();
 }

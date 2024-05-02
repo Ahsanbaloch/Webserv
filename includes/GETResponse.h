@@ -5,6 +5,7 @@
 # include <iostream>
 # include <fstream>
 # include <string>
+# include <vector>
 # include "AResponse.h"
 # include "RequestHandler.h"
 # include "utils.tpp"
@@ -20,11 +21,11 @@ private:
 	bool			auto_index;
 
 	// helper methods
-	
 	std::string		getBodyFromDir();
 	std::string		createBody();
-	std::string		createHeaderFields(std::string);
+	std::string		createHeaderFields();
 	std::string		identifyMIME();
+	std::string		createHTMLPage(const std::string&, const std::vector<std::string>&);
 	void			determineOutput();
 
 	// constructors
@@ -37,12 +38,8 @@ public:
 	explicit GETResponse(RequestHandler&);
 	~GETResponse();
 
-	// getter
-	// std::ifstream&	getInputFile();
-
 	// main method
 	void			createResponse();
-	
 	
 };
 
