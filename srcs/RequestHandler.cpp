@@ -76,6 +76,7 @@ RequestHandler::~RequestHandler()
 		delete chunk_decoder;
 	if (cgi_handler != NULL)
 	{
+		kill(cgi_handler->getCGIPid(), SIGKILL);
 		close(cgi_handler->cgi_out[0]);
 		delete cgi_handler;
 	}

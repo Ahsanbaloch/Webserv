@@ -66,6 +66,14 @@ CGIHandler &CGIHandler::operator=(const CGIHandler &other)
 }
 
 
+///////// GETTERS ///////////
+
+pid_t	CGIHandler::getCGIPid() const
+{
+	return (cgi_pid);
+}
+
+
 ///////// HELPER METHODS ///////////
 
 std::string	CGIHandler::identifyPathInfo()
