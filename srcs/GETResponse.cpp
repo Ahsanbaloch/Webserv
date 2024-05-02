@@ -42,7 +42,7 @@ std::string GETResponse::createHTMLPage(const std::string& directory_name, const
 	for (std::vector<std::string>::const_iterator it = items.begin(); it != items.end(); ++it)
 	{
 		std::string link = "/" + *it;
-		directory_items << "<li><a href=\"" << link << "\">" << *it << "</a></li>";
+		directory_items << "<li><a href=\"" << directory_name << link << "\">" << *it << "</a></li>";
 	}
 
 	size_t pos = html_template.find("{directory_name}");
