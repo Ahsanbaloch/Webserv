@@ -2,7 +2,7 @@ NAME = webserv
 
 CXX = c++
 
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -pedantic -g -fsanitize=address
+CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -pedantic #-g -fsanitize=address
 
 SRCS_DIR = ./srcs/
 
