@@ -41,14 +41,11 @@ int	main(int argc, char **argv)
 		// close all listening sockets
 		SocketsBlock.closeSockets();
 
-		// close connection sockets? (if any are left?) --> do that in Darwin worker destructor?
-
 		// close queue
 		Queue.closeQueue();
 	}
 	catch(const std::exception& e)
 	{
-		// close fds?
 		std::cerr << e.what() << '\n';
 	}
 }
