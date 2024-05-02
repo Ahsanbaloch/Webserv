@@ -75,4 +75,18 @@
         {directory_items}
     </ul>
 </body>
+
+<script>
+	function sendDeleteRequest(url) {
+		fetch(url, {
+			method: 'DELETE',
+		})
+		.then(response => response.text())
+		.then(data => console.log(data))
+		.catch((error) => {
+		  console.error('Error:', error);
+		});
+	}
+	</script>
+
 </html>
