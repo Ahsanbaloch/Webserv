@@ -34,7 +34,6 @@ RequestHandler::RequestHandler()
 RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_config, int q_fd)
 	: request_header(*this)
 {
-	std::cout << "request handler constructed" << std::endl;
 	this->server_config = server_config;
 	kernel_q_fd = q_fd;
 	connection_fd = fd;
@@ -63,7 +62,6 @@ RequestHandler::RequestHandler(int fd, std::vector<t_server_config> server_confi
 
 RequestHandler::~RequestHandler()
 {
-	std::cout << "request handler destroyed" << std::endl;
 	if (cgi_identifier != NULL)
 		delete cgi_identifier;
 	if (response != NULL)
@@ -250,8 +248,6 @@ void	RequestHandler::receiveRequest()
 		throw CustomException("Stream socket peer has performed an orderly shutdown. Connection will be closed");
 	request_length += bytes_read;
 	buf[bytes_read] = '\0';
-	// printf("read %i bytes\n", bytes_read);
-	// printf("buffer content: \n%s\n", buf);
 }
 
 void	RequestHandler::processHeader()
@@ -273,14 +269,6 @@ void	RequestHandler::checkHeader()
 {
 	request_header.checkHeader();
 	checkForCGI();
-	if (request_header.getHeaderExpectedStatus()) // this is relevant for POST only, should this be done in another place? (e.g. POST request class)
-	{
-		// check value of expect field?
-		// check content-length field before accepting?
-		// create response signalling the client that the body can be send
-		// make reponse
-		// in this case we don't want to destroy the requesthandler object
-	}
 	header_check_done = 1;
 }
 
@@ -407,7 +395,7 @@ void RequestHandler::checkInternalRedirect()
 void RequestHandler::determineLocationBlock()
 {
 	if (server_config.size() > 1)
-		findServerBlock();	
+		findServerBlock();
 	if (server_config[selected_server].locations.size() > 1)
 		findLocationBlock();
 }
@@ -449,11 +437,15 @@ AUploadModule*	RequestHandler::checkContentType()
 		content_type = urlencoded;
 		return (new UploadUrlencoded(*this));
 	}
-	else
+	else if (type == "text/plain")
 	{
-		// or throwException if type is not supported?
 		content_type = text_plain;
 		return (new UploadPlain(*this));
+	}
+	else
+	{
+		setStatus(415);
+		throw CustomException("Unsupported content type");
 	}
 }
 
