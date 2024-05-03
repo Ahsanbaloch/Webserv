@@ -23,8 +23,7 @@
         }
 
         li {
-            padding: 8px;
-            border-bottom: 1px solid #ddd;
+            padding: 8px;	
         }
 
         li a {
@@ -70,23 +69,28 @@
 		  </div>
 		</div>
 	  </nav>
-    <h1>Directory Listing for {directory_name}</h1>
-    <ul>
-        {directory_items}
-    </ul>
+	  <div class="container mt-3  border border-primary">
+        <h1>Directory Listing for {directory_name}</h1>
+        <ul>
+            {directory_items}
+        </ul>
+    </div>
 </body>
 
 <script>
-	function sendDeleteRequest(url) {
-		fetch(url, {
-			method: 'DELETE',
-		})
-		.then(response => response.text())
-		.then(data => console.log(data))
-		.catch((error) => {
-		  console.error('Error:', error);
-		});
-	}
+function sendDeleteRequest(url) {
+    fetch(url, {
+        method: 'DELETE',
+    })
+    .then(response => response.text())
+    .then(data => {
+        console.log(data);
+        location.reload();
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+    });
+}
 	</script>
 
 </html>

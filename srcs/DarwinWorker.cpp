@@ -89,12 +89,12 @@ void	DarwinWorker::acceptConnections(int connect_ev)
 				if (it != listening_sockets.end())
 					addToConnectedClients(it->second);
 				else
-					throw CustomException("Failed when connecting clients"); // where is this going?
+					throw CustomException("Failed when connecting clients");
 				pending_fds.clear();
 				break;
 			}
 			else
-				throw CustomException("Failed when trying to establish connection"); // where is this going?
+				throw CustomException("Failed when trying to establish connection");
 		}
 		std::cout << "Connection " << connection_fd << " has been established" << std::endl;
 		pending_fds.push_back(connection_fd);
@@ -168,37 +168,41 @@ void	DarwinWorker::runEventLoop()
 {
 	while (1)
 	{
-		int new_events = kevent(Q.getKQueueFD(), NULL, 0, event_lst, MAX_EVENTS, NULL);
-		if (new_events == -1)
-			throw CustomException("Failed when checking for new events");
-		for (int connect_ev = 0; new_events > connect_ev; connect_ev++)
+		try
 		{
-			if (event_lst[connect_ev].flags & EV_EOF && *static_cast<int*>(event_lst[connect_ev].udata) == Q.getConnectionSocketIdent())
+			int new_events = kevent(Q.getKQueueFD(), NULL, 0, event_lst, MAX_EVENTS, NULL);
+			if (new_events == -1)
+				throw CustomException("Failed when checking for new events");
+			for (int connect_ev = 0; new_events > connect_ev; connect_ev++)
 			{
-				if (connected_clients[event_lst[connect_ev].ident] != NULL)
-					closeConnection(connect_ev);
-			}
-			else if (*static_cast<int*>(event_lst[connect_ev].udata) == Q.getListeningSocketIdent())
-			{
-				// how to handle exceptions in here?
-				acceptConnections(connect_ev);
-			}
-			else if (*static_cast<int*>(event_lst[connect_ev].udata) == Q.getConnectionSocketIdent()
-					&& connected_clients[event_lst[connect_ev].ident] != NULL)
-			{
-				if (event_lst[connect_ev].filter == EVFILT_READ)
-					handleReadEvent(connect_ev);
-				else if (event_lst[connect_ev].filter == EVFILT_WRITE && connected_clients[event_lst[connect_ev].ident]->getResponseStatus()
-						&& connected_clients[event_lst[connect_ev].ident]->getRequestHandler() != NULL)
+				if (event_lst[connect_ev].flags & EV_EOF && *static_cast<int*>(event_lst[connect_ev].udata) == Q.getConnectionSocketIdent())
 				{
-					handleWriteEvent(connect_ev);
+					if (connected_clients[event_lst[connect_ev].ident] != NULL)
+						closeConnection(connect_ev);
+				}
+				else if (*static_cast<int*>(event_lst[connect_ev].udata) == Q.getListeningSocketIdent())
+					acceptConnections(connect_ev);
+				else if (*static_cast<int*>(event_lst[connect_ev].udata) == Q.getConnectionSocketIdent()
+						&& connected_clients[event_lst[connect_ev].ident] != NULL)
+				{
+					if (event_lst[connect_ev].filter == EVFILT_READ)
+						handleReadEvent(connect_ev);
+					if (event_lst[connect_ev].filter == EVFILT_WRITE && connected_clients[event_lst[connect_ev].ident]->getResponseStatus()
+						&& connected_clients[event_lst[connect_ev].ident]->getRequestHandler() != NULL)
+					{
+						handleWriteEvent(connect_ev);
+					}
+				}
+				else if (*static_cast<int*>(event_lst[connect_ev].udata) != Q.getListeningSocketIdent()
+						&& *static_cast<int*>(event_lst[connect_ev].udata) != Q.getConnectionSocketIdent())
+				{
+					handleCGIResponse(connect_ev);
 				}
 			}
-			else if (*static_cast<int*>(event_lst[connect_ev].udata) != Q.getListeningSocketIdent()
-					&& *static_cast<int*>(event_lst[connect_ev].udata) != Q.getConnectionSocketIdent())
-			{
-				handleCGIResponse(connect_ev);
-			}
+		}
+		catch(const std::exception& e)
+		{
+			std::cerr << e.what() << '\n';
 		}
 	}
 }

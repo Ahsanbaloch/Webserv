@@ -41,9 +41,10 @@ std::string GETResponse::createHTMLPage(const std::string& directory_name, const
 	std::ostringstream directory_items;
 	for (std::vector<std::string>::const_iterator it = items.begin(); it != items.end(); ++it)
 	{
-		std::string link = "/" + *it;
-		directory_items << "<li><a href=\"" << directory_name << link << "\">" << *it << "</a> "
-                << "<button onclick=\"sendDeleteRequest('" << directory_name << link << "')\">Delete</button></li>";
+	 std::string link = "/" + *it;
+    directory_items << "<li class=\"list-group-item\"><a href=\"" << directory_name << link << "\">" << *it << "</a> "
+        << "<button class=\"btn btn-danger float-right\" onclick=\"this.firstChild.classList.remove('d-none'); sendDeleteRequest('" << directory_name << link << "');\">"
+        << "<span class=\"spinner-border spinner-border-sm d-none\" role=\"status\"></span> Delete</button></li>";
 	}
 
 	size_t pos = html_template.find("{directory_name}");
@@ -113,15 +114,6 @@ std::string	GETResponse::createHeaderFields()
 	}
 	else
 		header.append("Content-Length: " + toString(body_size) + "\r\n");
-	// header.append("Cache-Control: no-cache");
-	// header.append("Set-Cookie: preference=darkmode; Domain=example.com");
-	// header.append("Server: nginx/1.21.0");
-	// header.append("Expires: Sat, 08 May 2023 12:00:00 GMT"); // If a client requests the same resource before the expiration date has passed, the server can return a cached copy of the resource.
-	// header.append("Last-Modified: Tue, 04 May 2023 16:00:00 GMT"); // This header specifies the date and time when the content being sent in the response was last modified. This can be used by clients to determine if the resource has changed since it was last requested.
-	// header.append("ETag: "abc123""); //This header provides a unique identifier for the content being sent in the response. This can be used by clients to determine if the resource has changed since it was last requested, without having to download the entire resource again.
-	// header.append("Keep-Alive: timeout=5, max=100"); // used to enable persistent connections between the client and the server, allowing multiple requests and responses to be sent over a single TCP connection
-	// Access-Control-Allow-Origin; X-Frame-Options; X-XSS-Protection; Referrer-Policy; X-Forwarded-For; X-Powered-By; 
-
 	header.append("\r\n");
 	return (header);
 }

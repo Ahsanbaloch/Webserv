@@ -51,11 +51,6 @@ std::vector<t_server_config>	ListeningSocket::getServerConfig() const
 
 void	ListeningSocket::setSockOptions()
 {
-	// set socket options
-	// enabling SO_REUSEADDR for the socket indicates that the socket can be reused even if it is in a TIME_WAIT state. This can be helpful in scenarios where you want to restart a server quickly after it has been shut down, without waiting for the operating system to release the socket.
-	// A TCP local socket address that has been bound is unavailable for some time after closing, unless the SO_REUSEADDR flag has been
-	// set.  Care should be taken when using this flag as it makes TCP less reliable.
-	// how is it related to timeout functionality (RFC 9112 (HTTP 1.1) section 9.5) and do we implement it?
 	int enable = 1;
 	if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable)) == -1)
 		throw CustomException("Failed when calling setsocketopt()");
