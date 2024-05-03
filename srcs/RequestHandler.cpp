@@ -151,7 +151,6 @@ const RequestHeader&	RequestHandler::getHeaderInfo()
 	return (request_header);
 }
 
-// provide a function to get the chunk decoder filepath instead?
 ChunkDecoder*	RequestHandler::getChunkDecoder() const
 {
 	return (chunk_decoder);

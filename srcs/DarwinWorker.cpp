@@ -187,7 +187,7 @@ void	DarwinWorker::runEventLoop()
 				{
 					if (event_lst[connect_ev].filter == EVFILT_READ)
 						handleReadEvent(connect_ev);
-					if (event_lst[connect_ev].filter == EVFILT_WRITE && connected_clients[event_lst[connect_ev].ident]->getResponseStatus()
+					else if (event_lst[connect_ev].filter == EVFILT_WRITE && connected_clients[event_lst[connect_ev].ident]->getResponseStatus()
 						&& connected_clients[event_lst[connect_ev].ident]->getRequestHandler() != NULL)
 					{
 						handleWriteEvent(connect_ev);
