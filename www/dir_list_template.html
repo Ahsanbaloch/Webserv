@@ -85,7 +85,7 @@ function sendDeleteRequest(url) {
     .then(response => response.text())
     .then(data => {
         console.log(data);
-        location.reload();
+        window.location.href = '/cgi-bin/my_files.py'; 
     })
     .catch((error) => {
         console.error('Error:', error);
