@@ -256,11 +256,11 @@ void	RequestHandler::processHeader()
 	if (request_header.getRequestLineStatus())
 	{
 		request_header.identifyFileName();
+		request_header.parseHeaderFields();
 		determineLocationBlock();
 		checkAllowedMethods();
 		if (request_header.getMethod() == "GET")
 			checkInternalRedirect();
-		request_header.parseHeaderFields();
 	}
 }
 
