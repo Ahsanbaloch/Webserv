@@ -90,7 +90,7 @@ echo <<<HTML
 				<a class="nav-link active" aria-current="page" href="/cgi_form_php.html">CGI Form (php)</a>
 			  </li>
 			  <li class="nav-item">
-				<a class="nav-link" href="/cgi-bin/my_files.py">My Files</a>
+				<a class="nav-link" href="/upload">My Files</a>
 			  </li>
 			</ul>
 		</div>
