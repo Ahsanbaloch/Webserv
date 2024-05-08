@@ -63,7 +63,7 @@ void	LinuxWorker::addToConnectedClients(ListeningSocket& socket)
 
 void	LinuxWorker::closeConnection(int connect_ev)
 {
-	if (connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd] == NULL)
+	if (connected_clients.find(static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd) == connected_clients.end())
 		return ;
 	connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->removeRequestHandler();
 	delete connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd];
@@ -86,14 +86,14 @@ void	LinuxWorker::acceptConnections(int connect_ev)
 				if (it != listening_sockets.end())
 					addToConnectedClients(it->second);
 				else
-					throw CustomException("Failed when connecting clients"); // where is this going?
+					throw CustomException("Failed when connecting clients");
 				pending_fds.clear();
 				break;
 			}
 			else
 			{
 				perror("fail");
-				throw CustomException("Failed when trying to establish connection"); // where is this going?
+				throw CustomException("Failed when trying to establish connection");
 			}
 		}
 		std::cout << "Connection " << connection_fd << " has been established" << std::endl;
@@ -122,7 +122,6 @@ void	LinuxWorker::handleWriteEvent(int connect_ev)
 	try
 	{
 		connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->getRequestHandler()->sendResponse();
-		std::cout << "Hello" << std::endl;
 		if (connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->getRequestHandler()->getNumResponseChunks() == 0 || connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->getRequestHandler()->getChunksSentCompleteStatus() == 1)
 		{
 			if (connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->getRequestHandler()->getHeaderInfo().getHeaderFields()["connection"] == "close"
@@ -132,7 +131,6 @@ void	LinuxWorker::handleWriteEvent(int connect_ev)
 			}
 			else
 			{
-				std::cout << "Hello2" << std::endl;
 				connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->setResponseStatus(0);
 				connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->removeRequestHandler();
 			}
@@ -155,7 +153,7 @@ void	LinuxWorker::handleCGIResponse(int connect_ev)
 	}
 	catch(const std::exception& e)
 	{
-		closeConnection(connect_ev);
+		closeConnection(static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd);
 		std::cerr << e.what() << '\n';
 	}
 }
@@ -176,21 +174,21 @@ void	LinuxWorker::runEventLoop()
 			    || (event_lst[connect_ev].events & EPOLLHUP)
 				|| (event_lst[connect_ev].events & EPOLLRDHUP))
 			{
-				if (connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd] != NULL)
 					closeConnection(connect_ev);
 			}
 			else if (static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->socket_ident == Q.getListeningSockIdent())
 			{
 				acceptConnections(connect_ev);
 			}
-			else if (static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->socket_ident == Q.getConnectionSockIdent() && connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd] != NULL)
+			else if (static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->socket_ident == Q.getConnectionSockIdent() && connected_clients.find(static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd) != connected_clients.end())
 			{
 				
 				if (event_lst[connect_ev].events & EPOLLIN)
 				{
 					handleReadEvent(connect_ev);
 				}
-				if (connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->getRequestHandler() != NULL && connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->getResponseStatus() && event_lst[connect_ev].events & EPOLLOUT)
+				if (event_lst[connect_ev].events & EPOLLOUT && connected_clients.find(static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd) != connected_clients.end()
+					&& connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->getRequestHandler() != NULL && connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->getResponseStatus())
 				{
 					handleWriteEvent(connect_ev);
 				}
