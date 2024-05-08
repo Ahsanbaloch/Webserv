@@ -63,6 +63,8 @@ void	LinuxWorker::addToConnectedClients(ListeningSocket& socket)
 
 void	LinuxWorker::closeConnection(int connect_ev)
 {
+	if (connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd] == NULL)
+		return ;
 	connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->removeRequestHandler();
 	delete connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd];
 	connected_clients.erase(static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd);
@@ -120,6 +122,7 @@ void	LinuxWorker::handleWriteEvent(int connect_ev)
 	try
 	{
 		connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->getRequestHandler()->sendResponse();
+		std::cout << "Hello" << std::endl;
 		if (connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->getRequestHandler()->getNumResponseChunks() == 0 || connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->getRequestHandler()->getChunksSentCompleteStatus() == 1)
 		{
 			if (connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->getRequestHandler()->getHeaderInfo().getHeaderFields()["connection"] == "close"
@@ -129,6 +132,7 @@ void	LinuxWorker::handleWriteEvent(int connect_ev)
 			}
 			else
 			{
+				std::cout << "Hello2" << std::endl;
 				connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->setResponseStatus(0);
 				connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd]->removeRequestHandler();
 			}
@@ -168,11 +172,9 @@ void	LinuxWorker::runEventLoop()
 		
 		for (int connect_ev = 0; new_events > connect_ev; connect_ev++)
 		{
-			// double check what this is exactly checking / epoll error?
 			if ((event_lst[connect_ev].events & EPOLLERR)
 			    || (event_lst[connect_ev].events & EPOLLHUP)
-				|| (event_lst[connect_ev].events & EPOLLRDHUP)
-				|| (!(event_lst[connect_ev].events & EPOLLIN)))
+				|| (event_lst[connect_ev].events & EPOLLRDHUP))
 			{
 				if (connected_clients[static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd] != NULL)
 					closeConnection(connect_ev);

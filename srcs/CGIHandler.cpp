@@ -29,14 +29,16 @@ CGIHandler::~CGIHandler()
 	if (env != NULL)
 	{
 		for (size_t i = 0; env[i]; i++)
-			delete env[i];
-		delete env;
+		{
+			delete[] env[i];
+		}
+		delete[] env;
 	}
 	if (argv != NULL)
 	{
 		for (size_t i = 0; argv[i]; i++)
-			delete argv[i];
-		delete argv;
+			delete[] argv[i];
+		delete[] argv;
 	}
 }
 
@@ -133,14 +135,17 @@ void	CGIHandler::createArguments()
 			throw CustomException("Internal Server Error: request body not found by CGI");
 		}
 		argv = new char*[3];
-		argv[0] = strdup(file_path.c_str());
-		argv[1] = strdup(handler.getTempBodyFilepath().c_str());
+		argv[0] = new char[file_path.size() + 1];
+		strcpy(argv[0], file_path.c_str());
+		argv[1] = new char[handler.getTempBodyFilepath().size() + 1];
+		strcpy(argv[1], handler.getTempBodyFilepath().c_str());
 		argv[2] = NULL;
 	}
 	else
 	{
 		argv = new char*[2];
-		argv[0] = strdup(file_path.c_str());
+		argv[0] = new char[file_path.size() + 1];
+		strcpy(argv[0], file_path.c_str());
 		argv[1] = NULL;
 	}
 }

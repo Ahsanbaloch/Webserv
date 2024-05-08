@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HOME</title>
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <style>
+    
+
+
+  .col-md-6.signup-form {
+  border: 1px solid rgb(21, 79, 214);
+  color : white;
+  padding: 20px;
+	opacity: 0.9;
+	margin-top: 150px;
+  padding: 20px;
+	border-radius: 5%;
+}
+
+.card {
+    border: none;  /* this will remove the border */
+  }
+
+  .col:not(:nth-child(2)) .card {
+    margin-top: 150px;  /* adjust this value as needed */
+  }
+
+/* .img-fluid {
+      width: 300px; 
+    }
+ 
+ .img-fluid {
+	width: 100%;
+	height: 100%;
+	border-radius: 5%;
+	} */
+  .card-img-top.top1 {
+      height: 200px;  
+      object-fit: contain; 
+    }
+
+  .card-img-top.top2
+  {
+    height: 160px; 
+    object-fit: contain;  
+  }
+
+  .card-img-top.top3
+  {
+    height: 300px; 
+    object-fit: contain;  
+  }
+
+  </style>
+</head>
+<body>
+
+  <nav class="navbar navbar-expand-lg navbar-light bg-primary">
+    <div class="container-fluid">
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mx-auto mb-2 mb-lg-0">      
+          <li class="nav-item">
+            <a class="nav-link active" aria-current="page" href="/home.html">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/form.html">Form</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/upload_file.html">Upload File</a>
+          </li>
+		  <li class="nav-item">
+            <a class="nav-link" href="/upload_file_cgi.html">CGI Upload File</a>
+          </li>
+		  <li class="nav-item">
+            <a class="nav-link" href="/avatar_form.html">CGI Avatar (py)</a>
+          </li>
+		  <li class="nav-item">
+            <a class="nav-link" href="/cgi_form_py.html">CGI Form (py)</a>
+          </li>
+		  <li class="nav-item">
+            <a class="nav-link" href="/cgi_form_php.html">CGI Form (php)</a>
+          </li>
+		  <li class="nav-item">
+            <a class="nav-link" href="/upload">My Files</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mt-5" id="output">
+   
+  </div>
+
+
+  <div class="container text-center">
+    <img src="/minion/minion1.png" alt="Description of image" class="img-fluid mx-auto d-block">
+    <p class="lead">Hi, we are the Webserv team</p>
+    <br>
+  </div>
+
+  <!-- Bootstrap JS and jQuery -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+  <script>
+    // JavaScript code to handle form submission and display data
+    document.getElementById("signupForm").addEventListener("submit", function(event) {
+      event.preventDefault(); // Prevent the form from submitting
+
+      // Get form values
+      var name = document.getElementById("name").value;
+      var email = document.getElementById("email").value;
+      var password = document.getElementById("password").value;
+
+      // Display form data
+      var outputDiv = document.getElementById("output");
+      outputDiv.innerHTML = `
+        <div class="alert alert-success">
+          <h4 class="alert-heading">Form Submitted!</h4>
+          <p>Name: ${name}</p>
+          <p>Email: ${email}</p>
+          <p>Password: ${password}</p>
+        </div>
+      `;
+
+  // Create a new URL with query parameters
+  var newUrl = new URL(window.location.href);
+  newUrl.searchParams.append('name', name);
+  newUrl.searchParams.append('email', email);
+  newUrl.searchParams.append('password', password);
+
+  // Redirect to the new URL
+  window.location.href = newUrl.href;
+    });
+  </script>
+</body>
+</html>

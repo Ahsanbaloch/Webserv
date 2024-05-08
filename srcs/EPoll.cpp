@@ -74,6 +74,7 @@ void	EPoll::attachListeningSockets(ListeningSocketsBlock&
 		listening_event.events = EPOLLIN;
 		if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, it->first, &listening_event) == -1)
 			throw CustomException("Failed when registering events for listening sockets\n");
+		std::cout << "Localhost listening on port " << it->second.getServerConfig()[0].port << " ..." << std::endl;
 	}
 }
 
@@ -83,7 +84,6 @@ void	EPoll::attachConnectionSockets(std::vector<int> pending_fds)
 	struct epoll_event connection_event;
 	for (int i = 0; i < size; i++)
 	{
-		std::cout << "connection socket" << std::endl;
 		ListeningSocket::setNonblocking(pending_fds[i]);
 		e_data* user_data = new e_data;
 		user_data->fd = pending_fds[i];
