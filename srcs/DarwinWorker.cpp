@@ -154,9 +154,9 @@ void	DarwinWorker::handleWriteEvent(int ev_connect_fd)
 
 void	DarwinWorker::handleCGIResponse(int connect_ev)
 {
+	int connect_fd = *static_cast<int*>(event_lst[connect_ev].udata); // connection fd related to CGI is transmitted in udata field
 	try
 	{
-		int connect_fd = *static_cast<int*>(event_lst[connect_ev].udata); // connection fd related to CGI is transmitted in udata field
 		if (connected_clients.find(connect_fd) != connected_clients.end()) // needed?
 		{
 			connected_clients[connect_fd]->getRequestHandler()->initCGIResponse();
@@ -190,18 +190,18 @@ void	DarwinWorker::runEventLoop()
 				if (event_lst[connect_ev].flags & EV_EOF && socket_ident == Q.getConnectionSocketIdent())
 				{
 					if (connected_clients[event_fd] != NULL)
-						closeConnection(ev_connect_fd);
+						closeConnection(event_fd);
 				}
 				else if (socket_ident == Q.getListeningSocketIdent())
-					acceptConnections(ev_connect_fd);
+					acceptConnections(event_fd);
 				else if (socket_ident == Q.getConnectionSocketIdent() && connected_clients.find(event_fd) != connected_clients.end())
 				{
 					if (event_lst[connect_ev].filter == EVFILT_READ)
-						handleReadEvent(ev_connect_fd);
+						handleReadEvent(event_fd);
 					else if (event_lst[connect_ev].filter == EVFILT_WRITE && connected_clients[event_fd]->getResponseStatus()
 						&& connected_clients[event_fd]->getRequestHandler() != NULL)
 					{
-						handleWriteEvent(ev_connect_fd);
+						handleWriteEvent(event_fd);
 					}
 				}
 				else if (socket_ident != Q.getListeningSocketIdent() && socket_ident != Q.getConnectionSocketIdent())
