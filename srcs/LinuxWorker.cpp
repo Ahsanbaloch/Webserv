@@ -68,8 +68,8 @@ void	LinuxWorker::closeConnection(int ev_connect_fd)
 	connected_clients[ev_connect_fd]->removeRequestHandler();
 	delete connected_clients[ev_connect_fd];
 	connected_clients.erase(ev_connect_fd);
-	close(ev_connect_fd);
 	epoll_ctl(Q.getEPOLLFD(), EPOLL_CTL_DEL, ev_connect_fd, NULL);
+	close(ev_connect_fd);
 	std::cout << "Connection " << ev_connect_fd << " has been closed" << std::endl;
 }
 
@@ -126,7 +126,7 @@ void	LinuxWorker::handleWriteEvent(int ev_connect_fd)
 		if (connected_clients[ev_connect_fd]->getRequestHandler()->getNumResponseChunks() == 0 || connected_clients[ev_connect_fd]->getRequestHandler()->getChunksSentCompleteStatus() == 1)
 		{
 			if (connected_clients[ev_connect_fd]->getRequestHandler()->getHeaderInfo().getHeaderFields()["connection"] == "close"
-			|| connected_clients[ev_connect_fd]->getRequestHandler()->getStatus() >= 400)
+				|| connected_clients[ev_connect_fd]->getRequestHandler()->getStatus() >= 400)
 			{
 				closeConnection(ev_connect_fd);
 			}
@@ -165,41 +165,46 @@ void	LinuxWorker::runEventLoop()
 {
 	while (1)
 	{
-		int new_events = epoll_wait(Q.getEPOLLFD(), event_lst, MAX_EVENTS, -1);
-		if (new_events == -1)
-			throw CustomException("Failed when checking for new events");
-		
-		for (int connect_ev = 0; new_events > connect_ev; connect_ev++)
+		try
 		{
-			int socket_ident = static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->socket_ident;
-			int event_fd = static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd;
-			if (socket_ident == Q.getConnectionSockIdent() && ((event_lst[connect_ev].events & EPOLLERR)
-				|| (event_lst[connect_ev].events & EPOLLHUP) || (event_lst[connect_ev].events & EPOLLRDHUP)))
+			int new_events = epoll_wait(Q.getEPOLLFD(), event_lst, MAX_EVENTS, -1);
+			if (new_events == -1)
+				throw CustomException("Failed when checking for new events");
+			for (int connect_ev = 0; new_events > connect_ev; connect_ev++)
 			{
-				closeConnection(event_fd);
-			}
-			else if (socket_ident == Q.getListeningSockIdent())
-			{
-				acceptConnections(event_fd);
-			}
-			else if (socket_ident == Q.getConnectionSockIdent() && connected_clients.find(event_fd) != connected_clients.end())
-			{
-				
-				if (event_lst[connect_ev].events & EPOLLIN)
+				int socket_ident = static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->socket_ident;
+				int event_fd = static_cast<EPoll::e_data*>(event_lst[connect_ev].data.ptr)->fd;
+				if (socket_ident == Q.getConnectionSockIdent() && ((event_lst[connect_ev].events & EPOLLERR)
+					|| (event_lst[connect_ev].events & EPOLLHUP) || (event_lst[connect_ev].events & EPOLLRDHUP)))
 				{
-					handleReadEvent(event_fd);
+					closeConnection(event_fd);
 				}
-				if (event_lst[connect_ev].events & EPOLLOUT && connected_clients.find(event_fd) != connected_clients.end()
-					&& connected_clients[event_fd]->getRequestHandler() != NULL && connected_clients[event_fd]->getResponseStatus())
+				else if (socket_ident == Q.getListeningSockIdent())
 				{
-					handleWriteEvent(event_fd);
+					acceptConnections(event_fd);
+				}
+				else if (socket_ident == Q.getConnectionSockIdent() && connected_clients.find(event_fd) != connected_clients.end())
+				{
+					
+					if (event_lst[connect_ev].events & EPOLLIN)
+					{
+						handleReadEvent(event_fd);
+					}
+					if (event_lst[connect_ev].events & EPOLLOUT && connected_clients.find(event_fd) != connected_clients.end()
+						&& connected_clients[event_fd]->getRequestHandler() != NULL && connected_clients[event_fd]->getResponseStatus())
+					{
+						handleWriteEvent(event_fd);
+					}
+				}
+				else if (socket_ident != Q.getListeningSockIdent() && socket_ident != Q.getConnectionSockIdent())
+				{
+					handleCGIResponse(event_fd);
 				}
 			}
-			else
-			{
-				handleCGIResponse(event_fd);
-			}
+		}
+		catch(const std::exception& e)
+		{
+			std::cerr << e.what() << '\n';
 		}
 	}
 }
-

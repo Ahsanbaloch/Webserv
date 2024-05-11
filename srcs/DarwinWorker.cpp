@@ -66,26 +66,35 @@ void	DarwinWorker::addToConnectedClients(ListeningSocket& socket)
 	}
 }
 
-void	DarwinWorker::closeConnection(int connect_ev)
+void	DarwinWorker::closeConnection(int ev_connect_fd)
 {
-	connected_clients[event_lst[connect_ev].ident]->removeRequestHandler();
-	delete connected_clients[event_lst[connect_ev].ident];
-	connected_clients.erase(event_lst[connect_ev].ident);
-	close(event_lst[connect_ev].ident);
-	std::cout << "Connection " << event_lst[connect_ev].ident << " has been closed" << std::endl;
+	if (connected_clients.find(ev_connect_fd) == connected_clients.end())
+		return ;
+	connected_clients[ev_connect_fd]->removeRequestHandler();
+	delete connected_clients[ev_connect_fd];
+	connected_clients.erase(ev_connect_fd);
+	struct kevent ev;
+	EV_SET(&ev, ev_connect_fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+	if (kevent(Q.getKQueueFD(), &ev, 1, NULL, 0, NULL) == -1)
+		throw CustomException("Failed when deleting read event");
+	EV_SET(&ev, ev_connect_fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+	if (kevent(Q.getKQueueFD(), &ev, 1, NULL, 0, NULL) == -1)
+		throw CustomException("Failed when deleting write event");
+	close(ev_connect_fd);
+	std::cout << "Connection " << ev_connect_fd << " has been closed" << std::endl;
 }
 
-void	DarwinWorker::acceptConnections(int connect_ev)
+void	DarwinWorker::acceptConnections(int ev_listening_fd)
 {
 	while (1)
 	{
-		int connection_fd = accept(event_lst[connect_ev].ident, (struct sockaddr *)&client_addr, &addr_size);
+		int connection_fd = accept(ev_listening_fd, (struct sockaddr *)&client_addr, &addr_size);
 		if (connection_fd == -1)
 		{
 			if (errno == EAGAIN || errno == EWOULDBLOCK)
 			{
 				Q.attachConnectionSockets(pending_fds);
-				std::map<int, ListeningSocket>::iterator it = listening_sockets.find(event_lst[connect_ev].ident);
+				std::map<int, ListeningSocket>::iterator it = listening_sockets.find(ev_listening_fd);
 				if (it != listening_sockets.end())
 					addToConnectedClients(it->second);
 				else
@@ -101,44 +110,44 @@ void	DarwinWorker::acceptConnections(int connect_ev)
 	}
 }
 
-void	DarwinWorker::handleReadEvent(int connect_ev)
+void	DarwinWorker::handleReadEvent(int ev_connect_fd)
 {
 	try
 	{
-		if (connected_clients[event_lst[connect_ev].ident]->getRequestHandler() == NULL)
-			connected_clients[event_lst[connect_ev].ident]->initRequestHandler();
-		connected_clients[event_lst[connect_ev].ident]->getRequestHandler()->processRequest();
-		connected_clients[event_lst[connect_ev].ident]->setResponseStatus(connected_clients[event_lst[connect_ev].ident]->getRequestHandler()->getResponseStatus());
+		if (connected_clients[ev_connect_fd]->getRequestHandler() == NULL)
+			connected_clients[ev_connect_fd]->initRequestHandler();
+		connected_clients[ev_connect_fd]->getRequestHandler()->processRequest();
+		connected_clients[ev_connect_fd]->setResponseStatus(connected_clients[ev_connect_fd]->getRequestHandler()->getResponseStatus());
 	}
 	catch(const std::exception& e)
 	{
-		closeConnection(connect_ev);
+		closeConnection(ev_connect_fd);
 		std::cerr << e.what() << '\n';
 	}
 }
 
-void	DarwinWorker::handleWriteEvent(int connect_ev)
+void	DarwinWorker::handleWriteEvent(int ev_connect_fd)
 {
 	try
 	{
-		connected_clients[event_lst[connect_ev].ident]->getRequestHandler()->sendResponse();
-		if (connected_clients[event_lst[connect_ev].ident]->getRequestHandler()->getNumResponseChunks() == 0 || connected_clients[event_lst[connect_ev].ident]->getRequestHandler()->getChunksSentCompleteStatus() == 1)
+		connected_clients[ev_connect_fd]->getRequestHandler()->sendResponse();
+		if (connected_clients[ev_connect_fd]->getRequestHandler()->getNumResponseChunks() == 0 || connected_clients[ev_connect_fd]->getRequestHandler()->getChunksSentCompleteStatus() == 1)
 		{
-			if (connected_clients[event_lst[connect_ev].ident]->getRequestHandler()->getHeaderInfo().getHeaderFields()["connection"] == "close"
-			|| connected_clients[event_lst[connect_ev].ident]->getRequestHandler()->getStatus() >= 400)
+			if (connected_clients[ev_connect_fd]->getRequestHandler()->getHeaderInfo().getHeaderFields()["connection"] == "close"
+			|| connected_clients[ev_connect_fd]->getRequestHandler()->getStatus() >= 400)
 			{
-				closeConnection(connect_ev);
+				closeConnection(ev_connect_fd);
 			}
 			else
 			{
-				connected_clients[event_lst[connect_ev].ident]->setResponseStatus(0);
-				connected_clients[event_lst[connect_ev].ident]->removeRequestHandler();
+				connected_clients[ev_connect_fd]->setResponseStatus(0);
+				connected_clients[ev_connect_fd]->removeRequestHandler();
 			}
 		}
 	}
 	catch(const std::exception& e)
 	{
-		closeConnection(connect_ev);
+		closeConnection(ev_connect_fd);
 		std::cerr << e.what() << '\n';
 	}
 }
@@ -147,16 +156,17 @@ void	DarwinWorker::handleCGIResponse(int connect_ev)
 {
 	try
 	{
-		if (connected_clients[*static_cast<int*>(event_lst[connect_ev].udata)] != NULL)
+		int connect_fd = *static_cast<int*>(event_lst[connect_ev].udata); // connection fd related to CGI is transmitted in udata field
+		if (connected_clients.find(connect_fd) != connected_clients.end()) // needed?
 		{
-			connected_clients[*static_cast<int*>(event_lst[connect_ev].udata)]->getRequestHandler()->initCGIResponse();
-			connected_clients[*static_cast<int*>(event_lst[connect_ev].udata)]->getRequestHandler()->readCGIResponse();
-			connected_clients[*static_cast<int*>(event_lst[connect_ev].udata)]->setResponseStatus(connected_clients[*static_cast<int*>(event_lst[connect_ev].udata)]->getRequestHandler()->getResponseStatus());
+			connected_clients[connect_fd]->getRequestHandler()->initCGIResponse();
+			connected_clients[connect_fd]->getRequestHandler()->readCGIResponse();
+			connected_clients[connect_fd]->setResponseStatus(connected_clients[connect_fd]->getRequestHandler()->getResponseStatus());
 		}
 	}
 	catch(const std::exception& e)
 	{
-		closeConnection(*static_cast<int*>(event_lst[connect_ev].udata));
+		closeConnection(connect_fd);
 		std::cerr << e.what() << '\n';
 	}
 }
@@ -175,26 +185,26 @@ void	DarwinWorker::runEventLoop()
 				throw CustomException("Failed when checking for new events");
 			for (int connect_ev = 0; new_events > connect_ev; connect_ev++)
 			{
-				if (event_lst[connect_ev].flags & EV_EOF && *static_cast<int*>(event_lst[connect_ev].udata) == Q.getConnectionSocketIdent())
+				int socket_ident = *static_cast<int*>(event_lst[connect_ev].udata);
+				int event_fd = event_lst[connect_ev].ident;
+				if (event_lst[connect_ev].flags & EV_EOF && socket_ident == Q.getConnectionSocketIdent())
 				{
-					if (connected_clients[event_lst[connect_ev].ident] != NULL)
-						closeConnection(connect_ev);
+					if (connected_clients[event_fd] != NULL)
+						closeConnection(ev_connect_fd);
 				}
-				else if (*static_cast<int*>(event_lst[connect_ev].udata) == Q.getListeningSocketIdent())
-					acceptConnections(connect_ev);
-				else if (*static_cast<int*>(event_lst[connect_ev].udata) == Q.getConnectionSocketIdent()
-						&& connected_clients[event_lst[connect_ev].ident] != NULL)
+				else if (socket_ident == Q.getListeningSocketIdent())
+					acceptConnections(ev_connect_fd);
+				else if (socket_ident == Q.getConnectionSocketIdent() && connected_clients.find(event_fd) != connected_clients.end())
 				{
 					if (event_lst[connect_ev].filter == EVFILT_READ)
-						handleReadEvent(connect_ev);
-					else if (event_lst[connect_ev].filter == EVFILT_WRITE && connected_clients[event_lst[connect_ev].ident]->getResponseStatus()
-						&& connected_clients[event_lst[connect_ev].ident]->getRequestHandler() != NULL)
+						handleReadEvent(ev_connect_fd);
+					else if (event_lst[connect_ev].filter == EVFILT_WRITE && connected_clients[event_fd]->getResponseStatus()
+						&& connected_clients[event_fd]->getRequestHandler() != NULL)
 					{
-						handleWriteEvent(connect_ev);
+						handleWriteEvent(ev_connect_fd);
 					}
 				}
-				else if (*static_cast<int*>(event_lst[connect_ev].udata) != Q.getListeningSocketIdent()
-						&& *static_cast<int*>(event_lst[connect_ev].udata) != Q.getConnectionSocketIdent())
+				else if (socket_ident != Q.getListeningSocketIdent() && socket_ident != Q.getConnectionSocketIdent())
 				{
 					handleCGIResponse(connect_ev);
 				}
