@@ -148,9 +148,12 @@ void	LinuxWorker::handleCGIResponse(int ev_connect_fd)
 {
 	try
 	{
-		connected_clients[ev_connect_fd]->getRequestHandler()->initCGIResponse();
-		connected_clients[ev_connect_fd]->getRequestHandler()->readCGIResponse();
-		connected_clients[ev_connect_fd]->setResponseStatus(connected_clients[ev_connect_fd]->getRequestHandler()->getResponseStatus());
+		if (connected_clients.find(ev_connect_fd) != connected_clients.end())
+		{
+			connected_clients[ev_connect_fd]->getRequestHandler()->initCGIResponse();
+			connected_clients[ev_connect_fd]->getRequestHandler()->readCGIResponse();
+			connected_clients[ev_connect_fd]->setResponseStatus(connected_clients[ev_connect_fd]->getRequestHandler()->getResponseStatus());
+		}
 	}
 	catch(const std::exception& e)
 	{
