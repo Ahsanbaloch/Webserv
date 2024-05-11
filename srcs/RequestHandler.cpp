@@ -314,7 +314,7 @@ void	RequestHandler::addCGIToQueue()
 		user_data->fd = connection_fd;
 		user_data->socket_ident = 3;
 		listening_event.data.ptr = user_data;
-		listening_event.events = EPOLLIN | EPOLLHUP | EPOLLRDHUP;
+		listening_event.events = EPOLLIN | EPOLLRDHUP;
 		if (fcntl(cgi_handler->cgi_out[0], F_SETFL, O_NONBLOCK) == -1)
 			throw CustomException("Failed when calling fcntl() and setting fds to non-blocking");
 		if (epoll_ctl(kernel_q_fd, EPOLL_CTL_ADD, cgi_handler->cgi_out[0], &listening_event) == -1)
