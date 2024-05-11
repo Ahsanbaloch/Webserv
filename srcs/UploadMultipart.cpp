@@ -363,6 +363,8 @@ void	UploadMultipart::parseBody(char ch)
 		case mp_start:
 			if (ch == '-')
 				mp_state = mp_boundary_id;
+			else if (ch == '\0')
+				break;
 			else
 			{
 				handler.setStatus(400);
