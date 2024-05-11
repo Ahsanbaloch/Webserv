@@ -420,8 +420,9 @@ void	UploadMultipart::parseBody(char ch)
 				storeUnchunkedFileData();
 			else
 				storeFileData();
-			break;
-			
+			if (mp_state != mp_boundary_end)
+				break;
+			// fall through
 		case mp_boundary_end:
 			body_read = 1;
 			body_parsing_done = 1;
