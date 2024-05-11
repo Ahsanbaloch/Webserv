@@ -157,7 +157,7 @@ void	DarwinWorker::handleCGIResponse(int connect_ev)
 	int connect_fd = *static_cast<int*>(event_lst[connect_ev].udata); // connection fd related to CGI is transmitted in udata field
 	try
 	{
-		if (connected_clients.find(connect_fd) != connected_clients.end()) // needed?
+		if (connected_clients.find(connect_fd) != connected_clients.end())
 		{
 			connected_clients[connect_fd]->getRequestHandler()->initCGIResponse();
 			connected_clients[connect_fd]->getRequestHandler()->readCGIResponse();
