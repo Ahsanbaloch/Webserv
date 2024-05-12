@@ -2,7 +2,7 @@
 
 This is a basic web server created from scratch in C++98. It was developed as part of the curriculum at 42. The project emphasizes a deep understanding of the HTTP protocol, networking, and the CGI (Common Gateway Interface) standard.
 
-### Features
+## Features
 - **HTTP/1.1 Protocol Support**: Compliant with the HTTP/1.1 protocol, handling GET, POST, and DELETE requests
 - **Cross-Platform Compatibility**: Developed to work on Linux and macOS environments building on the scalable event interfaces epoll and kqueue, respectively
 - **Concurrent Connections**: Handle mutliple incoming connections, stress-tested with [siege](https://github.com/JoeDog/siege)
@@ -13,7 +13,7 @@ This is a basic web server created from scratch in C++98. It was developed as pa
 - **Error Handling**: Provides informative error messages for various scenarios, ensuring robustness and user-friendliness
 - **Security**: Implements basic security measures to prevent common attacks such as directory traversal, and HTTP request smuggling
 
-### Installation
+## Installation
 
 1. Clone the repository:
 ```
@@ -26,7 +26,7 @@ cd webserv
 make
 ```
 
-### Usage
+## Usage
 
 1. To start the server, run:
 ```
@@ -42,8 +42,7 @@ Replace <config_file> with the path to your configuration file. If no file is sp
 http://localhost:4040/
 ```
 
-### Architectural Overview
+## Architectural Overview
 
 ![Webserv_Architecture](https://github.com/Ahsanbaloch/Webserv/assets/65039082/e02f5e8f-abde-41aa-9734-6544b4dfbb21)
-
 
