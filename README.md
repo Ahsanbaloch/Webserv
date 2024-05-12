@@ -46,3 +46,7 @@ http://localhost:4040/
 
 ![Webserv_Architecture](https://github.com/Ahsanbaloch/Webserv/assets/65039082/e02f5e8f-abde-41aa-9734-6544b4dfbb21)
 
+## License
+
+This project uses the [MIT License](https://github.com/Ahsanbaloch/Webserv/blob/main/LICENSE)
+
