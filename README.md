@@ -35,7 +35,7 @@ make
 Replace <config_file> with the path to your configuration file. If no file is specified, the server will look for "simple.conf" in the config_files directory.
 
 
-2. Send HTTP requests to the server using your favorite web browser (oprimzed for Chrome) or a tool such as Postman. For CGI, ensure that the scripting language of your choice is installed (tested with .py and .php scripts).
+2. Send HTTP requests to the server using your favorite web browser (optimzed for Chrome) or a tool such as Postman. For CGI, ensure that the scripting language of your choice is installed (tested with .py and .php scripts).
    
 3. A demo of the main functionalities can be accessed via the default configuration file and typing following address in your browser:
 ```
